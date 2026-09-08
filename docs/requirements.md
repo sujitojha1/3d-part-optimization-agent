@@ -2,12 +2,13 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.2 |
+| Version | 0.3 |
 | Date | 2026-09-09 |
 | Status | Draft for owner approval |
 | Owner | Sujit Ojha |
 | Budget | Four weeks, one engineer |
 | Scope source | [Project intent](intent.md) |
+| Execution order | [Plan](plan.md) — Phase 0 and the four-week schedule |
 | Conventions | EARS statements ([Mavin](https://alistairmavin.com/ears/)); structure informed by ISO/IEC/IEEE 29148:2018, tailored — not audited compliance |
 
 ## 1. How to read this
@@ -23,23 +24,27 @@ These were open decisions `OD-01`–`OD-10` in v0.1. Each is now resolved toward
 | # | Decision | Rationale |
 | --- | --- | --- |
 | D-01 | **Analysis:** linear static, small strain, isotropic elastic. Failure mode: von Mises against yield only. Buckling, fatigue, contact, thermal, and plasticity are out of scope. | The intent's loop is stress-contour reasoning. Anything nonlinear multiplies solve time and debugging with no gain to the thesis. |
-| D-02 | **Solver:** CalculiX (`ccx`). FEniCS dropped. | Text `.inp` in, `.frd` out; both trivially scriptable and diffable. Small, vendorable binary. FEniCS drags a dependency chain that will not survive "runs on a clean machine". |
+| D-02 | **Solver:** CalculiX (`ccx`) 2.10, the native Windows x64 build published in `GeneralElectric/CalculiX` under `releases/`. Fetched at setup time by pinned URL and SHA-256, **not committed** to this repo. FEniCS dropped. | Text `.inp` in, `.frd` out; both trivially scriptable and diffable. `ccx` is GPL and this repo is public, so fetching rather than vendoring avoids a source-offer obligation while keeping the build reproducible. FEniCS drags a dependency chain that will not survive "runs on a clean machine". |
 | D-03 | **Mesh:** Gmsh, second-order tetrahedra (`C3D10`), one task-declared characteristic length with a local refinement factor at named regions. | First-order tets are over-stiff and report bad stress — they would poison the entire prediction-accuracy metric. |
-| D-04 | **Geometry:** one FreeCAD parametric model per benchmark part, driven headless through its Python API. Edits set **named parameters**; the agent never performs free-form CAD. | The single largest scope cut. Arbitrary CAD editing is its own multi-week project and is where builds of this shape usually die. |
+| D-04 | **Geometry:** one **CadQuery** parametric script per benchmark part. Edits set **named parameters**; the agent never performs free-form CAD and never writes CAD code. FreeCAD dropped. | Two cuts in one. Arbitrary CAD editing is its own multi-week project and is where builds of this shape usually die. FreeCAD additionally has no reliable pip path on Windows and expects its own interpreter; CadQuery 2.8.0 on `cadquery-ocp` 7.9.3.1.1 has verified cp313 `win_amd64` wheels and installs alongside everything else. |
 | D-05 | **Permitted edit vocabulary** (closed set of four): `fillet_radius`, `wall_thickness`, `hole_diameter`, `pocket_depth`. Each task declares which apply, with min/max/step. | Makes `REQ-OPT-003` checkable, and makes the refusal case (D-09) a finite, enumerable claim. |
 | D-06 | **Named regions:** each parametric model exports labeled element sets (e.g. `fillet_A`, `web`, `hole_edge`, `bulk`). Spatial claims resolve to one label. | Turns "where is the stress" from an open representation problem into a set-membership check. Resolves v0.1's `OD-02` region question. |
 | D-07 | **Prediction schema:** `{region, metric, direction, band}` where `metric ∈ {max_vm, max_disp, mass}`, `direction ∈ {up, down, flat}`, `band ∈ {0–5%, 5–15%, 15–30%, >30%}`. Scored as three independent booleans — region hit, direction hit, band hit — reported separately and as a conjunction. | The intent's headline metric had no scoring rule, and free-text reasons collide with `REQ-DEL-004`. This makes the reasoning score a predicate over structured data. |
 | D-08 | **Load cases:** exactly one per task in v1. | Multi-case support multiplies solve time and result plumbing for no thesis value. Deferred (section 6). |
 | D-09 | **Material library:** closed JSON file, 8 alloys (Al 6061-T6, Al 7075-T6, steel 1018, 4140, 304 SS, Ti-6Al-4V, brass 360, cast iron). Fields per D-10. Provenance is a cited source string per record. | Finite and enumerable, so "no material in the library works" is provable by exhaustion. |
 | D-10 | **Material fields:** `yield_mpa`, `density_kg_m3`, `youngs_gpa`, `poisson`, `cost_per_kg`, `machinability`, `corrosion_resistance`, `availability`, `source`. Unknowns are explicit `null`, never omitted. | Intent calls out all six selection attributes; explicit `null` keeps `REQ-OPT-007` decidable. |
-| D-11 | **Manufacturing check:** FDM profile only — minimum wall thickness and maximum overhang angle, computed geometrically from the candidate mesh. PrusaSlicer and CAM are out; draft angle is not applicable to FDM and is dropped. | A geometric rule check is hours of work; driving a slicer and parsing its output is days, and adds a fragile external process to the packaged run. |
+| D-11 | **Manufacturing check:** FDM profile only — minimum wall thickness and maximum overhang angle. Overhang is the angle between each surface facet's normal and the build direction. Minimum wall is a ray cast inward along each facet normal, taking the distance to the next surface as local thickness. PrusaSlicer and CAM are out; draft angle is not applicable to FDM and is dropped. | A geometric rule check is hours of work; driving a slicer and parsing its output is days, and adds a fragile external process to the packaged run. The ray cast is named because "computed geometrically" hid a real algorithm choice; checking the driven thickness parameter instead is the cheap fallback, but it misses thin regions that emerge where a hole sits near an edge. |
 | D-12 | **Singularity protocol:** re-solve the flagged candidate at 0.5× characteristic length in the affected region. If peak von Mises rises more than 20%, the peak is treated as mesh-driven and the result is unverified. | One extra solve, no convergence-study machinery. Catches the sharp-corner mutation. |
 | D-13 | **Budget:** 8 candidate evaluations or 20 minutes wall clock per run, whichever comes first. Per-tool timeout 180 s. In-flight work finishes; no new evaluation launches. | Bounds the run and forces benchmark parts small enough to solve in seconds. |
 | D-14 | **Benchmark parts (3):** `L_bracket` (fillet-driven), `cantilever_plate_with_hole` (hole and thickness), `ribbed_beam` (web and pocket). Each ships a baseline that passes all checks. | Enough to cover the edit vocabulary and show a material trade; more is schedule risk. |
 | D-15 | **Task set:** 9 tasks — each part × {geometry-led, material-led, unachievable-target}. | Gives every validation scenario at least one fixture. |
 | D-16 | **Mutation corpus:** 3 categories × 2 instances = 6 mutants, each paired with a valid control. Categories per intent: sharp-corner singularity, wrong load direction, MPa/Pa material-unit mismatch. | Small enough to run every commit; paired controls make the false-positive rate reportable. |
-| D-17 | **Environment:** Windows 11 primary, conda-forge lockfile pinning FreeCAD, Gmsh, CalculiX, and Python. One documented entry command. | A lockfile is the only realistic way to make this three-binary stack reproducible on a clean machine. |
-| D-18 | **Model access:** the vision step sends rendered contour images and numeric summaries to a hosted model. No customer geometry — benchmark parts are project-authored. Records stay local. | Removes v0.1's `OD-10` privacy blocker for this project's data. |
+| D-17 | **Environment:** Windows 11, Python 3.13, **`uv` lockfile** — `cadquery`, `gmsh` 4.15.2, `meshio`, `ccx2paraview`, `pyvista`/`vtk`. conda dropped. `ccx` per D-02 is the only non-PyPI artifact. One documented entry command. | The full stack was verified to resolve under `uv` on Python 3.13 Windows with no conda present, which is what the target machine actually has. Dropping conda removes the hardest part of "runs on a clean machine". |
+| D-18 | **Model access:** the vision step sends rendered contour images and numeric summaries to a hosted model **through the `glc_v5` gateway on 8111**; the agent process holds no credential. No customer geometry — benchmark parts are project-authored. Records stay local. | Matches the course harness split. Whether the gateway can carry an image part at all is unproven and is `OD-D`. |
+| D-19 | **Rerunnable capabilities:** `run_sim`, `read_result`, and the manufacturing check are declared rerunnable in the capability registry. | The harness deduplicates identical capability calls. Re-solving the same parameter set after an edit is not a duplicate — the geometry changed in between — and without this the loop silently stops iterating. |
+| D-20 | **Protected paths:** `verifiers/**`, `tasks/**`, `materials/**`, and `mutations/**` join the harness defaults (`tests/**`, `conftest.py`, `.github/**`). The solver is exposed as a capability, not added to the command allowlist. Code-editing capabilities are disabled unless D-21 work requires them. | The judge must be unreachable by the thing being judged: an agent asked to reduce mass that can edit `tasks/` will lower the safety factor instead of removing material. A typed `run_sim` contract also satisfies `REQ-DEL-002` for free. |
+| D-21 | **Mesh density is not an agent-controllable parameter.** Characteristic length and refinement factors are task data, and a proposal that changes them is refused. | The cheapest way to make a stress concentration disappear is to coarsen the mesh until it vanishes. D-05 already excludes it; this makes the exclusion an explicit refusal rather than an omission. |
+| D-22 | **Solver validation gate:** two closed-form cases ship as tests and must pass before any agent result is meaningful — a tip-loaded cantilever (`δ = PL³/3EI`, `σ = Mc/I`) and a shoulder-fillet stepped bar checked against a published `Kt`. | Prediction accuracy, mutation detection, and the frontier all inherit the solver's correctness. The cantilever also gives the MPa/Pa mutation a ground truth, where a unit error appears as a factor of 10⁶. The fillet case calibrates D-12's 20% threshold on geometry whose true answer is known, instead of guessing it. |
 
 Two rendering constraints follow from D-07 and are normative, not stylistic: contour images use a **fixed camera set and a legend range locked across all iterations of a run** (`REQ-OPT-001`). An auto-rescaling color bar makes cross-iteration visual comparison meaningless.
 
@@ -75,7 +80,7 @@ Two rendering constraints follow from D-07 and are normative, not stylistic: con
 | --- | --- | --- | --- |
 | REQ-OPT-001 | When valid results are available, the system shall render the stress contour using the run's fixed camera set and locked legend range, and supply the image to the agent's visual step. | Must | Trace shows an image input bound to the matching result; two iterations of one run share an identical legend range. |
 | REQ-OPT-002 | When the agent interprets a contour, the system shall record the identified concentration as one region label from D-06. | Must | The `L_bracket` fixture with a known fillet concentration yields a label the predicate can score. |
-| REQ-OPT-003 | When the agent proposes a candidate, the system shall accept exactly one D-05 parameter change or one material substitution, within declared bounds. | Must | Compound and out-of-bounds proposals rejected; each permitted single edit accepted. |
+| REQ-OPT-003 | When the agent proposes a candidate, the system shall accept exactly one D-05 parameter change or one material substitution, within declared bounds, and shall refuse any proposal that changes mesh settings. | Must | Compound, out-of-bounds, and mesh-altering proposals rejected; each permitted single edit accepted. Enforced in the runtime, not in a skill. |
 | REQ-OPT-004 | Before a change is executed, the system shall persist the agent's rationale and its D-07 structured prediction. | Must | Record ordering shows both persisted before the tool invocation. |
 | REQ-OPT-005 | When the next valid evaluation completes, the system shall score the preceding prediction per D-07 and store all three booleans. | Must | Known-correct and known-wrong predictions receive the expected sub-scores. |
 | REQ-OPT-006 | When the agent considers a material, the system shall supply all D-10 fields, including explicit `null`. | Must | Trace shows every field for each considered material. |
@@ -113,7 +118,11 @@ Two rendering constraints follow from D-07 and are normative, not stylistic: con
 | REQ-DEL-006 | Before scoring, the system shall persist the raw run record — inputs, tool calls, outputs, artifact references, predictions, tool versions, and terminal status — to disk, and a write failure shall prevent scoring. | Must | Scoring blocked until the record is readable; every evaluation resolves to its exact inputs and versions. |
 | REQ-DEL-007 | When a saved run is rescored, the system shall compute the new score with no model or solver access. | Must | Rescore a saved fixture with both disabled. |
 | REQ-DEL-008 | If a tool execution fails, then the system shall persist its diagnostics against the candidate ID. | Must | Injected solver and checker failures retrievable by candidate. |
-| REQ-DEL-009 | The system should publish a run report summarizing mass delta, constraint margins, prediction accuracy, and mutation detection. | Should | Report generated from stored records alone. |
+| REQ-DEL-009 | The distribution shall include the D-22 validation cases as tests, and their failure shall block release. | Must | Both cases agree with closed form within the declared tolerance; an injected unit error in the material card fails the cantilever case. |
+| REQ-DEL-010 | The system shall declare `run_sim`, `read_result`, and the manufacturing check rerunnable, and shall not deduplicate them. | Must | Two identical `run_sim` calls separated by an edit both execute and both appear in the run record. |
+| REQ-DEL-011 | The system shall refuse edits to every D-20 protected path and shall record each refusal. | Must | An attempted edit to a task, verifier, material record, and mutation is refused, and each refusal is retrievable. |
+| REQ-DEL-012 | The system should publish a run report summarizing mass delta, constraint margins, prediction accuracy, and mutation detection. | Should | Report generated from stored records alone. |
+| REQ-DEL-013 | The system should record an A/B of one benchmark task run with and without the FEA-reasoning skill loaded. | Should | Both runs stored, differing only by the skill being available. |
 
 ## 5. Interface contracts
 
@@ -139,22 +148,16 @@ Dropped from v0.1 as redundant or merged, IDs retired and not reused: v0.1 `OPT-
 
 | ID | Question | Blocks |
 | --- | --- | --- |
-| OD-A | Does the EAG V3 harness exist, and what is reusable? The repo currently contains no code. | `REQ-DEL-001`, week 1 |
+| OD-A | Which harness is the reusable base? `S17Code` carries the capability registry, skills loader, and protected-paths guard, but the owner's account has forks of `glc_v5`, `S16Code`, and `S15Code` only — no `S17Code` fork, and no local clone. | `REQ-DEL-001`, Phase 0 |
+| OD-D | Can `glc_v5` carry an image part to the model? Nothing in the course material exercises that path, and the intent's central claim depends on it. | `REQ-OPT-001`, Phase 0 |
 | OD-B | Release thresholds: prediction accuracy, mutation detection rate, control false-positive ceiling. | `REQ-DEL-004`, `REQ-DEL-005` |
-| OD-C | Numeric tolerances: mass comparison, load-direction angle, spatial region match. | `REQ-VER-001`, `REQ-VER-006`, `REQ-OPT-005` |
+| OD-C | Numeric tolerances: mass comparison, load-direction angle, spatial region match, and D-22 validation agreement. | `REQ-VER-001`, `REQ-VER-006`, `REQ-OPT-005`, `REQ-DEL-009` |
 
-OD-B and OD-C do not block building; they block declaring the result acceptable. Set them from week-3 baseline data rather than guessing now.
+OD-A and OD-D block work and are resolved in [Phase 0](plan.md) before week 1. OD-B and OD-C do not block building; they block declaring the result acceptable, and should be set from week-3 data rather than guessed now.
 
-## 8. Four-week schedule
+## 8. Execution order
 
-| Week | Delivers | Requirements |
-| --- | --- | --- |
-| 1 | Locked environment; three parametric parts; headless mesh → solve → parse working; run records on disk. | DEL-003, DEL-006, IN-003 |
-| 2 | Harness loop; contour rendering with locked legend; vision step; prediction schema; single-edit application and re-run. | OPT-001–004, DEL-001–002 |
-| 3 | Verifiers; task set; mutation corpus; offline rescoring. | VER-001–006, DEL-004, DEL-005, DEL-007 |
-| 4 | Frontier and refusal; clean-machine run; reported numbers; buffer. | OUT-001–004, DEL-003, DEL-009 |
-
-Week 1 is the schedule risk. If the CalculiX and FreeCAD toolchain is not solving headless by day 5, cut to two benchmark parts before cutting anything in weeks 2–3.
+Sequencing, the Phase 0 gates that resolve `OD-A` and `OD-D`, the demo and validation parts, and the risk register live in **[plan.md](plan.md)**. Two ordering constraints are normative here because requirements depend on them: `REQ-OPT-001` cannot be built before `OD-D` is answered, and no agent result is meaningful before `REQ-DEL-009`'s validation cases pass.
 
 ## 9. References
 
@@ -166,3 +169,4 @@ Week 1 is the schedule risk. If the CalculiX and FreeCAD toolchain is not solvin
 | --- | --- | --- |
 | 0.1 | 2026-09-09 | Initial specification from intent |
 | 0.2 | 2026-09-09 | Scoped to four weeks: 10 open decisions resolved to 3, 38 requirements reduced to 30, lifecycle process and source register removed, schedule added |
+| 0.3 | 2026-09-09 | Stack corrected to what this machine can actually run — CadQuery replaces FreeCAD, uv replaces conda, CalculiX sourced and fetched rather than vendored. Added D-19 to D-22 and REQ-DEL-009 to 011/013 from the harness constraints and the missing solver-validation gate. `OD-A` restated, `OD-D` added. Execution order moved to `plan.md` |
