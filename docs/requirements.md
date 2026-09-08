@@ -1,221 +1,168 @@
 # Requirements — 3D Part Optimization Agent
 
-| Document attribute | Value |
+| Attribute | Value |
 | --- | --- |
-| Version | 0.1 |
+| Version | 0.2 |
 | Date | 2026-09-09 |
-| Status | Draft for stakeholder review; not an approved baseline |
-| Project owner | Sujit Ojha |
-| Standard | ISO/IEC/IEEE 29148:2018, Systems and software engineering — Life cycle processes — Requirements engineering |
-| Requirement syntax | EARS (Easy Approach to Requirements Syntax, Mavin et al.) |
-| Product scope source | [Project intent](intent.md) |
+| Status | Draft for owner approval |
+| Owner | Sujit Ojha |
+| Budget | Four weeks, one engineer |
+| Scope source | [Project intent](intent.md) |
+| Conventions | EARS statements ([Mavin](https://alistairmavin.com/ears/)); structure informed by ISO/IEC/IEEE 29148:2018, tailored — not audited compliance |
 
-## 1. Purpose and document conventions
+## 1. How to read this
 
-This specification defines the expected behavior, interfaces, quality constraints, and acceptance evidence for a runnable agent that reduces a loaded part's mass while checking structural and manufacturing constraints. It uses a tailored requirements-engineering process informed by IEEE 29148:2018 and EARS; it does not assert audited compliance with the complete standard.
+Only `REQ-*` lines are normative. `Must` = required to ship in four weeks. `Should` = build only if section 8's schedule holds. Everything else is definition, rationale, or a decision record.
 
-Only statements identified by `REQ-*` are normative product requirements. Supporting text supplies definitions, rationale, verification guidance, and unresolved decisions. All requirements are proposed, unimplemented, and unverified unless their status is changed through the process in section 9.
+Section 2 fixes the choices the v0.1 draft left open. A four-week build cannot run a decision-review process, so the defaults below are **decided** with rationale; the owner overrides any of them by editing section 2, and the requirements follow. Only section 7 stays genuinely open.
 
-Each requirement has a stable identifier, one normative statement, a source, a priority, and a verification criterion. `Must` means required for initial acceptance; `Should` means desirable with a documented waiver. Source codes beginning with `D` identify derived requirements that need owner review, rather than commitments explicitly present in the intent.
+## 2. Fixed decisions
 
-EARS conventions used here are: an unconditional statement for persistent behavior, `When` for an event, `While` for a state, `If ... then` for an unwanted condition, and `Where` for an included optional feature. Clauses may be combined when both a state and a trigger determine behavior. Every normative statement uses `shall` and identifies the responsible system.
+These were open decisions `OD-01`–`OD-10` in v0.1. Each is now resolved toward the cheapest option that still satisfies the intent.
 
-## 2. Context, stakeholders, and scope
+| # | Decision | Rationale |
+| --- | --- | --- |
+| D-01 | **Analysis:** linear static, small strain, isotropic elastic. Failure mode: von Mises against yield only. Buckling, fatigue, contact, thermal, and plasticity are out of scope. | The intent's loop is stress-contour reasoning. Anything nonlinear multiplies solve time and debugging with no gain to the thesis. |
+| D-02 | **Solver:** CalculiX (`ccx`). FEniCS dropped. | Text `.inp` in, `.frd` out; both trivially scriptable and diffable. Small, vendorable binary. FEniCS drags a dependency chain that will not survive "runs on a clean machine". |
+| D-03 | **Mesh:** Gmsh, second-order tetrahedra (`C3D10`), one task-declared characteristic length with a local refinement factor at named regions. | First-order tets are over-stiff and report bad stress — they would poison the entire prediction-accuracy metric. |
+| D-04 | **Geometry:** one FreeCAD parametric model per benchmark part, driven headless through its Python API. Edits set **named parameters**; the agent never performs free-form CAD. | The single largest scope cut. Arbitrary CAD editing is its own multi-week project and is where builds of this shape usually die. |
+| D-05 | **Permitted edit vocabulary** (closed set of four): `fillet_radius`, `wall_thickness`, `hole_diameter`, `pocket_depth`. Each task declares which apply, with min/max/step. | Makes `REQ-OPT-003` checkable, and makes the refusal case (D-09) a finite, enumerable claim. |
+| D-06 | **Named regions:** each parametric model exports labeled element sets (e.g. `fillet_A`, `web`, `hole_edge`, `bulk`). Spatial claims resolve to one label. | Turns "where is the stress" from an open representation problem into a set-membership check. Resolves v0.1's `OD-02` region question. |
+| D-07 | **Prediction schema:** `{region, metric, direction, band}` where `metric ∈ {max_vm, max_disp, mass}`, `direction ∈ {up, down, flat}`, `band ∈ {0–5%, 5–15%, 15–30%, >30%}`. Scored as three independent booleans — region hit, direction hit, band hit — reported separately and as a conjunction. | The intent's headline metric had no scoring rule, and free-text reasons collide with `REQ-DEL-004`. This makes the reasoning score a predicate over structured data. |
+| D-08 | **Load cases:** exactly one per task in v1. | Multi-case support multiplies solve time and result plumbing for no thesis value. Deferred (section 6). |
+| D-09 | **Material library:** closed JSON file, 8 alloys (Al 6061-T6, Al 7075-T6, steel 1018, 4140, 304 SS, Ti-6Al-4V, brass 360, cast iron). Fields per D-10. Provenance is a cited source string per record. | Finite and enumerable, so "no material in the library works" is provable by exhaustion. |
+| D-10 | **Material fields:** `yield_mpa`, `density_kg_m3`, `youngs_gpa`, `poisson`, `cost_per_kg`, `machinability`, `corrosion_resistance`, `availability`, `source`. Unknowns are explicit `null`, never omitted. | Intent calls out all six selection attributes; explicit `null` keeps `REQ-OPT-007` decidable. |
+| D-11 | **Manufacturing check:** FDM profile only — minimum wall thickness and maximum overhang angle, computed geometrically from the candidate mesh. PrusaSlicer and CAM are out; draft angle is not applicable to FDM and is dropped. | A geometric rule check is hours of work; driving a slicer and parsing its output is days, and adds a fragile external process to the packaged run. |
+| D-12 | **Singularity protocol:** re-solve the flagged candidate at 0.5× characteristic length in the affected region. If peak von Mises rises more than 20%, the peak is treated as mesh-driven and the result is unverified. | One extra solve, no convergence-study machinery. Catches the sharp-corner mutation. |
+| D-13 | **Budget:** 8 candidate evaluations or 20 minutes wall clock per run, whichever comes first. Per-tool timeout 180 s. In-flight work finishes; no new evaluation launches. | Bounds the run and forces benchmark parts small enough to solve in seconds. |
+| D-14 | **Benchmark parts (3):** `L_bracket` (fillet-driven), `cantilever_plate_with_hole` (hole and thickness), `ribbed_beam` (web and pocket). Each ships a baseline that passes all checks. | Enough to cover the edit vocabulary and show a material trade; more is schedule risk. |
+| D-15 | **Task set:** 9 tasks — each part × {geometry-led, material-led, unachievable-target}. | Gives every validation scenario at least one fixture. |
+| D-16 | **Mutation corpus:** 3 categories × 2 instances = 6 mutants, each paired with a valid control. Categories per intent: sharp-corner singularity, wrong load direction, MPa/Pa material-unit mismatch. | Small enough to run every commit; paired controls make the false-positive rate reportable. |
+| D-17 | **Environment:** Windows 11 primary, conda-forge lockfile pinning FreeCAD, Gmsh, CalculiX, and Python. One documented entry command. | A lockfile is the only realistic way to make this three-binary stack reproducible on a clean machine. |
+| D-18 | **Model access:** the vision step sends rendered contour images and numeric summaries to a hosted model. No customer geometry — benchmark parts are project-authored. Records stay local. | Removes v0.1's `OD-10` privacy blocker for this project's data. |
 
-### 2.1 Intended outcome
+Two rendering constraints follow from D-07 and are normative, not stylistic: contour images use a **fixed camera set and a legend range locked across all iterations of a run** (`REQ-OPT-001`). An auto-rescaling color bar makes cross-iteration visual comparison meaningless.
 
-Given a part, material, loads, supports, and acceptance constraints, the agent interprets finite element analysis (FEA) results visually, proposes one geometry or material change, predicts its effect, and checks that prediction through another simulation. Success requires reduced mass and passing all specified constraints. A lower mass alone is insufficient.
-
-### 2.2 Stakeholders and system boundary
-
-| Stakeholder or external component | Responsibility or interaction |
-| --- | --- |
-| Project owner | Approves scope, open decisions, and acceptance baseline |
-| Engineering user | Supplies part, intended use, load cases, constraints, and material options; reviews recommendations |
-| Evaluator | Executes task predicates, mutation tests, and offline scoring |
-| Agent harness | Coordinates tool calls, reasoning, iteration, and recording |
-| Geometry and meshing tools | Apply permitted edits and create meshes |
-| FEA solver | Produces displacement and stress results for the specified setup |
-| Manufacturing checker | Evaluates process-specific geometric constraints |
-| Material library | Supplies material properties, units, and selection attributes |
-
-The delivered system includes the custom harness, tool wrappers, task set, independent verifiers, mutation corpus, raw records, and runnable package. FreeCAD, Gmsh, CalculiX or FEniCS, and PrusaSlicer or a CAM check are the candidate tool stack specified by the intent. Final solver, manufacturing path, formats, and deployment environment remain open decisions.
-
-Physical qualification, production approval, exhaustive global optimization, and proof of infeasibility over an unbounded design space are outside this draft's scope. Reported feasibility is limited to the modeled loads, material library, geometry changes, and evaluated manufacturing rules.
-
-### 2.3 Operational sequence
-
-1. Validate a task and establish a simulated baseline.
-2. Inspect the stress contour alongside numerical results and setup data.
-3. Record one proposed change and a structured prediction before execution.
-4. Apply the change, remesh as needed, and rerun the checks.
-5. Evaluate constraint satisfaction and prediction accuracy; retain the evidence.
-6. Repeat within the declared search budget, then return a verified candidate or an evidence-backed termination outcome.
-
-## 3. Definitions and acceptance semantics
+## 3. Acceptance semantics
 
 | Term | Meaning |
 | --- | --- |
-| Task | Part geometry, units, loads, supports, material library, permitted changes, process rules, targets, and execution budget |
-| Baseline | Initial valid part evaluated under the same acceptance conditions as candidates |
-| Candidate | One geometry and material assignment evaluated under the task's load cases |
-| Safety factor, `SF` | Positive task-specified factor, at least 1, applied to material yield strength |
-| Structural pass | For every required load case, valid maximum von Mises stress is at most `yield_strength / SF`, and maximum displacement is at most the specified limit |
-| Manufacturing pass | Every applicable rule in the task's declared manufacturing profile passes |
-| Successful reduction | Candidate mass is below baseline mass by more than the configured comparison tolerance, with structural and manufacturing passes |
-| Target achieved | Successful reduction that also meets the task's explicit mass target, when supplied |
-| Explored frontier | Recorded nondominated evaluated candidates, compared on mass and constraint violations; not proof of a global optimum |
-| Prediction accuracy | Agreement between a pre-execution structured prediction and the next valid simulation, under the task's scoring rule |
-| Invalid result | Missing, failed, non-finite, or setup-inconsistent solver/checker evidence; never a constraint pass |
+| Task | Part ID, units, single load case, supports, material library reference, permitted edits with bounds, safety factor `SF ≥ 1`, displacement limit, manufacturing profile, optional mass target, budget |
+| Baseline | The task's initial parameter set, evaluated under identical conditions to every candidate |
+| Candidate | One parameter set plus one material assignment |
+| Structural pass | Valid `max_vm ≤ yield_mpa / SF` **and** `max_disp ≤ limit` |
+| Manufacturing pass | Every enabled rule in the task's profile passes |
+| Successful reduction | Mass at least 1% below baseline (task-overridable), with structural and manufacturing pass |
+| Target achieved | Successful reduction that also meets the task's mass target |
+| Explored frontier | Recorded nondominated candidates on (mass, violation). Evidence of search, not proof of optimality |
+| Prediction score | D-07's three booleans, compared against the next valid evaluation |
+| Invalid | Missing, failed, non-finite, timed-out, or setup-inconsistent evidence. Never a pass |
 
-The initial stress criterion assumes the selected analysis and material support a yield-based von Mises check. Applicability to other failure modes is unresolved in `OD-01`. Units and tolerances are explicit task data; the draft supplies no invented load magnitudes, wall thicknesses, solver error tolerances, or response-time targets.
+## 4. Requirements
 
-## 4. Source register and stakeholder needs
+### 4.1 Intake and baseline
 
-| Source | Intent section or derivation | Stakeholder need |
-| --- | --- | --- |
-| S1 | One-line brief; Why this is not a numerical optimiser | Reduce mass through geometry and material reasoning |
-| S2 | The loop; Vision matters here | Interpret spatial stress evidence and test a stated reason |
-| S3 | Verifier | Check mass, stress, displacement, manufacturability, and prediction accuracy |
-| S4 | Mutation corpus | Detect misleading simulation inputs and results |
-| S5 | The refusal case | Explain failure to achieve a target using explored evidence |
-| S6 | Stack; The five deliverables | Ship a custom, reproducible, independently evaluable package |
-| D1 | Derived from S3–S4 | Validate task data and prevent invalid evidence from passing |
-| D2 | Derived from S5–S6 | Bound execution and distinguish search exhaustion from demonstrated infeasibility |
-| D3 | Derived from S6 | Preserve provenance and enable offline rescoring |
+| ID | Requirement | Pri | Verification |
+| --- | --- | --- | --- |
+| REQ-IN-001 | When a task is submitted, the system shall validate it against the versioned task schema. | Must | One complete fixture plus one missing-field fixture per required field. |
+| REQ-IN-002 | If a task declares inconsistent or unsupported units, then the system shall reject it and name the offending field. | Must | Pa/MPa mismatch and an unsupported unit both rejected with field-specific diagnostics. |
+| REQ-IN-003 | When a valid task starts, the system shall evaluate the initial parameter set as the baseline. | Must | Baseline record holds mass, stress, displacement, and manufacturing results. |
+| REQ-IN-004 | If any baseline check is invalid, then the system shall terminate with `invalid-baseline`. | Must | Failed and non-finite baseline fixtures produce no successful outcome. |
 
-## 5. Functional requirements
+### 4.2 Reasoning loop
 
-### 5.1 Task intake and baseline
+| ID | Requirement | Pri | Verification |
+| --- | --- | --- | --- |
+| REQ-OPT-001 | When valid results are available, the system shall render the stress contour using the run's fixed camera set and locked legend range, and supply the image to the agent's visual step. | Must | Trace shows an image input bound to the matching result; two iterations of one run share an identical legend range. |
+| REQ-OPT-002 | When the agent interprets a contour, the system shall record the identified concentration as one region label from D-06. | Must | The `L_bracket` fixture with a known fillet concentration yields a label the predicate can score. |
+| REQ-OPT-003 | When the agent proposes a candidate, the system shall accept exactly one D-05 parameter change or one material substitution, within declared bounds. | Must | Compound and out-of-bounds proposals rejected; each permitted single edit accepted. |
+| REQ-OPT-004 | Before a change is executed, the system shall persist the agent's rationale and its D-07 structured prediction. | Must | Record ordering shows both persisted before the tool invocation. |
+| REQ-OPT-005 | When the next valid evaluation completes, the system shall score the preceding prediction per D-07 and store all three booleans. | Must | Known-correct and known-wrong predictions receive the expected sub-scores. |
+| REQ-OPT-006 | When the agent considers a material, the system shall supply all D-10 fields, including explicit `null`. | Must | Trace shows every field for each considered material. |
+| REQ-OPT-007 | If a material lacks a property an enabled check requires, then the system shall exclude it from accepted candidates. | Must | A record with `null` yield strength cannot produce an accepted candidate. |
 
-| ID | EARS requirement | Source | Priority | Verification / acceptance criterion |
-| --- | --- | --- | --- | --- |
-| REQ-IN-001 | When a task is submitted, the system shall validate its required fields against the versioned task schema. | D1 | Must | Test complete input and one missing-field fixture per required field; incomplete tasks fail validation. |
-| REQ-IN-002 | If a task contains inconsistent or unsupported physical units, then the system shall reject the task with the affected field identified. | S4, D1 | Must | Inject a declared Pa/MPa mismatch and an unsupported unit; both are rejected with field-specific diagnostics. |
-| REQ-IN-003 | When a valid task starts, the system shall evaluate the initial part as its baseline. | S1, S3 | Must | Baseline record contains mass, stress, displacement, and manufacturing results linked to the original part. |
-| REQ-IN-004 | If a required baseline check is invalid, then the system shall terminate optimization with an invalid-baseline outcome. | D1 | Must | Failed and non-finite baseline fixtures produce no successful optimization outcome. |
+### 4.3 Verification
 
-### 5.2 Reasoning and optimization loop
+| ID | Requirement | Pri | Verification |
+| --- | --- | --- | --- |
+| REQ-VER-001 | When a candidate is evaluated, the system shall report mass in grams. | Must | Known volume × known density, within declared tolerance. |
+| REQ-VER-002 | When valid structural results exist, the system shall decide structural pass per section 3. | Must | Boundary fixtures at, below, and above both limits. |
+| REQ-VER-003 | When a candidate is evaluated, the system shall decide manufacturing pass using the task's FDM profile. | Must | Fixtures violating minimum wall and overhang each fail the matching rule. |
+| REQ-VER-004 | If any required check is invalid, then the system shall classify the candidate `unverified`, and an unverified candidate shall never count as a pass. | Must | Timeout, missing-output, and non-finite fixtures never pass. |
+| REQ-VER-005 | If a peak meets the D-12 singularity criteria, then the system shall run the D-12 refinement re-solve and classify the result `unverified` unless it survives. | Must | Both sharp-corner mutants flagged; the smooth control is not. |
+| REQ-VER-006 | If the solver's applied load direction differs from the task's declared direction, then the system shall reject the setup before scoring. | Must | Both wrong-direction mutants detected by comparing task intent with the generated `.inp`. |
 
-| ID | EARS requirement | Source | Priority | Verification / acceptance criterion |
-| --- | --- | --- | --- | --- |
-| REQ-OPT-001 | When valid FEA results become available, the system shall supply the stress contour image to the agent's visual interpretation step. | S2 | Must | Inspect a run trace for an actual image input linked to the matching solver result. |
-| REQ-OPT-002 | When the agent interprets a stress contour, the system shall record its identified stress-concentration region. | S2 | Must | A benchmark with a known fillet concentration yields a recorded region that the fixture's spatial predicate can evaluate. |
-| REQ-OPT-003 | When the agent proposes a candidate, the system shall restrict the proposal to one permitted geometry edit or one material substitution. | S2 | Must | A compound geometry-and-material proposal is rejected; each permitted single edit is accepted. |
-| REQ-OPT-004 | Before a proposed change is executed, the system shall persist the agent's rationale for that change. | S2 | Must | Record ordering establishes that rationale persistence precedes the tool invocation. |
-| REQ-OPT-005 | Before a proposed change is executed, the system shall persist a structured prediction of its expected effect. | S2, S3 | Must | Prediction includes the affected metric or region, expected change, and scoring-rule reference before execution. |
-| REQ-OPT-006 | When a candidate change has been applied, the system shall evaluate the candidate under every required task load case. | S2, S3 | Must | A multi-load-case fixture produces results for every required case linked to the candidate version. |
-| REQ-OPT-007 | When the next valid candidate evaluation completes, the system shall score the preceding prediction against that evaluation using the task's prediction rule. | S3 | Must | Known correct and incorrect predictions receive the expected scores from structured results. |
-| REQ-OPT-008 | When the agent considers a material substitution, the system shall provide its yield strength, density, cost, machinability, corrosion resistance, and availability attributes to the selection step. | S1 | Must | Trace inspection shows all six attributes, including explicit unknown values, for considered materials. |
-| REQ-OPT-009 | If a material lacks a property required for a task's acceptance checks, then the system shall exclude that material from accepted candidates. | D1 | Must | A material missing yield strength or density cannot produce an accepted candidate. |
+### 4.4 Termination and explanation
 
-### 5.3 Verification and abnormal conditions
+| ID | Requirement | Pri | Verification |
+| --- | --- | --- | --- |
+| REQ-OUT-001 | When the D-13 budget is exhausted, the system shall launch no further evaluation. | Must | Small-budget fixture stops; in-flight work completes. |
+| REQ-OUT-002 | When a run ends, the system shall report exactly one of `target-achieved`, `improved-without-target`, `target-not-achieved`, `invalid-input`, `invalid-baseline`, `execution-failed`. | Must | One fixture per status with matching machine-readable outcome. |
+| REQ-OUT-003 | When a valid search ends without the target, the system shall report the explored frontier with each candidate's parameters, material, mass, and constraint results, and shall scope the claim to the declared search space rather than asserting universal infeasibility. | Must | Unachievable-target fixture returns a frontier and scoped wording; budget-exhaustion fixture asserts nothing stronger. |
+| REQ-OUT-004 | When a run returns a recommendation, the system shall link it to the baseline comparison, change history, and stored evidence. | Must | Every reported metric resolves to a persisted artifact. |
 
-| ID | EARS requirement | Source | Priority | Verification / acceptance criterion |
-| --- | --- | --- | --- | --- |
-| REQ-VER-001 | When a candidate is evaluated, the system shall report its mass in grams. | S3 | Must | Known-volume, known-density fixtures produce the expected gram values within the declared tolerance. |
-| REQ-VER-002 | When valid structural results are available, the system shall determine structural pass using the criteria in section 3. | S3 | Must | Boundary fixtures at, below, and above both limits produce the expected result for every load case. |
-| REQ-VER-003 | When a candidate is evaluated, the system shall determine manufacturing pass using the task's applicable process rules. | S3 | Must | Fixtures violating each enabled minimum-wall, draft, or overhang rule fail the corresponding check. |
-| REQ-VER-004 | If any required candidate check is invalid, then the system shall classify the candidate as unverified. | D1 | Must | Timeout, missing-output, and non-finite fixtures never receive a pass. |
-| REQ-VER-005 | If a stress concentration meets the configured singularity-suspicion criteria, then the system shall flag the result for mesh-sensitivity investigation. | S2, S4 | Must | The sharp-corner mutation is flagged according to the selected diagnostic protocol in OD-04. |
-| REQ-VER-006 | While a singularity flag remains unresolved, the system shall classify the affected structural result as unverified. | D1 | Must | A flagged result cannot contribute to a structural pass before recorded resolution. |
-| REQ-VER-007 | If the solver-applied load direction differs from the task's declared direction beyond the configured tolerance, then the system shall reject the simulation setup. | S4 | Must | Wrong-direction mutation is detected by comparing task intent with applied solver data. |
-| REQ-VER-008 | When a candidate is classified as a successful reduction, the system shall require the successful-reduction conditions in section 3 to hold. | S1, S3 | Must | Lower-mass candidates failing stress, displacement, or manufacturing checks are not successful. |
+### 4.5 Delivery — the five course deliverables
 
-### 5.4 Termination and explanation
+| ID | Requirement | Pri | Verification |
+| --- | --- | --- | --- |
+| REQ-DEL-001 | The system shall orchestrate its loop in a project-owned harness with no agent framework. | Must | Dependency and source inspection finds no LangChain, CrewAI, or equivalent. |
+| REQ-DEL-002 | The system shall expose CalculiX through callable `run_sim` and `read_result` tools per section 5. | Must | Integration fixture exercises both contracts. |
+| REQ-DEL-003 | The distribution shall pin every tool dependency in the D-17 lockfile and provide one documented command that runs a bundled task end to end on a clean machine. | Must | Clean-VM install and run with no undeclared preinstalled dependency. |
+| REQ-DEL-004 | The system shall provide an executable acceptance predicate per task in D-15, deriving its decision exclusively from structured tool outputs. | Must | Editing agent prose alone leaves every score unchanged. |
+| REQ-DEL-005 | The distribution shall include the D-16 corpus and shall report detections ÷ executions, plus the control false-positive rate. | Must | Controlled outcomes yield the expected numerator, denominator, and rates; zero executions report `not evaluated`. |
+| REQ-DEL-006 | Before scoring, the system shall persist the raw run record — inputs, tool calls, outputs, artifact references, predictions, tool versions, and terminal status — to disk, and a write failure shall prevent scoring. | Must | Scoring blocked until the record is readable; every evaluation resolves to its exact inputs and versions. |
+| REQ-DEL-007 | When a saved run is rescored, the system shall compute the new score with no model or solver access. | Must | Rescore a saved fixture with both disabled. |
+| REQ-DEL-008 | If a tool execution fails, then the system shall persist its diagnostics against the candidate ID. | Must | Injected solver and checker failures retrievable by candidate. |
+| REQ-DEL-009 | The system should publish a run report summarizing mass delta, constraint margins, prediction accuracy, and mutation detection. | Should | Report generated from stored records alone. |
 
-| ID | EARS requirement | Source | Priority | Verification / acceptance criterion |
-| --- | --- | --- | --- | --- |
-| REQ-OUT-001 | When the declared iteration or elapsed-time budget is exhausted, the system shall stop launching new optimization evaluations. | D2 | Must | A small-budget fixture launches no further evaluation after exhaustion; in-flight timeout behavior follows OD-06. |
-| REQ-OUT-002 | When a run terminates, the system shall report its outcome as target-achieved, improved-without-target, target-not-achieved, invalid-input, invalid-baseline, or execution-failed. | S5, D2 | Must | Fixtures cover each outcome with matching machine-readable status and explanation. |
-| REQ-OUT-003 | When a valid search terminates without achieving the mass target, the system shall report the explored frontier with each candidate's material, mass, and constraint results. | S5 | Must | An unattainable-target fixture returns a frontier linked to stored evaluations. |
-| REQ-OUT-004 | If the search does not establish infeasibility over the declared finite search space, then the system shall describe target failure as not achieved within the explored scope. | S5, D2 | Must | Budget-exhaustion fixture does not assert universal infeasibility. |
-| REQ-OUT-005 | When a run returns a recommended candidate, the system shall provide an explanation linked to its baseline comparison, change history, and verification evidence. | S1, S2 | Must | Every reported metric and accepted change resolves to a persisted artifact. |
+## 5. Interface contracts
 
-## 6. Interfaces, data, and delivery requirements
+Logical content; encodings are JSON on disk unless noted.
 
-### 6.1 Required interface contracts
-
-These contracts define logical content; file encodings and concrete API signatures are pending OD-02.
-
-| Interface | Required content |
+| Interface | Content |
 | --- | --- |
-| Task input | Task ID; geometry reference and units; material records with property units and provenance; loads and supports; permitted edits; safety factor; displacement limit; manufacturing profile; optional mass target; comparison tolerances; execution budget |
-| `run_sim` request | Run/candidate IDs; immutable geometry and material references; mesh settings; complete load cases and supports; solver settings |
-| `run_sim` response | Execution status; solver version; applied-setup reference; result artifact references; diagnostic information |
-| `read_result` response | Validity status; mass in grams; per-case stress and displacement with units; stress contour and spatial-region references |
-| Manufacturing result | Candidate ID; checker version; profile; per-rule pass/fail/invalid status and measurements |
-| Prediction record | Candidate ID; preceding candidate ID; expected metric or spatial change; rationale reference; scoring rule and tolerance |
-| Run record | Task and configuration; versions; ordered model/tool inputs and outputs; artifact references; predictions; diagnostics; terminal status |
+| Task | `task_id`; part ID and units; single load case and supports; material library ref; permitted edits with bounds; `SF`; displacement limit; manufacturing profile; optional mass target; tolerances; budget |
+| `run_sim` request | `run_id`, `candidate_id`; parameter set; material ID; mesh settings; load case; solver settings |
+| `run_sim` response | Status; solver version; generated `.inp` reference; result artifact refs; diagnostics |
+| `read_result` response | Validity; `mass_g`; `max_vm` and `max_disp` with units; peak region label; contour image ref |
+| Manufacturing result | `candidate_id`; checker version; profile; per-rule pass/fail/invalid with measured value |
+| Prediction record | `candidate_id`, `parent_id`; D-07 schema; rationale ref; scored booleans |
+| Run record | Task, config, versions, ordered tool I/O, artifact refs, predictions, diagnostics, terminal status |
 
-### 6.2 Product and evaluation constraints
+## 6. Explicitly deferred
 
-| ID | EARS requirement | Source | Priority | Verification / acceptance criterion |
-| --- | --- | --- | --- | --- |
-| REQ-DEL-001 | The system shall implement its orchestration in a project-owned harness without an agent framework. | S6 | Must | Dependency and source inspection finds no LangChain, CrewAI, or equivalent framework driving the loop. |
-| REQ-DEL-002 | The system shall expose the chosen solver through callable `run_sim` and `read_result` tool interfaces. | S6 | Must | Integration fixture invokes both interfaces and checks their versioned contracts. |
-| REQ-DEL-003 | The distribution shall include vendored, version-pinned solver/checker dependencies for the declared supported environment. | S6 | Must | Package inspection and clean-environment installation match the dependency manifest. |
-| REQ-DEL-004 | The distribution shall provide a documented command that executes a bundled end-to-end task on a clean supported machine. | S6 | Must | Execute the command in the OD-05 environment without undeclared preinstalled project dependencies. |
-| REQ-DEL-005 | The system shall provide a task set with an executable acceptance predicate for each task. | S6 | Must | Enumerate task IDs and run every associated predicate on known pass/fail tool-output fixtures. |
-| REQ-DEL-006 | When an acceptance predicate scores a task, the system shall derive the decision exclusively from structured tool outputs. | S6 | Must | Changing agent prose alone leaves acceptance scores unchanged. |
-| REQ-DEL-007 | The distribution shall include mutations for sharp-corner singularities, wrong load direction, and incorrect material units. | S4, S6 | Must | Inventory contains all three runnable mutation categories paired with valid controls. |
-| REQ-DEL-008 | When the mutation corpus is scored, the system shall report the number detected divided by the number executed. | S4, S6 | Must | Controlled outcomes yield the expected numerator, denominator, and fraction; zero executions are reported as not evaluated. |
-| REQ-DEL-009 | Before scoring a run, the system shall persist its raw run record to disk. | S6 | Must | Scoring starts only after the record is readable; a write failure prevents scoring. |
-| REQ-DEL-010 | When a saved run is rescored, the system shall compute the new score without rerunning the model or engineering tools. | S6 | Must | Disable model and solver access and successfully rescore a saved fixture. |
-| REQ-DEL-011 | The system shall attach input and configuration provenance to each persisted evaluation. | D3 | Must | Every evaluation resolves to exact geometry, material, setup, tool versions, and model configuration. |
-| REQ-DEL-012 | If a tool execution fails, then the system shall persist its failure diagnostics with the affected candidate identifier. | D3 | Must | Inject solver/checker failures and retrieve their candidate-linked diagnostics. |
+Named so that absence is a decision, not an oversight: multiple load cases; buckling, fatigue, and nonlinear material; free-form CAD editing; CAM and slicer-based manufacturability; mesh convergence studies beyond D-12; multi-objective optimization over cost; non-Windows packaging; and any performance, retention, or privacy threshold beyond D-18.
 
-## 7. Assumptions, dependencies, and open decisions
+Dropped from v0.1 as redundant or merged, IDs retired and not reused: v0.1 `OPT-004`/`OPT-006` (merged into the new `OPT-004`), `VER-006` (merged into `VER-005`), `VER-008` (a restatement of section 3), `OUT-004` (merged into `OUT-003`), and `DEL-010`/`DEL-011` (merged into `DEL-006`). Note that `OPT-005`–`OPT-009`, `VER-007`, and `OUT-005` were renumbered by the merges; compare against v0.1 in git before citing an old ID. Section 4's source register and section 9's lifecycle process from v0.1 are removed — single-owner traceability is served by git history.
 
-Loads, supports, intended use, and material data are supplied by the task author. A direction check can detect disagreement with that declared intent; it cannot determine the true physical load without an independent reference. Declared unit checks cannot reliably detect every plausibly valued but mislabeled material property without provenance or reference bounds.
+## 7. Still open
 
-| ID | Decision required before baseline approval | Owner | Affected requirements |
-| --- | --- | --- | --- |
-| OD-01 | Supported part family, analysis regime, material behavior, and excluded failure modes such as buckling or fatigue | Project owner | IN-001, VER-002, OPT-009 |
-| OD-02 | Geometry formats, task/result schemas, unit normalization, and region-identification representation | Project owner | IN-001–002, OPT-002, DEL-002 |
-| OD-03 | Material library source, property provenance, unknown-attribute policy, and permitted edits | Project owner | OPT-003, OPT-008–009 |
-| OD-04 | Mesh-convergence/singularity protocol and numerical, spatial, load-direction, and prediction tolerances | Project owner | OPT-007, VER-001–002, VER-005–007 |
-| OD-05 | Selected solver and manufacturing checker, supported OS/runtime, package licensing, and deployment target | Project owner | VER-003, DEL-002–004 |
-| OD-06 | Iteration/time budgets, per-tool timeouts, in-flight cancellation, and representative runtime/memory limits | Project owner | OUT-001, DEL-012 |
-| OD-07 | Benchmark task count and coverage, target prediction accuracy, mutation detection threshold, and false-positive limit | Project owner | OPT-007, DEL-005–008 |
-| OD-08 | Manufacturing profiles and applicability of minimum wall, draft, and overhang checks | Project owner | VER-003 |
-| OD-09 | Availability and reuse scope of the EAG V3 code required by the intent | Project owner | DEL-001 |
-| OD-10 | Model/provider choice, handling of part data sent externally, record retention, and credential management | Project owner | OPT-001, DEL-009–011 |
-
-Requirement references in this table omit the `REQ-` prefix for readability. Quantitative performance, privacy, and retention requirements need approved operating constraints before they can be baselined. The absence of those values is a draft limitation, not evidence that the properties have been satisfied.
-
-## 8. Verification, validation, and traceability
-
-The acceptance criteria beside each requirement define planned verification, not completed test results. Numerical checks use the approved task tolerances. Independent task-success predicates consume engineering tool outputs; prediction scoring compares structured predictions with those outputs and is reported separately from task success.
-
-| Validation scenario | Requirement coverage | Expected evidence |
+| ID | Question | Blocks |
 | --- | --- | --- |
-| Geometry-based mass reduction | IN-003, OPT-001–007, VER-001–003, VER-008, OUT-005 | Baseline/candidate artifacts, visible stress interpretation, single edit, prediction score, all constraint passes |
-| Material tradeoff | OPT-008–009, VER-001–003 | Attribute comparison, material provenance, rerun results |
-| Broken setup and misleading stress | IN-002, VER-004–007, DEL-007–008 | Three mutation categories, valid controls, detection fraction and false-positive results |
-| Unachievable target | OUT-001–004 | Finite known-infeasible fixture, explored frontier, scoped refusal; separate budget-exhaustion fixture |
-| Reproducible delivery | DEL-001–006, DEL-009–012 | Clean-machine run, dependency manifest, raw records, independent predicates, offline rescore |
+| OD-A | Does the EAG V3 harness exist, and what is reusable? The repo currently contains no code. | `REQ-DEL-001`, week 1 |
+| OD-B | Release thresholds: prediction accuracy, mutation detection rate, control false-positive ceiling. | `REQ-DEL-004`, `REQ-DEL-005` |
+| OD-C | Numeric tolerances: mass comparison, load-direction angle, spatial region match. | `REQ-VER-001`, `REQ-VER-006`, `REQ-OPT-005` |
 
-Release acceptance requires verification evidence for every Must requirement, owner validation of the scenarios above, and resolution of applicable open decisions. Any waived requirement is explicitly recorded with owner, rationale, risk, and target resolution; an unresolved Must is not silently counted as passing.
+OD-B and OD-C do not block building; they block declaring the result acceptable. Set them from week-3 baseline data rather than guessing now.
 
-## 9. Requirements lifecycle and change control
+## 8. Four-week schedule
 
-1. **Elicit:** review the intent with the owner and engineering user; record assumptions and decisions with sources.
-2. **Analyze:** resolve feasibility, conflict, interface, and quantitative-threshold questions; separate required outcomes from tool choices.
-3. **Specify:** write atomic EARS statements with stable IDs, source/rationale, priority, and observable verification criteria.
-4. **Review and validate:** check necessity, clarity, consistency, feasibility, verifiability, and stakeholder agreement; resolve the open decisions that block acceptance.
-5. **Baseline:** obtain owner approval and record the approved version and date in this document.
-6. **Implement and verify:** link each requirement to implementation artifacts, test identifiers, and stored evidence; track status as proposed, approved, implemented, verified, or retired.
-7. **Manage changes:** record the requested change, reason, impacted requirements/interfaces/tests, owner decision, and new baseline version. Preserve retired IDs and never reuse them.
+| Week | Delivers | Requirements |
+| --- | --- | --- |
+| 1 | Locked environment; three parametric parts; headless mesh → solve → parse working; run records on disk. | DEL-003, DEL-006, IN-003 |
+| 2 | Harness loop; contour rendering with locked legend; vision step; prediction schema; single-edit application and re-run. | OPT-001–004, DEL-001–002 |
+| 3 | Verifiers; task set; mutation corpus; offline rescoring. | VER-001–006, DEL-004, DEL-005, DEL-007 |
+| 4 | Frontier and refusal; clean-machine run; reported numbers; buffer. | OUT-001–004, DEL-003, DEL-009 |
 
-For each approved requirement, the maintained traceability record contains: requirement ID, owner, status, source, rationale, dependencies, implementation reference, verification ID, evidence location, and last change. This draft's tables establish source-to-requirement-to-verification links; implementation and execution evidence remain pending.
+Week 1 is the schedule risk. If the CalculiX and FreeCAD toolchain is not solving headless by day 5, cut to two benchmark parts before cutting anything in weeks 2–3.
 
-| Version | Date | Change | Approval |
-| --- | --- | --- | --- |
-| 0.1 | 2026-09-09 | Initial specification derived from project intent using the requested standard and EARS | Pending |
+## 9. References
 
-## 10. References
+- [Project intent](intent.md) — product scope and the five deliverables.
+- [EARS — Mavin](https://alistairmavin.com/ears/), syntax reference, accessed 2026-09-09.
+- [ISO/IEC/IEEE 29148:2018](https://www.iso.org/obp/ui?_escaped_fragment_=iso%3Astd%3Aiso-iec-ieee%3A29148%3Aed-2%3Av1%3Aen), structural reference, accessed 2026-09-09.
 
-- [Project intent](intent.md), local product scope and deliverables.
-- [ISO/IEC/IEEE 29148:2018 — official ISO overview](https://www.iso.org/obp/ui?_escaped_fragment_=iso%3Astd%3Aiso-iec-ieee%3A29148%3Aed-2%3Av1%3Aen), requirements-engineering reference, accessed 2026-09-09. The 2018 edition is the edition requested for this project.
-- [Alistair Mavin — EARS official guide](https://alistairmavin.com/ears/), syntax reference, accessed 2026-09-09. EARS originated with Mavin et al.; the requirement statements here are project-specific.
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1 | 2026-09-09 | Initial specification from intent |
+| 0.2 | 2026-09-09 | Scoped to four weeks: 10 open decisions resolved to 3, 38 requirements reduced to 30, lifecycle process and source register removed, schedule added |
