@@ -7,7 +7,7 @@
 | Owner | Sujit Ojha |
 | Budget | Four weeks, one engineer, plus a Phase 0 of about three days |
 | Board | [Project #10](https://github.com/users/sujitojha1/projects/10) — milestones and tasks below are mirrored there |
-| Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) — what · this — when and in what order |
+| Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
 
 Five milestones. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
 

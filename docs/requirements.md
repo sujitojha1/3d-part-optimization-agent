@@ -8,7 +8,8 @@
 | Owner | Sujit Ojha |
 | Budget | Four weeks, one engineer |
 | Scope source | [Project intent](intent.md) |
-| Execution order | [Plan](plan.md) — Phase 0 and the four-week schedule |
+| Execution order | [Plan](plan.md) — milestones M0 to M4 |
+| Design | [Solution architecture](solution-architecture.md) — how it is built |
 | Conventions | EARS statements ([Mavin](https://alistairmavin.com/ears/)); structure informed by ISO/IEC/IEEE 29148:2018, tailored — not audited compliance |
 
 ## 1. How to read this
