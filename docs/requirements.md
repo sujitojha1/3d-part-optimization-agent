@@ -163,6 +163,8 @@ Sequencing, the Phase 0 gates that resolve `OD-A` and `OD-D`, the demo and valid
 ## 9. References
 
 - [Project intent](intent.md) — product scope and the five deliverables.
+- [GE jet engine bracket brief](ge-jet-engine-bracket.md) — real-world part, interfaces, four load cases and Ti-6Al-4V limits from the GrabCAD challenge, with its conflicts against D-04, D-08 and D-11.
+- [SimJEB dataset brief](simjeb-dataset.md) — 381 re-simulated challenge entries with exact load vectors and boundary conditions; candidate data for a real-geometry solver cross-check, singularity mutants, and refusal-target calibration.
 - [EARS — Mavin](https://alistairmavin.com/ears/), syntax reference, accessed 2026-09-09.
 - [ISO/IEC/IEEE 29148:2018](https://www.iso.org/obp/ui?_escaped_fragment_=iso%3Astd%3Aiso-iec-ieee%3A29148%3Aed-2%3Av1%3Aen), structural reference, accessed 2026-09-09.
 

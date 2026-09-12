@@ -2,12 +2,13 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.3 |
-| Date | 2026-09-12 |
+| Version | 0.4 |
+| Date | 2026-09-13 |
 | Owner | Sujit Ojha |
 | Budget | Three weeks, one engineer — 12 Sep to 3 Oct 2026. See [Timeline](#timeline). |
 | Board | [Project #10](https://github.com/users/sujitojha1/projects/10) — milestones and tasks below are mirrored there |
 | Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
+| Reference inputs | [GE jet engine bracket brief](ge-jet-engine-bracket.md) — real part, interfaces, load cases · [SimJEB dataset](simjeb-dataset.md) — 381 re-simulated entries, exact load vectors |
 
 Six milestones. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
 
@@ -38,15 +39,30 @@ Board milestone numbering (M1–M6) is used here and on [Project #10](https://gi
 
 | Board | This doc | Milestone | Window | Days | Tasks | Effort |
 | --- | --- | --- | --- | --- | --- | --- |
-| **M1** | M0 | Foundations and de-risking | 12 Sep → 14 Sep | 3 | 6 | 15–25 h |
-| **M2** | M0.5 | One part, one load case, walked by hand | 14 Sep → 18 Sep | 5 | 10 | 22–37 h |
-| **M3** | M1 | Engineering loop, no agent | 18 Sep → 22 Sep | 5 | 8 | 22–37 h |
+| **M1** | M0 | Foundations and de-risking | 12 Sep → 14 Sep | 3 | 8 | 16–27 h + M1.9 |
+| **M2** | M0.5 | One part, one load case, walked by hand | 14 Sep → 18 Sep | 5 | 10 | 23–38 h |
+| **M3** | M1 | Engineering loop, no agent | 18 Sep → 22 Sep | 5 | 9 | 26–43 h |
 | **M4** | M2 | The agent loop closes | 22 Sep → 26 Sep | 5 | 8 | 19–32 h |
 | **M5** | M3 | Judgement | 26 Sep → 30 Sep | 5 | 10 | 25–41 h |
 | **M6** | M4 | Refusal and packaging | 30 Sep → 3 Oct | 4 | 7 | 16–26 h |
-| | | **Total** | **12 Sep → 3 Oct** | **22** | **49** | **119–198 h** |
+| | | **Total** | **12 Sep → 3 Oct** | **22** | **52** | **125–207 h** + M1.9 |
 
-That is **5.4–9.0 h/day across all 22 days, weekends included**. Three weeks only holds at near-full-time effort with no slack, so the cut lines are named in advance and cut in this order: M5.6 (mutant corpus drops from 6 to 3), M6.5 (the skill A/B), M3.6 (the second validation case). A failed gate in M1 costs more than all three, which is why M1 stays first and unshortened.
+That is **5.7–9.4 h/day across all 22 days, weekends included**. Three weeks only holds at near-full-time effort with no slack, so the cut lines are named in advance and cut in this order:
+
+1. M5.6 — the mutant corpus drops from 6 to 3.
+2. M6.5 — the skill A/B.
+3. M3.9 — the SimJEB cross-check.
+4. M3.6 — the second validation case.
+
+A failed gate in M1 costs more than all four, which is why M1 stays first and unshortened.
+
+**v0.4 alignment with the reference inputs.** The GE bracket and SimJEB change *what the early tasks use*, not the milestone structure:
+
+- The Gate 2 and M2 render checks run on a real bracket's stress field as well as on `L_bracket`.
+- A third validation case (V3) checks couplings and load application on real geometry.
+- One wrong-direction mutant reuses the challenge's own published angle error.
+
+The in-loop part stays `L_bracket`. See [Reference — the demo problem](#reference--the-demo-problem) for why.
 
 ### Tentative task ranges
 
@@ -56,6 +72,8 @@ That is **5.4–9.0 h/day across all 22 days, weekends included**. Three weeks o
 | --- | --- | --- | --- | --- |
 | M1.8 Go through the Session 17 video | [#54](https://github.com/sujitojha1/3d-part-optimization-agent/issues/54) | 12 Sep | 12 Sep | 3–4 h |
 | M1.3 GATE 1 — configure the S17 environment and prove a prompt routes 8113 to 8111 | [#3](https://github.com/sujitojha1/3d-part-optimization-agent/issues/3) | 12 Sep | 13 Sep | 3–5 h |
+| M1.9 Verify all LLM providers, refresh the model list and .env, add a second Gemini API key | [#55](https://github.com/sujitojha1/3d-part-optimization-agent/issues/55) | 13 Sep | 14 Sep | — |
+| M1.10 Fetch SimJEB sample and metadata by pinned file ID and checksum into gitignored data/ | [#56](https://github.com/sujitojha1/3d-part-optimization-agent/issues/56) | 13 Sep | 13 Sep | 1–2 h |
 | M1.4 GATE 2a — prove pyvista renders off-screen on Windows | [#4](https://github.com/sujitojha1/3d-part-optimization-agent/issues/4) | 13 Sep | 13 Sep | 2–4 h |
 | M1.5 GATE 2b — prove an image reaches a vision model through glc_v5 | [#5](https://github.com/sujitojha1/3d-part-optimization-agent/issues/5) | 13 Sep | 13 Sep | 2–3 h |
 | M1.6 Create the uv project and lock the CAD mesh and render stack | [#6](https://github.com/sujitojha1/3d-part-optimization-agent/issues/6) | 13 Sep | 14 Sep | 3–5 h |
@@ -70,7 +88,7 @@ That is **5.4–9.0 h/day across all 22 days, weekends included**. Three weeks o
 | M2.3 Hand-run CAD to mesh in a REPL | [#45](https://github.com/sujitojha1/3d-part-optimization-agent/issues/45) | 15 Sep | 16 Sep | 3–5 h |
 | M2.4 Verify the region-label chain survives into the .inp | [#47](https://github.com/sujitojha1/3d-part-optimization-agent/issues/47) | 16 Sep | 16 Sep | 2–4 h |
 | M2.5 Hand-run solve to parse and measure it | [#48](https://github.com/sujitojha1/3d-part-optimization-agent/issues/48) | 16 Sep | 17 Sep | 3–5 h |
-| M2.6 Render the contour by hand and judge whether it is readable | [#49](https://github.com/sujitojha1/3d-part-optimization-agent/issues/49) | 17 Sep | 17 Sep | 2–3 h |
+| M2.6 Render the contour by hand and judge whether it is readable | [#49](https://github.com/sujitojha1/3d-part-optimization-agent/issues/49) | 17 Sep | 17 Sep | 3–4 h |
 | M2.7 Run one real exchange through glc_v5 by hand | [#50](https://github.com/sujitojha1/3d-part-optimization-agent/issues/50) | 17 Sep | 17 Sep | 2–4 h |
 | M2.8 Settle numbers-before-or-after-picture by experiment | [#51](https://github.com/sujitojha1/3d-part-optimization-agent/issues/51) | 17 Sep | 18 Sep | 2–3 h |
 | M2.9 Write the LLM integration spec | [#52](https://github.com/sujitojha1/3d-part-optimization-agent/issues/52) | 18 Sep | 18 Sep | 3–4 h |
@@ -88,6 +106,7 @@ That is **5.4–9.0 h/day across all 22 days, weekends included**. Three weeks o
 | M3.6 V2 validation — shoulder-fillet stepped bar against a published Kt | [#16](https://github.com/sujitojha1/3d-part-optimization-agent/issues/16) | 21 Sep | 22 Sep | 3–5 h |
 | M3.7 Contour renderer with fixed camera set and locked legend range | [#17](https://github.com/sujitojha1/3d-part-optimization-agent/issues/17) | 22 Sep | 22 Sep | 2–4 h |
 | M3.8 Measure per-iteration wall time and confirm or revise the budget | [#18](https://github.com/sujitojha1/3d-part-optimization-agent/issues/18) | 22 Sep | 22 Sep | 1–2 h |
+| M3.9 V3 cross-check — SimJEB design 148 displacement against the OptiStruct field | [#57](https://github.com/sujitojha1/3d-part-optimization-agent/issues/57) | 21 Sep | 22 Sep | 4–6 h |
 
 **M4 — The agent loop closes** · 22 Sep → 26 Sep
 
@@ -129,9 +148,9 @@ That is **5.4–9.0 h/day across all 22 days, weekends included**. Three weeks o
 | M6.6 Run report — mass delta margins prediction accuracy mutation detection | [#42](https://github.com/sujitojha1/3d-part-optimization-agent/issues/42) | 2 Oct | 3 Oct | 2–3 h |
 | M6.7 README and demo video including the failures and the refusal | [#43](https://github.com/sujitojha1/3d-part-optimization-agent/issues/43) | 3 Oct | 3 Oct | 3–5 h |
 
-M1.1 (#1) and M1.2 (#2) are closed already and carry no dates.
+M1.1 (#1) and M1.2 (#2) are closed already and carry no dates. M1.9 (#55) was added on the board directly and has no effort estimate. M1.10 (#56) and M3.9 (#57) are new in v0.4.
 
-**Ordering the dates respect.** M1.3–M1.5 precede anything touching the gateway or the vision path. No M3 pipeline code starts before M2.10 records the hand walk. No M4 agent work starts before M3.5 closed-form validation passes. M5.7 cannot start before M5.5 and M5.6 exist. M6.4 runs against the finished lockfile, so only the README and video follow it. M4.8 (the material library) is the one task with no upstream dependency — pull it forward into any blocked hour.
+**Ordering the dates respect.** M1.3–M1.5 precede anything touching the gateway or the vision path. M1.10 precedes M1.4, because Gate 2a renders a SimJEB field. M3.9 needs the `.inp` writer (M3.3) and the parser (M3.4). No M3 pipeline code starts before M2.10 records the hand walk. No M4 agent work starts before M3.5 closed-form validation passes. M5.7 cannot start before M5.5 and M5.6 exist. M6.4 runs against the finished lockfile, so only the README and video follow it. M4.8 (the material library) is the one task with no upstream dependency — pull it forward into any blocked hour.
 
 ---
 
@@ -152,10 +171,11 @@ M1.1 (#1) and M1.2 (#2) are closed already and carry no dates.
 1. Fork and clone `S17Code`; `uv sync`; confirm 478 tests pass.
 2. Clone the `glc_v5` fork, serve on 8111, configure provider keys at `/channels`.
 3. Configure the S17 environment — control token, workspace, allowed commands, protected paths, skills dir — and prove a prompt routes 8113 → 8111. *(Gate 1)*
-4. Prove `pyvista` renders off-screen on Windows with no display. *(Gate 2a)*
-5. Prove an image reaches a vision-capable model through `glc_v5`; if not, choose and record a fallback. *(Gate 2b, resolves `OD-D`)*
-6. Create the `uv` project and lock the CAD, mesh and render stack.
-7. Fetch CalculiX 2.10 by pinned URL and SHA-256, unzip to a gitignored `vendor/`, solve a bundled example. *(Gate 3)*
+4. Fetch the SimJEB sample zip (Dataverse file 4640735) and `all_bracket_metadata.tab` (file 4639239) into a gitignored `data/simjeb/`, checked against the SHA-256 in [simjeb-dataset.md](simjeb-dataset.md). Never commit these files: the CAD is licensed non-commercial, and they are dev-time data, not part of the packaged run.
+5. Prove `pyvista` renders off-screen on Windows with no display. Render the von Mises field from `148.csv` onto `148.obj` rather than a toy mesh. The gate then also shows that a real bracket's stress field reaches an image. *(Gate 2a)*
+6. Prove an image reaches a vision-capable model through `glc_v5` by sending that SimJEB contour. If it fails, choose and record a fallback. *(Gate 2b, resolves `OD-D`)*
+7. Create the `uv` project and lock the CAD, mesh and render stack.
+8. Fetch CalculiX 2.10 by pinned URL and SHA-256, unzip to a gitignored `vendor/`, solve a bundled example. *(Gate 3)*
 
 **Gate 2 fallbacks, in preference order.** Add a multimodal path to your own `glc_v5` fork — it is your fork, and this doubles as a course Part-2 contribution. Or call the vision model directly from the capability, routing only text through the gateway, and document the deviation. Or drop to a numeric-plus-region-label encoding and revise the intent's vision claim honestly.
 
@@ -184,12 +204,23 @@ label from the closed set and a complete D-07 prediction.
 
 1. **Downselect the part and freeze it.** `L_bracket` confirmed or replaced. Write the
    baseline dimensions, the three mass levers with min/max/step per D-05, and the named
-   regions per D-06. Record why the other two parts stay M3 breadth.
+   regions per D-06. Record why the other two parts stay M3 breadth. Also record why the
+   GE bracket ([part brief](ge-jet-engine-bracket.md)) is a reference and not the
+   in-loop part:
+   - its geometry is free-form, not parametric (D-04)
+   - it has four load cases (D-08)
+   - it is made by metal additive manufacturing, not FDM (D-11)
+   - SimJEB's design 148 alone has about 640k first-order tets, so one second-order
+     solve would exceed D-13's 180 s limit
+   Adopting a GE-bracket-inspired parametric part instead is an open owner decision
+   (see "Not covered" item 10).
 2. **Downselect the load case and freeze it.** One support face, one load face, vector,
    magnitude, units, `SF`, displacement limit. Hand-calculate that the baseline should
    pass and that the peak should land at the fillet — arithmetic, not a solve, so the
    first solve has something to disagree with. The wrong-direction mutant is the same
-   record with the vector flipped.
+   record with the vector flipped. Write the record in SimJEB's convention: +z up,
+   SI units, force in N on a reference node coupled to the load face. The
+   load-direction check (M3 task 4) then has one convention for `L_bracket` and V3.
 3. **Hand-run CAD → mesh.** Parameters → solid → tagged faces → STEP → Gmsh `C3D10`
    with local refinement at named regions. Eyeball the mesh at the fillet. Keep element
    counts and timings.
@@ -204,10 +235,15 @@ label from the closed set and a complete D-07 prediction.
 6. **Hand-render the contour and judge whether it is readable.** Fixed cameras, locked
    legend — then look at it as an engineer would and ask whether fillet-versus-web is
    visibly distinguishable at this image size, camera count and colormap. Fix those
-   settings now, while changing them is free.
+   settings now, while changing them is free. Then apply the same settings to SimJEB
+   design 148, all four load cases, from `148.csv`. A real bracket with a complex load
+   path is the harder readability test. If a setting only works on `L_bracket`, record
+   that as a finding.
 7. **Hand-run one real exchange through `glc_v5`.** Contour image plus prompt, sent by
    hand. Does the model name a region from the closed label set, and can it fill the
-   D-07 schema unaided? Keep the raw transcript, token counts and latency.
+   D-07 schema unaided? Keep the raw transcript, token counts and latency. Send one
+   SimJEB 148 contour too. Ask only where the concentration is and whether it looks
+   mesh-driven; the answer can be checked against the nodal field in `148.csv`.
 8. **Settle numbers-before-or-after-picture by experiment.** Same contour, two prompts —
    image only, then image with numerics — and compare whether the region claim moves.
    Resolves architecture open question 1 with evidence instead of preference.
@@ -218,7 +254,9 @@ label from the closed set and a complete D-07 prediction.
 10. **Walkthrough record and plan delta.** One page: what the pass proved, what broke,
     the frozen part and load record, measured timings, and every decision this milestone
     changes in `requirements.md` or `solution-architecture.md` — D-13's budget, the
-    render settings, and architecture questions 1, 2 and 6.
+    render settings, and architecture questions 1, 2 and 6. It also records which
+    GE-bracket conflicts in [the part brief §7](ge-jet-engine-bracket.md) are accepted
+    as they are, and which, if any, go to the owner as requirement changes.
 
 > Nothing here produces a number the project reports. It produces the decisions M1 and
 > M2 would otherwise make silently, at the point where they are still reversible.
@@ -241,6 +279,18 @@ label from the closed set and a complete D-07 prediction.
 6. **V2 validation** — shoulder-fillet stepped bar against a published `Kt`; use its refinement behaviour to calibrate D-12's 20% threshold.
 7. Contour PNG renderer with a fixed camera set and a legend range locked across a run. *(`REQ-OPT-001`)*
 8. Measure per-iteration wall time; confirm or revise D-13's budget of 8 evaluations in 20 minutes.
+9. **V3 cross-check — SimJEB design 148.**
+   - Import `148.vtk` and write it as C3D4, to match SimJEB's first-order mesh.
+   - Model each bolt hole as a `*RIGID BODY` fixed at the hole centre, and the pin
+     bore as a `*DISTRIBUTING COUPLING`.
+   - Apply the four vectors from [simjeb-dataset.md §2](simjeb-dataset.md).
+   - First check that the reaction forces sum to the applied load.
+   - Then compare nodal displacement magnitude against `148.csv`.
+
+   Compare displacement only: SimJEB's first-order stress at sharp corners is not
+   ground truth. The case proves couplings and load application on real geometry,
+   which neither closed-form case exercises. It needs tasks 3–4, and it does not gate
+   `REQ-DEL-009` release unless the requirements adopt it.
 
 ---
 
@@ -259,7 +309,10 @@ label from the closed set and a complete D-07 prediction.
 5. Single-edit enforcement **in the runtime**, with mesh-altering proposals refused. *(`REQ-OPT-003`, D-21)*
 6. Prediction record in the D-07 schema, persisted with its rationale before the tool call. *(`REQ-OPT-004`)*
 7. Prediction scoring against the next valid evaluation — region, direction and band as three booleans. *(`REQ-OPT-005`)*
-8. Material library JSON: 8 alloys, all D-10 fields with explicit nulls and a cited source each; exclusion rule for missing properties. *(`REQ-OPT-006`, `REQ-OPT-007`)*
+8. Material library JSON: 8 alloys, all D-10 fields with explicit nulls and a cited source each; exclusion rule for missing properties. *(`REQ-OPT-006`, `REQ-OPT-007`)* The
+   Ti-6Al-4V record uses E = 113.8 GPa and ν = 0.342, matching SimJEB so V3 compares
+   like with like. For density, take one cited handbook value. SimJEB itself disagrees:
+   the deck uses 4.43 g/cm³ and the metadata mass uses 4.47.
 
 > Task 1 is the one that will cost a day if missed. The harness deduplicates identical capability calls, and re-solving the same parameter set after an edit is not a duplicate — the geometry changed in between. Without the declaration the loop silently stops iterating and looks like a hang.
 
@@ -275,10 +328,10 @@ label from the closed set and a complete D-07 prediction.
 
 1. Structural and mass verifiers, with invalid results classified `unverified` and never passing. *(`REQ-VER-001`, `REQ-VER-002`, `REQ-VER-004`)*
 2. FDM manufacturing checker: ray-cast minimum wall, facet-normal overhang angle. *(`REQ-VER-003`, D-11)*
-3. Singularity protocol: 0.5× local re-solve, 20% rise rule, unverified unless it survives. *(`REQ-VER-005`, D-12)*
+3. Singularity protocol: 0.5× local re-solve, 20% rise rule, unverified unless it survives. *(`REQ-VER-005`, D-12)* Optional, if V3 ran: apply the rule to one SimJEB design with a worst-case peak above 5,000 MPa and to a plausible-peak control of similar mass. This is real-geometry evidence for the threshold, not a release gate.
 4. Load-direction check comparing task intent against the generated `.inp`. *(`REQ-VER-006`)*
 5. The 9-task set with an executable predicate each, reading only structured tool output. *(`REQ-DEL-004`)*
-6. The 6-mutant corpus with paired valid controls. *(`REQ-DEL-005`)*
+6. The 6-mutant corpus with paired valid controls. *(`REQ-DEL-005`)* One of the two wrong-direction instances reuses the GE challenge's real published error: a load at 30° from horizontal where 42° from vertical was meant, applied to the `L_bracket` load case. The other flips the sign.
 7. Detection-fraction and false-positive reporting, with zero executions reported as `not evaluated`. *(`REQ-DEL-005`)*
 8. Protected paths enforced over verifiers, tasks, materials and mutations, with every refusal recorded. *(`REQ-DEL-011`, D-20)*
 9. Offline rescoring with model and solver access disabled. *(`REQ-DEL-007`)*
@@ -300,7 +353,7 @@ label from the closed set and a complete D-07 prediction.
 4. Clean-machine run: one documented command, lockfile only, no undeclared preinstalled dependency. *(`REQ-DEL-003`)*
 5. Skill A/B — one task run with and without the `SKILL.md`, both stored, reporting the win and the cost. *(`REQ-DEL-013`)*
 6. Run report: mass delta, constraint margins, prediction accuracy, mutation detection. *(`REQ-DEL-012`)*
-7. README someone can follow, and the demo video — including the failure cases and the refusal.
+7. README someone can follow, and the demo video — including the failure cases and the refusal. The README cites SimJEB and the GE challenge as their licences require, and says the SimJEB files are fetched, not shipped.
 
 ---
 
@@ -315,8 +368,9 @@ Probed on this machine: Python 3.13.3, `uv` 0.6.14, no conda, no FEA tooling pre
 | FEA | CalculiX `ccx` 2.10 | **Located** — `GeneralElectric/CalculiX`, `releases/CalculiX-GE-OSS-2.10-win-x64.zip`, 17.9 MB, native Windows x64. Not yet run |
 | Result parsing | `ccx2paraview` 3.2.0, `meshio` 5.3.5 | **Verified** — resolve clean |
 | Render | `pyvista` 0.49.0 + `vtk` 9.7.0 | **Verified** to resolve; off-screen rendering unproven (Gate 2) |
+| Reference data | SimJEB sample (design 148: `.stp` `.fem` `.vtk` `.obj` `.csv`) and metadata, Harvard Dataverse | **Fetched and inspected** 2026-09-13; file IDs and checksums in [simjeb-dataset.md](simjeb-dataset.md). Dev-time only |
 
-CalculiX is the only non-PyPI artifact. Fetch by pinned URL and SHA-256; do not commit it — `ccx` is GPL and this repo is public.
+CalculiX is the only non-PyPI artifact in the packaged run. Fetch it by pinned URL and SHA-256, and do not commit it: `ccx` is GPL and this repo is public. SimJEB files follow the same fetch-and-pin rule for development, because the CAD is licensed non-commercial.
 
 ---
 
@@ -332,6 +386,22 @@ One family of geometry serves validation, the demo, and two of three mutation ca
 
 Build `L_bracket` first and completely. The other two parts are M3 breadth and are the first thing to cut.
 
+**V3 — SimJEB design 148 (real-geometry cross-check).** A crowdsourced GE-challenge bracket that the SimJEB authors meshed and solved in OptiStruct under all four challenge load cases. It is the only case here with rigid and distributing couplings, a real load path, and a published nodal field to compare against. It compares displacement, not stress, because the reference mesh is first-order. See [simjeb-dataset.md](simjeb-dataset.md).
+
+**GE jet engine bracket — reference, not the in-loop part.** The [part brief](ge-jet-engine-bracket.md) records the challenge's interfaces, load cases and limits, and SimJEB pins the vectors down exactly. It is not a task, because:
+
+- its geometry is free-form, not parametric (D-04)
+- it has four load cases (D-08)
+- it is made by metal additive manufacturing, not FDM (D-11)
+- at SimJEB's mesh density, one second-order solve would exceed D-13's 180 s limit
+
+It feeds the plan in four places:
+
+1. the Gate 2 render (M0 tasks 4–6)
+2. the readability and vision checks (M0.5 tasks 6–7)
+3. V3 (M1 task 9)
+4. one wrong-direction mutant instance (M3 task 6)
+
 ---
 
 ## Risk register
@@ -346,6 +416,9 @@ Build `L_bracket` first and completely. The other two parts are M3 breadth and a
 | The contour is rendered but not readable | Vision step degrades to noise while every metric still looks fine | M0.5 task 6 — judged by eye, with camera set, image size and colormap fixed there |
 | Capability dedupe swallows re-solves | The loop appears to hang | M2 task 1, asserted by a test |
 | Second-order tets blow up DOF count | Slow solve | Small parts; refine locally at named regions only |
+| SimJEB licence: CAD is non-commercial, and Dataverse's CC0 field conflicts with the README's ODC-By | Committing the files to this public repo breaks licence or attribution terms | Fetch by pinned file ID and checksum into gitignored `data/` (M0 task 4). Cite the dataset and credit the designer (M4 task 7) |
+| V3 disagrees with SimJEB | Unclear whether our coupling model or theirs is the difference | Check that reaction forces sum to the applied load first. Compare displacement only. A disagreement is a finding to record, not a blocker for V1 |
+| Dataverse unavailable or files re-versioned | Gate 2a and V3 lose their input | Checksum pins detect change. Keep the fetched sample in a local cache. Gate 2a can fall back to a `pyvista` example mesh |
 
 ---
 
@@ -362,6 +435,8 @@ Ranked. The first three are fixed by M0, M0.5 and M1; the rest are live.
 7. **Single process only.** The harness's JSON stores are unsafe across processes, so no parallel candidate evaluation. A real throughput ceiling.
 8. **The Route B rubric is unstated.** The Session 16 and 17 rubrics in the class notes are different assignments and do not apply.
 9. **`OD-B` and `OD-C` are unset** — release thresholds and numeric tolerances. Correctly deferred to M3 data, but required before calling anything acceptable.
+10. **Should a GE-bracket-inspired parametric part replace a breadth part?** It would be a CadQuery bracket built around SimJEB's interface coordinates, with one load case (LC1 vertical, which governs 318 of 381 SimJEB designs) and Ti-6Al-4V at 903 MPa. It could replace `ribbed_beam` under D-14. It would also give the refusal case a real reference: no SimJEB design under 0.345 kg stays below yield in all four load cases, and none under 0.673 kg does at SF 1.5. It needs requirement changes (D-08, D-11, D-14), so it is the owner's call, and the plan does not assume it.
+11. **D-17 names `ccx` as the only non-PyPI artifact.** That still holds for `REQ-DEL-003`, because the SimJEB files are dev-time validation data and not part of the packaged run. The fetch script must keep that line clear.
 
 ---
 
@@ -385,3 +460,4 @@ Owner-directed, parked as of 2026-09-09 — recorded, not being chased. Q1–Q3 
 5. **The solver is a capability, not an allowlisted command.** Tight allowlist, typed contract.
 6. **Re-solving is not a duplicate.** Declared rerunnable, asserted by a test.
 7. **The GPL binary is fetched, not vendored.** Pinned URL and SHA-256; the lockfile carries the rest.
+8. **Reference data is fetched, never committed, and never treated as ground truth.** SimJEB is pinned by file ID and checksum. Its displacements are a cross-check; its first-order stresses are not a target.
