@@ -5,7 +5,7 @@
 | Version | 0.3 |
 | Date | 2026-09-12 |
 | Owner | Sujit Ojha |
-| Budget | Four weeks, one engineer, plus a Phase 0 of about six days — M0 and M0.5 |
+| Budget | Three weeks, one engineer — 12 Sep to 3 Oct 2026. See [Timeline](#timeline). |
 | Board | [Project #10](https://github.com/users/sujitojha1/projects/10) — milestones and tasks below are mirrored there |
 | Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
 
@@ -15,20 +15,127 @@ Six milestones. Each states an **expectation** (what it is for), an **exit crite
 
 ## Milestone map
 
-| # | Milestone | Duration | Exit criterion |
+| # | Milestone | Window | Exit criterion |
 | --- | --- | --- | --- |
-| **M0** | Foundations and de-risking | ~3 days | Three gates pass |
-| **M0.5** | One part, one load case, walked by hand | ~3 days | A frozen part and load case, one hand pass to a contour, and a written LLM integration spec |
-| **M1** | Engineering loop, no agent | Week 1 | A parameter dict returns a verified result, and closed-form validation agrees |
-| **M2** | The agent loop closes | Week 2 | One full cycle on disk: read → predict → edit → re-run → score |
-| **M3** | Judgement | Week 3 | Mutation detection and false-positive rates are reportable numbers |
-| **M4** | Refusal and packaging | Week 4 | Someone else runs one command on a clean machine and gets a result |
+| **M0** | Foundations and de-risking | 12–14 Sep | Three gates pass |
+| **M0.5** | One part, one load case, walked by hand | 14–18 Sep | A frozen part and load case, one hand pass to a contour, and a written LLM integration spec |
+| **M1** | Engineering loop, no agent | 18–22 Sep | A parameter dict returns a verified result, and closed-form validation agrees |
+| **M2** | The agent loop closes | 22–26 Sep | One full cycle on disk: read → predict → edit → re-run → score |
+| **M3** | Judgement | 26–30 Sep | Mutation detection and false-positive rates are reportable numbers |
+| **M4** | Refusal and packaging | 30 Sep – 3 Oct | Someone else runs one command on a clean machine and gets a result |
 
 Three hard orderings: nothing depends on the vision path until M0 Gate 2 answers `OD-D`; **no pipeline code is written before M0.5 has walked the chain by hand on one frozen part and load case**, because the decisions M1 would otherwise make silently — labels, camera set, legend, exchange shape — are cheap to change now and expensive to change later; and **no agent work starts before M1's closed-form validation passes**. An agent reasoning over wrong physics produces confident nonsense that looks like a working demo and is not caught later.
 
 ---
 
-## M0 — Foundations and de-risking (~3 days)
+## Timeline
+
+Three weeks, **Sat 12 Sep 2026 → Sat 3 Oct 2026**. Dates are tentative ranges, not commitments: each task shows the window it is expected to occupy and a rough effort band. A milestone ends on the day the next one starts — that shared day is where the handover work sits.
+
+Board milestone numbering (M1–M6) is used here and on [Project #10](https://github.com/users/sujitojha1/projects/10); the section headings further down keep this document's older M0/M0.5/M1–M4 names. The mapping is in the table.
+
+### Milestone windows
+
+| Board | This doc | Milestone | Window | Days | Tasks | Effort |
+| --- | --- | --- | --- | --- | --- | --- |
+| **M1** | M0 | Foundations and de-risking | 12 Sep → 14 Sep | 3 | 6 | 15–25 h |
+| **M2** | M0.5 | One part, one load case, walked by hand | 14 Sep → 18 Sep | 5 | 10 | 22–37 h |
+| **M3** | M1 | Engineering loop, no agent | 18 Sep → 22 Sep | 5 | 8 | 22–37 h |
+| **M4** | M2 | The agent loop closes | 22 Sep → 26 Sep | 5 | 8 | 19–32 h |
+| **M5** | M3 | Judgement | 26 Sep → 30 Sep | 5 | 10 | 25–41 h |
+| **M6** | M4 | Refusal and packaging | 30 Sep → 3 Oct | 4 | 7 | 16–26 h |
+| | | **Total** | **12 Sep → 3 Oct** | **22** | **49** | **119–198 h** |
+
+That is **5.4–9.0 h/day across all 22 days, weekends included**. Three weeks only holds at near-full-time effort with no slack, so the cut lines are named in advance and cut in this order: M5.6 (mutant corpus drops from 6 to 3), M6.5 (the skill A/B), M3.6 (the second validation case). A failed gate in M1 costs more than all three, which is why M1 stays first and unshortened.
+
+### Tentative task ranges
+
+**M1 — Foundations and de-risking** · 12 Sep → 14 Sep
+
+| Task | Issue | Start | Target | Effort |
+| --- | --- | --- | --- | --- |
+| M1.8 Go through the Session 17 video | [#54](https://github.com/sujitojha1/3d-part-optimization-agent/issues/54) | 12 Sep | 12 Sep | 3–4 h |
+| M1.3 GATE 1 — configure the S17 environment and prove a prompt routes 8113 to 8111 | [#3](https://github.com/sujitojha1/3d-part-optimization-agent/issues/3) | 12 Sep | 13 Sep | 3–5 h |
+| M1.4 GATE 2a — prove pyvista renders off-screen on Windows | [#4](https://github.com/sujitojha1/3d-part-optimization-agent/issues/4) | 13 Sep | 13 Sep | 2–4 h |
+| M1.5 GATE 2b — prove an image reaches a vision model through glc_v5 | [#5](https://github.com/sujitojha1/3d-part-optimization-agent/issues/5) | 13 Sep | 13 Sep | 2–3 h |
+| M1.6 Create the uv project and lock the CAD mesh and render stack | [#6](https://github.com/sujitojha1/3d-part-optimization-agent/issues/6) | 13 Sep | 14 Sep | 3–5 h |
+| M1.7 GATE 3 — fetch CalculiX by pinned URL and SHA solve a bundled example | [#10](https://github.com/sujitojha1/3d-part-optimization-agent/issues/10) | 14 Sep | 14 Sep | 2–4 h |
+
+**M2 — One part, one load case, walked by hand** · 14 Sep → 18 Sep
+
+| Task | Issue | Start | Target | Effort |
+| --- | --- | --- | --- | --- |
+| M2.1 Downselect the part and freeze its parameter record | [#44](https://github.com/sujitojha1/3d-part-optimization-agent/issues/44) | 14 Sep | 15 Sep | 2–3 h |
+| M2.2 Downselect the load case and freeze it with a hand calculation | [#46](https://github.com/sujitojha1/3d-part-optimization-agent/issues/46) | 15 Sep | 15 Sep | 2–4 h |
+| M2.3 Hand-run CAD to mesh in a REPL | [#45](https://github.com/sujitojha1/3d-part-optimization-agent/issues/45) | 15 Sep | 16 Sep | 3–5 h |
+| M2.4 Verify the region-label chain survives into the .inp | [#47](https://github.com/sujitojha1/3d-part-optimization-agent/issues/47) | 16 Sep | 16 Sep | 2–4 h |
+| M2.5 Hand-run solve to parse and measure it | [#48](https://github.com/sujitojha1/3d-part-optimization-agent/issues/48) | 16 Sep | 17 Sep | 3–5 h |
+| M2.6 Render the contour by hand and judge whether it is readable | [#49](https://github.com/sujitojha1/3d-part-optimization-agent/issues/49) | 17 Sep | 17 Sep | 2–3 h |
+| M2.7 Run one real exchange through glc_v5 by hand | [#50](https://github.com/sujitojha1/3d-part-optimization-agent/issues/50) | 17 Sep | 17 Sep | 2–4 h |
+| M2.8 Settle numbers-before-or-after-picture by experiment | [#51](https://github.com/sujitojha1/3d-part-optimization-agent/issues/51) | 17 Sep | 18 Sep | 2–3 h |
+| M2.9 Write the LLM integration spec | [#52](https://github.com/sujitojha1/3d-part-optimization-agent/issues/52) | 18 Sep | 18 Sep | 3–4 h |
+| M2.10 Walkthrough record and plan delta | [#53](https://github.com/sujitojha1/3d-part-optimization-agent/issues/53) | 18 Sep | 18 Sep | 1–2 h |
+
+**M3 — Engineering loop, no agent** · 18 Sep → 22 Sep
+
+| Task | Issue | Start | Target | Effort |
+| --- | --- | --- | --- | --- |
+| M3.1 L_bracket CadQuery parametric model with named parameters and labeled regions | [#11](https://github.com/sujitojha1/3d-part-optimization-agent/issues/11) | 18 Sep | 19 Sep | 3–5 h |
+| M3.2 Parameters to STEP to Gmsh second-order tet mesh | [#12](https://github.com/sujitojha1/3d-part-optimization-agent/issues/12) | 19 Sep | 19 Sep | 3–5 h |
+| M3.3 CalculiX .inp writer — material card single load case supports | [#13](https://github.com/sujitojha1/3d-part-optimization-agent/issues/13) | 19 Sep | 20 Sep | 4–6 h |
+| M3.4 Parse .frd to mass max von Mises max displacement peak region label | [#14](https://github.com/sujitojha1/3d-part-optimization-agent/issues/14) | 20 Sep | 21 Sep | 4–6 h |
+| M3.5 V1 validation — tip-loaded cantilever against closed form | [#15](https://github.com/sujitojha1/3d-part-optimization-agent/issues/15) | 21 Sep | 21 Sep | 2–4 h |
+| M3.6 V2 validation — shoulder-fillet stepped bar against a published Kt | [#16](https://github.com/sujitojha1/3d-part-optimization-agent/issues/16) | 21 Sep | 22 Sep | 3–5 h |
+| M3.7 Contour renderer with fixed camera set and locked legend range | [#17](https://github.com/sujitojha1/3d-part-optimization-agent/issues/17) | 22 Sep | 22 Sep | 2–4 h |
+| M3.8 Measure per-iteration wall time and confirm or revise the budget | [#18](https://github.com/sujitojha1/3d-part-optimization-agent/issues/18) | 22 Sep | 22 Sep | 1–2 h |
+
+**M4 — The agent loop closes** · 22 Sep → 26 Sep
+
+| Task | Issue | Start | Target | Effort |
+| --- | --- | --- | --- | --- |
+| M4.1 Register run_sim read_result and check_manufacturing as rerunnable capabilities | [#19](https://github.com/sujitojha1/3d-part-optimization-agent/issues/19) | 22 Sep | 23 Sep | 3–4 h |
+| M4.2 Task schema and validation including unit-consistency rejection | [#20](https://github.com/sujitojha1/3d-part-optimization-agent/issues/20) | 23 Sep | 23 Sep | 2–4 h |
+| M4.8 Material library — 8 alloys all D-10 fields with cited sources | [#26](https://github.com/sujitojha1/3d-part-optimization-agent/issues/26) | 23 Sep | 24 Sep | 2–4 h |
+| M4.3 Baseline evaluation and invalid-baseline termination | [#21](https://github.com/sujitojha1/3d-part-optimization-agent/issues/21) | 23 Sep | 24 Sep | 2–4 h |
+| M4.4 Vision step — contour into the model concentration recorded as a region label | [#22](https://github.com/sujitojha1/3d-part-optimization-agent/issues/22) | 24 Sep | 25 Sep | 3–5 h |
+| M4.5 Single-edit enforcement in the runtime mesh changes refused | [#23](https://github.com/sujitojha1/3d-part-optimization-agent/issues/23) | 24 Sep | 25 Sep | 2–4 h |
+| M4.6 Prediction record in the D-07 schema persisted before the tool call | [#24](https://github.com/sujitojha1/3d-part-optimization-agent/issues/24) | 25 Sep | 25 Sep | 3–4 h |
+| M4.7 Score the prediction against the next evaluation as three booleans | [#25](https://github.com/sujitojha1/3d-part-optimization-agent/issues/25) | 25 Sep | 26 Sep | 2–3 h |
+
+**M5 — Judgement** · 26 Sep → 30 Sep
+
+| Task | Issue | Start | Target | Effort |
+| --- | --- | --- | --- | --- |
+| M5.1 Structural and mass verifiers with invalid results never passing | [#27](https://github.com/sujitojha1/3d-part-optimization-agent/issues/27) | 26 Sep | 27 Sep | 3–5 h |
+| M5.2 FDM manufacturing checker — ray-cast minimum wall facet-normal overhang | [#28](https://github.com/sujitojha1/3d-part-optimization-agent/issues/28) | 27 Sep | 28 Sep | 4–6 h |
+| M5.3 Singularity protocol — 0.5x local re-solve and the 20% rule | [#29](https://github.com/sujitojha1/3d-part-optimization-agent/issues/29) | 27 Sep | 28 Sep | 3–5 h |
+| M5.4 Load-direction check against the generated .inp | [#30](https://github.com/sujitojha1/3d-part-optimization-agent/issues/30) | 28 Sep | 28 Sep | 1–2 h |
+| M5.5 The 9-task set with an executable predicate each | [#31](https://github.com/sujitojha1/3d-part-optimization-agent/issues/31) | 28 Sep | 29 Sep | 3–5 h |
+| M5.6 The 6-mutant corpus with paired valid controls | [#32](https://github.com/sujitojha1/3d-part-optimization-agent/issues/32) | 29 Sep | 29 Sep | 3–5 h |
+| M5.7 Report detection fraction and control false-positive rate | [#33](https://github.com/sujitojha1/3d-part-optimization-agent/issues/33) | 29 Sep | 30 Sep | 2–3 h |
+| M5.8 Enforce protected paths and record every refusal | [#34](https://github.com/sujitojha1/3d-part-optimization-agent/issues/34) | 29 Sep | 30 Sep | 2–3 h |
+| M5.9 Offline rescoring with model and solver disabled | [#35](https://github.com/sujitojha1/3d-part-optimization-agent/issues/35) | 30 Sep | 30 Sep | 2–3 h |
+| M5.10 The FEA-reasoning SKILL.md | [#36](https://github.com/sujitojha1/3d-part-optimization-agent/issues/36) | 30 Sep | 30 Sep | 2–4 h |
+
+**M6 — Refusal and packaging** · 30 Sep → 3 Oct
+
+| Task | Issue | Start | Target | Effort |
+| --- | --- | --- | --- | --- |
+| M6.1 Budget and repeat-failure ceilings and the six terminal outcomes | [#37](https://github.com/sujitojha1/3d-part-optimization-agent/issues/37) | 30 Sep | 1 Oct | 3–4 h |
+| M6.2 Explored frontier with scoped infeasibility wording | [#38](https://github.com/sujitojha1/3d-part-optimization-agent/issues/38) | 1 Oct | 1 Oct | 2–4 h |
+| M6.3 Link the recommendation to baseline change history and evidence | [#39](https://github.com/sujitojha1/3d-part-optimization-agent/issues/39) | 1 Oct | 2 Oct | 2–3 h |
+| M6.4 Clean-machine run — one documented command from the lockfile | [#40](https://github.com/sujitojha1/3d-part-optimization-agent/issues/40) | 2 Oct | 2 Oct | 2–4 h |
+| M6.5 Skill A/B — one task with and without the SKILL.md | [#41](https://github.com/sujitojha1/3d-part-optimization-agent/issues/41) | 2 Oct | 2 Oct | 2–3 h |
+| M6.6 Run report — mass delta margins prediction accuracy mutation detection | [#42](https://github.com/sujitojha1/3d-part-optimization-agent/issues/42) | 2 Oct | 3 Oct | 2–3 h |
+| M6.7 README and demo video including the failures and the refusal | [#43](https://github.com/sujitojha1/3d-part-optimization-agent/issues/43) | 3 Oct | 3 Oct | 3–5 h |
+
+M1.1 (#1) and M1.2 (#2) are closed already and carry no dates.
+
+**Ordering the dates respect.** M1.3–M1.5 precede anything touching the gateway or the vision path. No M3 pipeline code starts before M2.10 records the hand walk. No M4 agent work starts before M3.5 closed-form validation passes. M5.7 cannot start before M5.5 and M5.6 exist. M6.4 runs against the finished lockfile, so only the README and video follow it. M4.8 (the material library) is the one task with no upstream dependency — pull it forward into any blocked hour.
+
+---
+
+## M0 — Foundations and de-risking (12–14 Sep)
 
 **Expectation.** Three things in this project have never been run together. Finding out in week 2 that one of them does not work costs the project. M0 buys that knowledge for three days and writes no engineering code. Each gate is answered by running something, not by reading.
 
@@ -54,7 +161,7 @@ Three hard orderings: nothing depends on the vision path until M0 Gate 2 answers
 
 ---
 
-## M0.5 — One part, one load case, walked by hand (~3 days)
+## M0.5 — One part, one load case, walked by hand (14–18 Sep)
 
 **Expectation.** M0 proves each tool runs. M1 automates a pipeline. Between them sits
 an assumption nothing has tested: that the chain composes *on this geometry*, and that
@@ -118,7 +225,7 @@ label from the closed set and a complete D-07 prediction.
 
 ---
 
-## M1 — Engineering loop, no agent (week 1)
+## M1 — Engineering loop, no agent (18–22 Sep)
 
 **Expectation.** Prove the physics before adding judgement. Every downstream number — prediction accuracy, mutation detection, the frontier — inherits the solver's correctness, so this milestone ends with evidence the FEA is right rather than merely running.
 
@@ -137,7 +244,7 @@ label from the closed set and a complete D-07 prediction.
 
 ---
 
-## M2 — The agent loop closes (week 2)
+## M2 — The agent loop closes (22–26 Sep)
 
 **Expectation.** The agent reads a picture, commits to a prediction *before* acting, makes exactly one change, and is scored against what actually happened. The prediction-before-execution ordering is the whole novelty; it is worthless if written afterwards.
 
@@ -158,7 +265,7 @@ label from the closed set and a complete D-07 prediction.
 
 ---
 
-## M3 — Judgement (week 3)
+## M3 — Judgement (26–30 Sep)
 
 **Expectation.** The verifiers decide, not the prose. This milestone produces the numbers the project is actually graded on, and puts the judge beyond the agent's reach.
 
@@ -179,7 +286,7 @@ label from the closed set and a complete D-07 prediction.
 
 ---
 
-## M4 — Refusal and packaging (week 4)
+## M4 — Refusal and packaging (30 Sep – 3 Oct)
 
 **Expectation.** The most interesting result in the intent is the honest no. Ship the frontier, the scoped refusal, and a package someone else can run — then show it failing as well as working.
 
