@@ -2,14 +2,14 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.2 |
-| Date | 2026-09-09 |
+| Version | 0.3 |
+| Date | 2026-09-12 |
 | Owner | Sujit Ojha |
-| Budget | Four weeks, one engineer, plus a Phase 0 of about three days |
+| Budget | Four weeks, one engineer, plus a Phase 0 of about six days — M0 and M0.5 |
 | Board | [Project #10](https://github.com/users/sujitojha1/projects/10) — milestones and tasks below are mirrored there |
 | Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
 
-Five milestones. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
+Six milestones. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
 
 ---
 
@@ -18,12 +18,13 @@ Five milestones. Each states an **expectation** (what it is for), an **exit crit
 | # | Milestone | Duration | Exit criterion |
 | --- | --- | --- | --- |
 | **M0** | Foundations and de-risking | ~3 days | Three gates pass |
+| **M0.5** | One part, one load case, walked by hand | ~3 days | A frozen part and load case, one hand pass to a contour, and a written LLM integration spec |
 | **M1** | Engineering loop, no agent | Week 1 | A parameter dict returns a verified result, and closed-form validation agrees |
 | **M2** | The agent loop closes | Week 2 | One full cycle on disk: read → predict → edit → re-run → score |
 | **M3** | Judgement | Week 3 | Mutation detection and false-positive rates are reportable numbers |
 | **M4** | Refusal and packaging | Week 4 | Someone else runs one command on a clean machine and gets a result |
 
-Two hard orderings: nothing depends on the vision path until M0 Gate 2 answers `OD-D`, and **no agent work starts before M1's closed-form validation passes**. An agent reasoning over wrong physics produces confident nonsense that looks like a working demo and is not caught later.
+Three hard orderings: nothing depends on the vision path until M0 Gate 2 answers `OD-D`; **no pipeline code is written before M0.5 has walked the chain by hand on one frozen part and load case**, because the decisions M1 would otherwise make silently — labels, camera set, legend, exchange shape — are cheap to change now and expensive to change later; and **no agent work starts before M1's closed-form validation passes**. An agent reasoning over wrong physics produces confident nonsense that looks like a working demo and is not caught later.
 
 ---
 
@@ -50,6 +51,70 @@ Two hard orderings: nothing depends on the vision path until M0 Gate 2 answers `
 7. Fetch CalculiX 2.10 by pinned URL and SHA-256, unzip to a gitignored `vendor/`, solve a bundled example. *(Gate 3)*
 
 **Gate 2 fallbacks, in preference order.** Add a multimodal path to your own `glc_v5` fork — it is your fork, and this doubles as a course Part-2 contribution. Or call the vision model directly from the capability, routing only text through the gateway, and document the deviation. Or drop to a numeric-plus-region-label encoding and revise the intent's vision claim honestly.
+
+---
+
+## M0.5 — One part, one load case, walked by hand (~3 days)
+
+**Expectation.** M0 proves each tool runs. M1 automates a pipeline. Between them sits
+an assumption nothing has tested: that the chain composes *on this geometry*, and that
+the information the agent needs survives it — labels that reach the `.inp`, a contour a
+human can actually read, numbers that arrive in the right order. One deliberate pass
+done by hand, in a REPL, with eyes on every intermediate artifact, is the cheapest place
+to find out. It also produces the thing M2 has no input for today: a specified LLM
+exchange, measured rather than assumed.
+
+No pipeline code is written here. Scripts are scratch; what ships is a frozen part and
+load record, a set of intermediate artifacts on disk, and a written integration spec.
+
+**Exit criterion.** One part and one load case are frozen in writing; a hand pass from
+parameters to contour PNG exists with every intermediate artifact kept; and the LLM
+integration is specified — what goes in, in what order, in what form, what comes back —
+backed by at least one real hand-made exchange through `glc_v5` that returned a region
+label from the closed set and a complete D-07 prediction.
+
+**Tasks**
+
+1. **Downselect the part and freeze it.** `L_bracket` confirmed or replaced. Write the
+   baseline dimensions, the three mass levers with min/max/step per D-05, and the named
+   regions per D-06. Record why the other two parts stay M3 breadth.
+2. **Downselect the load case and freeze it.** One support face, one load face, vector,
+   magnitude, units, `SF`, displacement limit. Hand-calculate that the baseline should
+   pass and that the peak should land at the fillet — arithmetic, not a solve, so the
+   first solve has something to disagree with. The wrong-direction mutant is the same
+   record with the vector flipped.
+3. **Hand-run CAD → mesh.** Parameters → solid → tagged faces → STEP → Gmsh `C3D10`
+   with local refinement at named regions. Eyeball the mesh at the fillet. Keep element
+   counts and timings.
+4. **Hand-verify the label chain survives.** CadQuery tags → Gmsh physical groups →
+   `.inp` element sets, checked by reading the `.inp`: every D-06 label present,
+   non-overlapping, covering the part. This is where the architecture's
+   checkable-spatial-claim promise holds or does not, and everything in `REQ-OPT-002`
+   and `REQ-OPT-005` rests on it.
+5. **Hand-run solve → parse.** Write the `.inp`, run `ccx`, read the `.frd`. Extract
+   mass in grams, max von Mises, max displacement, and peak element → label. Compare
+   against task 2's hand calculation. Record wall time per solve.
+6. **Hand-render the contour and judge whether it is readable.** Fixed cameras, locked
+   legend — then look at it as an engineer would and ask whether fillet-versus-web is
+   visibly distinguishable at this image size, camera count and colormap. Fix those
+   settings now, while changing them is free.
+7. **Hand-run one real exchange through `glc_v5`.** Contour image plus prompt, sent by
+   hand. Does the model name a region from the closed label set, and can it fill the
+   D-07 schema unaided? Keep the raw transcript, token counts and latency.
+8. **Settle numbers-before-or-after-picture by experiment.** Same contour, two prompts —
+   image only, then image with numerics — and compare whether the region claim moves.
+   Resolves architecture open question 1 with evidence instead of preference.
+9. **Write the LLM integration spec.** From tasks 7–8: turn structure, image encoding
+   and size, the prompt and response contracts, where the single-edit rule is enforced
+   at the seam, what belongs in `SKILL.md` versus the runtime, and the cost and latency
+   of one iteration. This is M2's input document.
+10. **Walkthrough record and plan delta.** One page: what the pass proved, what broke,
+    the frozen part and load record, measured timings, and every decision this milestone
+    changes in `requirements.md` or `solution-architecture.md` — D-13's budget, the
+    render settings, and architecture questions 1, 2 and 6.
+
+> Nothing here produces a number the project reports. It produces the decisions M1 and
+> M2 would otherwise make silently, at the point where they are still reversible.
 
 ---
 
@@ -169,7 +234,9 @@ Build `L_bracket` first and completely. The other two parts are M3 breadth and a
 | `glc_v5` cannot carry images | Kills the vision thesis | M0 Gate 2, before any engineering work. Three named fallbacks |
 | Off-screen render fails on Windows | No contour to read | M0 Gate 2. Fallback: matplotlib over the surface mesh |
 | `ccx` build does not run here | No solver | M0 Gate 3. Check WSL2 with a distro-packaged `ccx`, or `scikit-fem`, which resolves clean but deviates from the intent's named solver |
-| Iteration too slow for the budget | D-13 is unvalidated | M1 task 8. Shrink the part or coarsen the base mesh before cutting iterations |
+| Iteration too slow for the budget | D-13 is unvalidated | First measured by hand in M0.5 task 5, confirmed in M1 task 8. Shrink the part or coarsen the base mesh before cutting iterations |
+| Label chain does not survive CAD → mesh → `.inp` | Spatial claims become unscoreable, taking `REQ-OPT-002` and prediction accuracy with them | M0.5 task 4, by reading the generated `.inp` before any pipeline code exists |
+| The contour is rendered but not readable | Vision step degrades to noise while every metric still looks fine | M0.5 task 6 — judged by eye, with camera set, image size and colormap fixed there |
 | Capability dedupe swallows re-solves | The loop appears to hang | M2 task 1, asserted by a test |
 | Second-order tets blow up DOF count | Slow solve | Small parts; refine locally at named regions only |
 
@@ -177,14 +244,14 @@ Build `L_bracket` first and completely. The other two parts are M3 breadth and a
 
 ## Not covered or not clear
 
-Ranked. The first three are fixed by M0 and M1; the rest are live.
+Ranked. The first three are fixed by M0, M0.5 and M1; the rest are live.
 
-1. **Images through the gateway are unproven.** The intent's central claim depends on a path nothing in the course notes exercises. → M0 Gate 2.
+1. **Images through the gateway are unproven.** The intent's central claim depends on a path nothing in the course notes exercises. → M0 Gate 2, then exercised for real on the project's own contour in M0.5 task 7.
 2. **Solver correctness had no requirement.** Added as `REQ-DEL-009`. → M1 tasks 5–6.
 3. **Minimum wall thickness had no algorithm.** Now a ray cast along facet normals; the cheap fallback is checking the driven parameter, which misses thin regions emerging where a hole sits near an edge. → M3 task 2.
 4. **Does the agent get code-editing capability at all?** This project mostly calls tools. Cleaner to disable those capabilities explicitly than to leave them registered behind a guard.
 5. **Material data provenance.** MatWeb's data is not freely redistributable; use published handbook or public datasheet values, cited per record.
-6. **Per-iteration runtime is a guess.** D-13's budget was set before anything was measured.
+6. **Per-iteration runtime is a guess.** D-13's budget was set before anything was measured. → First real numbers come from M0.5 task 5.
 7. **Single process only.** The harness's JSON stores are unsafe across processes, so no parallel candidate evaluation. A real throughput ceiling.
 8. **The Route B rubric is unstated.** The Session 16 and 17 rubrics in the class notes are different assignments and do not apply.
 9. **`OD-B` and `OD-C` are unset** — release thresholds and numeric tolerances. Correctly deferred to M3 data, but required before calling anything acceptable.
@@ -206,7 +273,8 @@ Owner-directed, parked as of 2026-09-09 — recorded, not being chased. Q1–Q3 
 
 1. **Nothing is built on unvalidated physics.** M1's V1 passes before M2 starts.
 2. **The vision path is proven before it is depended on.** M0 Gate 2, ahead of all engineering work.
-3. **The judge is unreachable.** Verifiers, tasks, materials and mutations are protected paths.
-4. **The solver is a capability, not an allowlisted command.** Tight allowlist, typed contract.
-5. **Re-solving is not a duplicate.** Declared rerunnable, asserted by a test.
-6. **The GPL binary is fetched, not vendored.** Pinned URL and SHA-256; the lockfile carries the rest.
+3. **The chain is walked by hand before it is automated.** One part, one load case, every intermediate artifact inspected — M0.5. Integration shape is measured, not assumed.
+4. **The judge is unreachable.** Verifiers, tasks, materials and mutations are protected paths.
+5. **The solver is a capability, not an allowlisted command.** Tight allowlist, typed contract.
+6. **Re-solving is not a duplicate.** Declared rerunnable, asserted by a test.
+7. **The GPL binary is fetched, not vendored.** Pinned URL and SHA-256; the lockfile carries the rest.

@@ -2,8 +2,8 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.1 — first pass, expected to grow |
-| Date | 2026-09-09 |
+| Version | 0.2 |
+| Date | 2026-09-12 |
 | Owner | Sujit Ojha |
 | Status | Design sketch. Nothing here is built yet |
 | Companions | [Intent](intent.md) — why · [Requirements](requirements.md) — what · [Plan](plan.md) — when · this — how |
@@ -220,14 +220,14 @@ A short sanity check that the structure actually earns its keep:
 
 ## 9. Open architecture questions
 
-The agenda for the next pass. None block M0.
+The agenda for the next pass. None block M0. Questions 1, 2 and 6 are answered by **M0.5**'s hand pass — by experiment and measurement, not by argument — and 4, 5 and 7 stay open into M1.
 
-1. **Does the agent see the numbers before or after it reads the picture?** If `max_vm` is in context first, the model may anchor on it and the contour becomes decorative — which would quietly hollow out the project's central claim while every metric still looks fine. A two-step exchange (read image → commit the region claim → then reveal numerics) would preserve the thesis and make the region claim independently scoreable. This is the most consequential open question here.
-2. **Where does the proposal step live** — a planner node, or a capability with a typed request? A capability makes the single-edit rule trivially enforceable at the seam; a planner node keeps the graph honest about who decided what.
+1. **Does the agent see the numbers before or after it reads the picture?** If `max_vm` is in context first, the model may anchor on it and the contour becomes decorative — which would quietly hollow out the project's central claim while every metric still looks fine. A two-step exchange (read image → commit the region claim → then reveal numerics) would preserve the thesis and make the region claim independently scoreable. This is the most consequential open question here. → **M0.5 task 8** settles it by running the same contour both ways and comparing the region claim.
+2. **Where does the proposal step live** — a planner node, or a capability with a typed request? A capability makes the single-edit rule trivially enforceable at the seam; a planner node keeps the graph honest about who decided what. → Decided in **M0.5 task 9**'s integration spec, against a real transcript rather than in the abstract.
 3. **Is prediction scoring part of the judge?** It reads structured output and produces a number that is reported, which argues for protected. It is also not a task predicate. Probably `verify/`, to decide.
 4. **Frontier representation** — recomputed from stored candidates on demand, or maintained incrementally? Recompute is simpler and cheap at 8 candidates, and it cannot drift.
 5. **Retry policy at the L1 seam.** A timed-out solve is `unverified`, but is it retried once? The harness's answer elsewhere is that an operation with an unknown outcome is a question, not a retry.
-6. **Does the agent get code-editing capability at all?** If not — and this project mostly calls tools — the cleanest move is to disable those capabilities explicitly rather than register them and lean on the guard.
+6. **Does the agent get code-editing capability at all?** If not — and this project mostly calls tools — the cleanest move is to disable those capabilities explicitly rather than register them and lean on the guard. → **M0.5 task 9** names the answer, since the integration spec enumerates every capability the exchange actually needs.
 7. **Multi-part generalisation.** `L_bracket` first and completely; whether `parts/` needs a shared base or just three independent scripts is not yet clear, and guessing early would over-abstract.
 
 ---
@@ -237,3 +237,4 @@ The agenda for the next pass. None block M0.
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1 | 2026-09-09 | First pass: layers, pipeline purity, the rerunnable/cached distinction, trust boundaries, open questions |
+| 0.2 | 2026-09-12 | Open questions 1, 2 and 6 assigned to M0.5's hand pass, which supplies the evidence they need |

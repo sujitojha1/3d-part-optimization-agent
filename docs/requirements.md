@@ -2,13 +2,13 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.3 |
-| Date | 2026-09-09 |
+| Version | 0.4 |
+| Date | 2026-09-12 |
 | Status | Draft for owner approval |
 | Owner | Sujit Ojha |
 | Budget | Four weeks, one engineer |
 | Scope source | [Project intent](intent.md) |
-| Execution order | [Plan](plan.md) — milestones M0 to M4 |
+| Execution order | [Plan](plan.md) — milestones M0, M0.5, M1 to M4 |
 | Design | [Solution architecture](solution-architecture.md) — how it is built |
 | Conventions | EARS statements ([Mavin](https://alistairmavin.com/ears/)); structure informed by ISO/IEC/IEEE 29148:2018, tailored — not audited compliance |
 
@@ -158,7 +158,7 @@ OD-A and OD-D block work and are resolved in [Phase 0](plan.md) before week 1. O
 
 ## 8. Execution order
 
-Sequencing, the Phase 0 gates that resolve `OD-A` and `OD-D`, the demo and validation parts, and the risk register live in **[plan.md](plan.md)**. Two ordering constraints are normative here because requirements depend on them: `REQ-OPT-001` cannot be built before `OD-D` is answered, and no agent result is meaningful before `REQ-DEL-009`'s validation cases pass.
+Sequencing, the Phase 0 gates that resolve `OD-A` and `OD-D`, the demo and validation parts, and the risk register live in **[plan.md](plan.md)**. Three ordering constraints are normative here because requirements depend on them: `REQ-OPT-001` cannot be built before `OD-D` is answered; its fixed camera set, image size, colormap and legend scheme are fixed by **M0.5**, where readability is judged by eye before any renderer is written; and no agent result is meaningful before `REQ-DEL-009`'s validation cases pass.
 
 ## 9. References
 
@@ -170,4 +170,5 @@ Sequencing, the Phase 0 gates that resolve `OD-A` and `OD-D`, the demo and valid
 | --- | --- | --- |
 | 0.1 | 2026-09-09 | Initial specification from intent |
 | 0.2 | 2026-09-09 | Scoped to four weeks: 10 open decisions resolved to 3, 38 requirements reduced to 30, lifecycle process and source register removed, schedule added |
+| 0.4 | 2026-09-12 | M0.5 added to the execution order; section 8 records that M0.5 fixes `REQ-OPT-001`'s render settings |
 | 0.3 | 2026-09-09 | Stack corrected to what this machine can actually run — CadQuery replaces FreeCAD, uv replaces conda, CalculiX sourced and fetched rather than vendored. Added D-19 to D-22 and REQ-DEL-009 to 011/013 from the harness constraints and the missing solver-validation gate. `OD-A` restated, `OD-D` added. Execution order moved to `plan.md` |
