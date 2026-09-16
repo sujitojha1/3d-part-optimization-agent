@@ -10,8 +10,9 @@
 | Status | Reference input. FreeCAD is not in this project's stack ([D-04](requirements.md)); this page is a domain source, not a dependency |
 | Related | [FreeCAD tutorials index](freecad-tutorials.md) — §4.1 is the short version of this page · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) |
 
-Sections 1–13 record what the source page says, following its own outline. Section 14 is
-this project's reading and is our interpretation, not FreeCAD's.
+Sections 1–13 record what the source page says, following its own outline — with one
+departure, noted at §9. Section 14 is this project's reading and is our interpretation,
+not FreeCAD's.
 
 **How to read it.** The page is written for people driving FreeCAD's GUI, so a good part
 of it is tool-specific: which button partitions a face, which boolean makes an assembly
@@ -337,6 +338,9 @@ workarounds are given:
 ---
 
 ## 9. Selecting interior entities
+
+*On the source page this is a subsection of §8, not a section of its own. It is promoted
+here because nothing else in §8 applies to us and this does.*
 
 Selecting internal faces or volumes is described as tricky, and is needed for interior
 material assignments, body loads and boundary conditions — especially in thermal and
