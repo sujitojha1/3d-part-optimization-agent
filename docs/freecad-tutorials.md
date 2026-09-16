@@ -28,13 +28,13 @@ worth having in `docs/` for that reason and no other.
 [wiki.freecad.org/Tutorials](https://wiki.freecad.org/Tutorials) is a curated shortlist
 of tutorials the project considers high quality, followed by a comprehensive sortable
 table of every tutorial on the wiki regardless of quality. The curated part is grouped
-into eight topics:
+into nine topics:
 
 | Topic | Tutorials | Relevance here |
 | --- | --- | --- |
-| Architecture and BIM | 6 | None |
-| Modeling parts | 12 + 3 Raspberry Pi | Background on CSG vs. parametric feature modelling |
-| Drafting and Sketching | 4 | None — we never draw by hand |
+| Architecture and BIM | 7 | None |
+| Modeling parts | 13 + 3 Raspberry Pi | Background on CSG vs. parametric feature modelling |
+| Drafting and Sketching | 5 | None — we never draw by hand |
 | Technical Drawings | 3 | None |
 | **FEM** | **7** | **Direct. The core of this project** |
 | CNC & 3D Printing | 2 | Marginal — see section 6.5 |
@@ -47,7 +47,8 @@ The page carries one standing caution, which applies to everything below:
 > Please notice the version of FreeCAD used in the tutorial as some tutorials may use
 > an old version of the program.
 
-Versions in the table range from 0.11 to 1.1. Several curated tutorials predate the
+Versions in the comprehensive table range from 0.11 to 1.0, and some page bodies
+describe features introduced in 1.1. Several curated tutorials predate the
 0.17 PartDesign rework and the index says so.
 
 ---
@@ -436,8 +437,8 @@ distinction the agent has to make on every contour it reads.
 
 ### 6.7 An `.inp` writer reference for M3.3
 
-M3.3 (the CalculiX `.inp` writer) is the longest single estimate in M3 at 4–6 h, and it is
-the task where an undetected mistake is most expensive, because everything downstream
+M3.3 (the CalculiX `.inp` writer) is tied for the longest estimate in M3 at 4–6 h, and it
+is the task where an undetected mistake is most expensive, because everything downstream
 inherits it. FreeCAD's `femtools`/`ccxtools` module writes CalculiX decks from a Gmsh mesh
 and is readable on GitHub without installing anything. Reading it as a reference for card
 ordering, set definitions and material-card syntax is free and does not create a
