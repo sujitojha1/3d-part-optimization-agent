@@ -7,7 +7,7 @@
 | Accessed | 2026-09-17 |
 | Status | Reference input. **FreeCAD is not in this project's stack** and this page does not reopen that — see [D-04](requirements.md) and section 6 |
 | Read in depth | [FEM Geometry Preparation and Meshing](#41-fem-geometry-preparation-and-meshing), [FEM Tutorial Python](#42-fem-tutorial-python), [FEM CalculiX Cantilever 3D](#43-fem-calculix-cantilever-3d) |
-| Related | [FEM geometry preparation](fem-geometry-preparation.md) — §4.1 below in full · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) · [GE bracket brief](ge-jet-engine-bracket.md) · [SimJEB dataset](simjeb-dataset.md) |
+| Related | [FEM geometry preparation](fem-geometry-preparation.md) — §4.1 below in full · [FEM Workbench](fem-workbench.md) — the tool catalogue · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) · [GE bracket brief](ge-jet-engine-bracket.md) · [SimJEB dataset](simjeb-dataset.md) |
 
 Sections 1–5 record what the FreeCAD tutorial index and three of its pages say.
 Section 6 is this project's reading of what that is worth to us, and section 7 lists

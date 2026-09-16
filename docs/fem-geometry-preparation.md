@@ -8,7 +8,7 @@
 | FreeCAD version | Its infobox says 1.0 or above; the [tutorial index](https://wiki.freecad.org/Tutorials) says 0.21. Features marked *1.1* below are flagged as such on the source page |
 | Accessed | 2026-09-17 |
 | Status | Reference input. FreeCAD is not in this project's stack ([D-04](requirements.md)); this page is a domain source, not a dependency |
-| Related | [FreeCAD tutorials index](freecad-tutorials.md) — §4.1 is the short version of this page · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) |
+| Related | [FreeCAD tutorials index](freecad-tutorials.md) — §4.1 is the short version of this page · [FEM Workbench](fem-workbench.md) — the tool catalogue · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) |
 
 Sections 1–13 record what the source page says, following its own outline — with one
 departure, noted at §9. Section 14 is this project's reading and is our interpretation,
@@ -187,6 +187,10 @@ as material.
 The caveat given is that fixed boundary conditions introduce rigidity, as if the part were
 attached to something infinitely stiff, and that flexible supports such as springs are not
 available in FreeCAD's FEM workbench with CalculiX. Elmer has a spring constraint.
+
+> **The [FEM Workbench page](fem-workbench.md) contradicts this**, listing a Spring Boundary
+> Condition among the mechanical boundary conditions with no solver qualifier. Recorded, not
+> resolved — see [fem-workbench.md §9.5](fem-workbench.md).
 
 ### 6.3 Planar symmetry
 
