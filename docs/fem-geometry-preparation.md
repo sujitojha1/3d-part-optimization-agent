@@ -7,7 +7,7 @@
 | Stated level | Beginner. Topic: Finite Element Analysis. Time to complete: N/A |
 | FreeCAD version | Its infobox says 1.0 or above; the [tutorial index](https://wiki.freecad.org/Tutorials) says 0.21. Features marked *1.1* below are flagged as such on the source page |
 | Accessed | 2026-09-17 |
-| Status | Reference input. FreeCAD is not in this project's stack ([D-04](requirements.md)); this page is a domain source, not a dependency |
+| Status | Reference input. Since requirements v0.5, FreeCAD **is** the project's CAD and FEM front end ([D-04](requirements.md)), so this page documents the stack in use |
 | Related | [FreeCAD tutorials index](freecad-tutorials.md) — §4.1 is the short version of this page · [FEM Workbench](fem-workbench.md) — the tool catalogue · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) |
 
 Sections 1–13 record what the source page says, following its own outline — with one

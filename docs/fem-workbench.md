@@ -7,7 +7,7 @@
 | Kind | Workbench hub page — the tool catalogue for FreeCAD's FEA workbench, plus its onward links |
 | Version markers | The page tags tools *introduced in 1.0*, *1.1* and *26.3*; those tags are carried through below as written |
 | Accessed | 2026-09-17 |
-| Status | Reference input. FreeCAD is not in this project's stack ([D-04](requirements.md)); this page is a domain source, not a dependency |
+| Status | Reference input. Since requirements v0.5, FreeCAD **is** the project's CAD and FEM front end ([D-04](requirements.md)); §9.6 ("D-04, again") is historical |
 | Related | [FEM geometry preparation](fem-geometry-preparation.md) · [FreeCAD tutorials index](freecad-tutorials.md) · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) |
 
 Sections 1–8 record what the source page says, following its own menu structure. Section 9
