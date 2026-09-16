@@ -412,11 +412,13 @@ change to M3.5, not a milestone change, and it must land before 21 Sep.
 The risk register's mitigation for "iteration too slow" is "shrink the part or coarsen the
 base mesh before cutting iterations". §4.1 supplies two better first moves:
 
-- **Planar symmetry.** `L_bracket` — a plate bent through 90° with a fillet — is symmetric
-  about the plane through the bend, and if the load case is chosen symmetric, a half model
-  is valid. That is a factor of two on every solve in the run, for the cost of one
-  boundary condition, and it does not touch mesh density, which D-21 puts out of reach
-  anyway.
+- **Planar symmetry.** `L_bracket` — a plate bent through 90° with a fillet — is
+  symmetric about its mid-width plane, the one whose normal runs along the bend axis,
+  provided the lightening hole stays centred on it. If the frozen load case is symmetric
+  about that plane too, a half model is valid: a factor of two on every solve in the run,
+  for the cost of one boundary condition, and it does not touch mesh density, which D-21
+  puts out of reach anyway. It constrains M2.1 and M2.2's frozen records, so it has to be
+  decided while they are still open.
 - **Minimum element size.** The page's specific advice is to set a minimum element size
   as well as a maximum, to stop the mesher generating unnecessarily dense meshes around
   small features. With `fillet_radius` as an agent-controllable parameter, small features
