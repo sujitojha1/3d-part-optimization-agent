@@ -172,6 +172,34 @@ Tools, bits, and the Tool Library are managed through the ToolBit architecture: 
 
 *CAM Development Roadmap* — for developers wanting to contribute to CAM.
 
+## This project's reading
+
+*Our interpretation, not FreeCAD's. Decision: [requirements D-11](requirements.md) (`cnc_3axis`), proven in [plan](plan.md) Gate 4 (M1.11) and built in M5.2.*
+
+**Why CAM and not a slicer.** The intent allows "PrusaSlicer or a CAM check". The CAM Workbench lives in the same FreeCAD process as the parametric model and the FEM analysis, so manufacturability needs no second application. The original GE bracket was also a machined part. See [ge-jet-engine-bracket.md](ge-jet-engine-bracket.md) §1.
+
+**Headless use: checked in the FreeCAD 1.1.3 source on 2026-09-17, not yet run here.**
+- `src/Mod/CAM/CAMTests/TestPathProfile.py` builds a Job and a Profile operation with `Path.Main.Job.Create(...)` and `Path.Op.Profile.Create(...)`, then recomputes. Every GUI call sits behind `if FreeCAD.GuiUp`, so the scripted path runs without a GUI.
+- `PathSimulator` is an App module with a Python API. Its calls are `PathSim()`, `BeginSimulation(stock, resolution)`, `SetToolShape(shape)`, `ApplyCommand(placement, command)` and `GetResultMesh()`. It works on a box stock as a heightmap along the tool axis.
+- The **CAM Simulator** (1.0) and **Inspect Toolpath** in the command list are GUI tools, and we do not use them.
+
+**How the list above maps onto the check:**
+
+| From this page | Use in `cnc_3axis` |
+| --- | --- |
+| Job, stock, ToolBit library, tool controller | One Job per declared setup; the ToolBit library is committed under protected `tooling/` |
+| Adaptive, Profile, Pocket Shape, Drilling | The only operations used — all 2.5D |
+| Sanity Check | Run per Job; an error there is `invalid`, not a manufacturing fail |
+| Post Process | G-code kept as an artifact, from a pinned post processor |
+| Limitation: most tools 2.5D, 3-axis | The profile is 3-axis by definition, and undercuts show as residual stock |
+| Limitation: operations assume a standard endmill | The ToolBit library holds flat endmills and drills only |
+| Limitation: not aware of clamping | Out of scope; the check is about tool reach, not fixturing |
+| Units: internal mm and s, feed in mm/s | Feeds do not enter any rule; only geometry and generated paths do |
+
+**Not used:** 3D Surface and Waterline (experimental, and they need `opencamlib`), the dressups, 4th-axis, the Turning add-on, engraving, V-carve and thread milling.
+
+**Open until Gate 4:** whether `PathSimulator` runs headless on macOS arm64 from conda-forge FreeCAD, and how long one Job plus simulation takes at a useful resolution. If it fails, the fallback in D-11 is ray-cast tool access plus a minimum concave radius.
+
 ---
 
 Source: [CAM Workbench — FreeCAD Documentation](https://wiki.freecad.org/CAM_Workbench)

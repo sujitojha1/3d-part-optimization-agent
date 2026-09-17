@@ -74,8 +74,9 @@ The project's novelty sits in the second bullet, and its credibility sits entire
 ```
 CandidateSpec ──▶ FreeCAD doc ──▶ Part shape ──▶ FemMeshGmsh ──▶ ccxtools .inp ──▶ ccx ──▶ .frd ──▶ EvaluationResult
    params          Spreadsheet     recompute,     C3D10,          material,          results       + contour.png
-   material_id     cells set       faces by       mesh groups     constraints                      + manufacturing
-                                   predicate                                                         (PrusaSlicer)
+   material_id     cells set       faces by       mesh groups     constraints                      + manufacturing:
+                                   predicate                                                         CAM Job per setup
+                                                                                                     → G-code → PathSimulator
 ```
 
 **The pipeline is a pure function of `CandidateSpec`.** This is the single most useful property in the design and several requirements collapse into it:
@@ -89,7 +90,8 @@ CandidateSpec = {
     part_id, parameters{...}, material_id,
     mesh_settings,          # task data, never agent-set (D-21)
     load_case, supports,
-    tool_versions{freecad, gmsh, ccx, prusaslicer},
+    tool_versions{freecad, gmsh, ccx},
+    manufacturing{profile, setups, toolbit_library_hash},
 }
 candidate_id = sha256(canonical_json(CandidateSpec))
 ```
@@ -163,13 +165,14 @@ The legend range is locked across the run (`REQ-OPT-001`). An auto-rescaling col
 
 ```
 runs/<run_id>/            journal, checkpoints, predictions, scores, terminal status
-artifacts/<candidate_id>/ spec.json  part.FCStd  mesh.inp  result.frd  part.stl
-                          result.json  contour.png  slice.gcode  manufacturing.json
+artifacts/<candidate_id>/ spec.json  part.FCStd  mesh.inp  result.frd
+                          result.json  contour.png  cam_<setup>.gcode  stock_<setup>.stl  manufacturing.json
 tasks/       PROTECTED    task definitions with predicates
 materials/   PROTECTED    the closed 8-alloy library, sourced per record
 mutations/   PROTECTED    6 mutants + paired controls
 skills/                   SKILL.md — how to approach the work, never what is permitted
-vendor/                   fem-env (FreeCAD, Gmsh, ccx) from an explicit lock; PrusaSlicer app; gitignored
+vendor/                   fem-env (FreeCAD with FEM and CAM, Gmsh, ccx) from an explicit lock; gitignored
+tooling/     PROTECTED    ToolBit library and post-processor config for the cnc_3axis check
 ```
 
 Run records reference artifacts by `candidate_id` rather than embedding them, which keeps the journal small enough to read and makes the artifact store deduplicating by construction.
@@ -181,7 +184,7 @@ Run records reference artifacts by `candidate_id` rather than embedding them, wh
 Four rules, each inherited from something that has already gone wrong in the course material:
 
 1. **The model proposes; deterministic code decides.** Every accept/reject is code the agent did not write.
-2. **The judge is unreachable.** `verify/`, `tasks/`, `materials/`, `mutations/` are protected paths, refusals recorded (D-20).
+2. **The judge is unreachable.** `verify/`, `tasks/`, `materials/`, `mutations/`, `tooling/` are protected paths, refusals recorded (D-20).
 3. **A skill is instruction, never authority.** The single-edit rule and the mesh-change refusal live in the runtime. Writing them in `SKILL.md` would make them advice, and advice is not binding.
 4. **Credentials live on the gateway.** The agent process holds none; `glc_v5` on 8111 owns provider keys and routing (D-18).
 
@@ -198,8 +201,8 @@ Fixed, with the reasoning compressed. Full rationale sits in `requirements.md` s
 | CAD | FreeCAD 1.1.3, conda-forge `osx-arm64`, spreadsheet-driven | The intent's tool; its FEM Workbench already joins CAD, Gmsh and CalculiX (D-04) |
 | Mesh | Gmsh 4.15.2 via `FemMeshGmsh`, second-order tets, `MeshRegion` sizing | First-order tets are over-stiff and report bad stress (D-03, D-24) |
 | Solver | CalculiX 2.23 via `femtools.ccxtools` | Text in, text out; FreeCAD writes the deck; fetched from a pinned lock, never committed — GPL, public repo (D-02) |
-| Packaging | macOS arm64: conda-forge explicit lock for the FEM environment, `uv` lock for the harness, PrusaSlicer pinned by URL + SHA | FreeCAD cannot share the harness's environment (D-17) |
-| Manufacturing | `metal_am`: PrusaSlicer CLI support detection at 45°, FreeCAD ray-cast min wall 1.27 mm | The intent's slicer for overhang; slicers do not report wall thickness reliably (D-11) |
+| Packaging | macOS arm64: conda-forge explicit lock for the FEM environment, `uv` lock for the harness | FreeCAD cannot share the harness's environment (D-17) |
+| Manufacturing | `cnc_3axis` in the FreeCAD CAM Workbench: a CAM Job per setup, `PathSimulator` residual stock, ray-cast min wall 1.27 mm | The intent's "CAM check", in the same process as the model; the rules read generated paths and simulated stock, not a proxy (D-11) |
 | Render | PyVista + VTK, off-screen | Off-screen on macOS is unproven and is M1 Gate 2a |
 | Edits | Named spreadsheet parameters of four kinds | Free-form CAD editing is its own multi-week project (D-04, D-05) |
 | Model access | Through `glc_v5` | Matches the harness split; the agent holds no credential (D-18) |
@@ -242,4 +245,4 @@ The agenda for the next pass. None block M1. Questions 1, 2 and 6 are answered b
 | --- | --- | --- |
 | 0.1 | 2026-09-09 | First pass: layers, pipeline purity, the rerunnable/cached distinction, trust boundaries, open questions |
 | 0.2 | 2026-09-12 | Open questions 1, 2 and 6 assigned to M0.5's hand pass, which supplies the evidence they need |
-| 0.3 | 2026-09-17 | Follows requirements v0.5: FreeCAD pipeline in a separate FEM process, predicate face selection, PrusaSlicer manufacturing, macOS packaging; milestone references renamed M1–M6 |
+| 0.3 | 2026-09-17 | Follows requirements v0.5: FreeCAD pipeline in a separate FEM process, predicate face selection, CAM Workbench manufacturing check, macOS packaging; milestone references renamed M1–M6 |

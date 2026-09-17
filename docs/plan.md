@@ -8,7 +8,7 @@
 | Budget | 12 Sep → **Sat 3 Oct 2026, fixed**. Re-planned on 17 Sep with 17 days left. See [Timeline](#timeline) |
 | Board | [Project #10](https://github.com/users/sujitojha1/projects/10) — milestones, tasks and dates below are mirrored there |
 | Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) v0.5 — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
-| Reference inputs | [GE jet engine bracket brief](ge-jet-engine-bracket.md) — the demo part · [SimJEB dataset](simjeb-dataset.md) — interface coordinates, load vectors, V3 · [FEM Workbench](fem-workbench.md), [FEM geometry preparation](fem-geometry-preparation.md), [FreeCAD tutorials](freecad-tutorials.md) — the stack's own documentation |
+| Reference inputs | [GE jet engine bracket brief](ge-jet-engine-bracket.md) — the demo part · [SimJEB dataset](simjeb-dataset.md) — interface coordinates, load vectors, V3 · [FEM Workbench](fem-workbench.md), [CAM Workbench](freecad-cam-workbench.md), [FEM geometry preparation](fem-geometry-preparation.md), [FreeCAD tutorials](freecad-tutorials.md) — the stack's own documentation |
 
 Six milestones, M1–M6, numbered as on the board. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
 
@@ -23,17 +23,17 @@ Six milestones, M1–M6, numbered as on the board. Each states an **expectation*
 1. **macOS arm64 only.** The Windows toolchain in v0.4 — the GE `ccx` 2.10 build and `win_amd64` wheels — does not run on the build machine.
 2. **3 Oct is fixed.** Seventeen days remain, not the 22 the v0.4 timeline assumed.
 3. **The GE-style jet engine bracket is the demo part.** `L_bracket` is now only the fallback.
-4. **The intent's stack, with FreeCAD as the only CAD tool.** FreeCAD 1.1.3 drives Gmsh and CalculiX through its FEM Workbench, and PrusaSlicer checks overhang. CadQuery is withdrawn.
+4. **The intent's stack, centred on FreeCAD.** FreeCAD 1.1.3 drives Gmsh and CalculiX through its FEM Workbench, and its **CAM Workbench** is the manufacturability check: 3-axis machining, not printing. No other CAD tool, and no slicer. CadQuery is withdrawn.
 
-Decision 4 makes the three FreeCAD pages useful. They now document the stack we use, rather than a tool we dropped, and most of their eleven proposed changes are folded into the tasks below.
+Decision 4 makes the FreeCAD reference pages useful. They now document the stack we use, rather than a tool we dropped, and most of their eleven proposed changes are folded into the tasks below.
 
 **What changed in the plan:**
 
-- M1 gains a PrusaSlicer gate, and Gate 3 runs FreeCAD's bundled cantilever.
+- M1 gains a CAM gate, and Gate 3 runs FreeCAD's bundled cantilever.
 - The M2 hand walk builds the FreeCAD bracket, which M3 then promotes to pipeline code. That saves M3's CAD work.
 - The `.inp` writer is FreeCAD's `ccxtools`, not ours.
 - V3 becomes a gate, because the demo part carries its loads through couplings. V2 becomes Should.
-- The task set drops from 9 to 3 and the mutation corpus from 6 to 3. The material library now has 5 printable alloys.
+- The task set drops from 9 to 3 and the mutation corpus from 6 to 3. The material library now has 5 machinable alloys.
 - The skill A/B and the run report are Should.
 
 ---
@@ -65,21 +65,21 @@ Thu 17 Sep → Sat 3 Oct: **17 days**. Each task shows its window and an effort 
 
 | Milestone | Window | Days | Must tasks | Should | Must effort |
 | --- | --- | --- | --- | --- | --- |
-| **M1** Foundations and de-risking | 17 → 19 Sep | 3 | 9 | — | 14–23 h |
-| **M2** One part, one load case, walked by hand | 19 → 22 Sep | 4 | 9 | — | 20–34 h |
-| **M3** Engineering loop, no agent | 23 → 25 Sep | 3 | 8 | 1 | 19–30 h |
-| **M4** The agent loop closes | 26 → 28 Sep | 3 | 8 | — | 16–24 h |
-| **M5** Judgement | 29 Sep → 1 Oct | 3 | 10 | — | 18–29 h |
-| **M6** Refusal and packaging | 1 → 3 Oct | 3 | 5 | 2 | 10–17 h |
-| **Total** | **17 → 3 Oct** | **17** | **49** | **3** | **97–157 h** |
+| **M1** Foundations and de-risking | 17 Sep → 19 Sep | 3 | 9 | — | 15–25 h |
+| **M2** One part, one load case, walked by hand | 19 Sep → 22 Sep | 4 | 9 | — | 20–34 h |
+| **M3** Engineering loop, no agent | 23 Sep → 25 Sep | 3 | 8 | 1 | 19–30 h |
+| **M4** The agent loop closes | 26 Sep → 28 Sep | 3 | 8 | — | 16–24 h |
+| **M5** Judgement | 29 Sep → 1 Oct | 3 | 10 | — | 20–32 h |
+| **M6** Refusal and packaging | 1 Oct → 3 Oct | 3 | 5 | 2 | 10–17 h |
+| **Total** | **17 → 3 Oct** | **17** | **49** | **3** | **100–162 h** |
 
-That is **5.7–9.2 h a day, every day, weekends included**. The Must work only fits at the low end of every band, so the plan carries **dated cut triggers** instead of a cut list to consult when things are already late.
+That is **5.9–9.5 h a day, every day, weekends included**. The Must work only fits at the low end of every band, so the plan carries **dated cut triggers** instead of a cut list to consult when things are already late.
 
 ### Cut triggers
 
 | Check on | If this is not true | Then |
 | --- | --- | --- |
-| End of 19 Sep | Gates 2b and 3 pass | Take the Gate 2b fallback in [M1](#m1--foundations-and-de-risking-1719-sep). If Gate 3 fails, stop and re-plan, because nothing downstream runs |
+| End of 19 Sep | Gates 2b, 3 and 4 pass | Take the Gate 2b or Gate 4 fallback in [M1](#m1--foundations-and-de-risking-1719-sep). If Gate 3 fails, stop and re-plan, because nothing downstream runs |
 | End of 21 Sep | `ge_bracket` meshes and solves by hand in ≤ 60 s (half model) | Switch the demo part to `L_bracket` (D-14 fallback). M2.1–M2.5 repeat on it for about 6 h |
 | End of 22 Sep | The integration spec exists | Merge M2.10 into M2.9 and start M3 regardless. The spec is M4's input, not M3's |
 | End of 25 Sep | V1 and V3 pass | Reduce V3 to reactions balance only. Release is still gated on V1 |
@@ -96,9 +96,9 @@ Should items (M3.6, M6.5, M6.6, and requirements' LC2 tasks and second mutant in
 | --- | --- | --- | --- | --- |
 | M1.8 Go through the Session 17 video — time-boxed to 1 h | [#54](https://github.com/sujitojha1/3d-part-optimization-agent/issues/54) | 17 Sep | 17 Sep | 1 h |
 | M1.10 Fetch SimJEB sample and metadata by pinned file ID and checksum into gitignored data/ | [#56](https://github.com/sujitojha1/3d-part-optimization-agent/issues/56) | 17 Sep | 17 Sep | 1–2 h |
-| M1.6 Create the FEM environment — FreeCAD, Gmsh, CalculiX from a conda-forge explicit lock | [#6](https://github.com/sujitojha1/3d-part-optimization-agent/issues/6) | 17 Sep | 18 Sep | 3–5 h |
+| M1.6 Create the FEM environment — FreeCAD (FEM and CAM), Gmsh, CalculiX from a conda-forge explicit lock | [#6](https://github.com/sujitojha1/3d-part-optimization-agent/issues/6) | 17 Sep | 18 Sep | 3–5 h |
 | M1.7 GATE 3 — run FreeCAD's bundled CalculiX cantilever headless and reproduce -86.93 mm | [#10](https://github.com/sujitojha1/3d-part-optimization-agent/issues/10) | 18 Sep | 18 Sep | 2–3 h |
-| M1.11 GATE 4 — PrusaSlicer CLI slices an STL headless and reports support material | [#58](https://github.com/sujitojha1/3d-part-optimization-agent/issues/58) | 18 Sep | 18 Sep | 1–2 h |
+| M1.11 GATE 4 — a FreeCAD CAM Job runs headless: operations, post-processed G-code, PathSimulator stock | [#58](https://github.com/sujitojha1/3d-part-optimization-agent/issues/58) | 18 Sep | 18 Sep | 2–4 h |
 | M1.4 GATE 2a — prove pyvista renders off-screen on macOS | [#4](https://github.com/sujitojha1/3d-part-optimization-agent/issues/4) | 18 Sep | 19 Sep | 1–3 h |
 | M1.9 Verify all LLM providers, refresh the model list and .env, add a second Gemini API key | [#55](https://github.com/sujitojha1/3d-part-optimization-agent/issues/55) | 19 Sep | 19 Sep | 1 h |
 | M1.5 GATE 2b — prove an image reaches a vision model through glc_v5 | [#5](https://github.com/sujitojha1/3d-part-optimization-agent/issues/5) | 19 Sep | 19 Sep | 2–3 h |
@@ -138,7 +138,7 @@ Should items (M3.6, M6.5, M6.6, and requirements' LC2 tasks and second mutant in
 | --- | --- | --- | --- | --- |
 | M4.1 Register run_sim, read_result and check_manufacturing as rerunnable capabilities | [#19](https://github.com/sujitojha1/3d-part-optimization-agent/issues/19) | 26 Sep | 26 Sep | 3–4 h |
 | M4.2 Task schema and validation, including unit-consistency rejection | [#20](https://github.com/sujitojha1/3d-part-optimization-agent/issues/20) | 26 Sep | 26 Sep | 2–3 h |
-| M4.8 Material library — 5 metal-AM alloys, all D-10 fields with cited sources | [#26](https://github.com/sujitojha1/3d-part-optimization-agent/issues/26) | 26 Sep | 26 Sep | 1–2 h |
+| M4.8 Material library — 5 machinable alloys, all D-10 fields with cited sources | [#26](https://github.com/sujitojha1/3d-part-optimization-agent/issues/26) | 26 Sep | 26 Sep | 1–2 h |
 | M4.3 Baseline evaluation and invalid-baseline termination | [#21](https://github.com/sujitojha1/3d-part-optimization-agent/issues/21) | 27 Sep | 27 Sep | 1–2 h |
 | M4.4 Vision step — contour into the model, concentration recorded as a region label | [#22](https://github.com/sujitojha1/3d-part-optimization-agent/issues/22) | 27 Sep | 27 Sep | 3–4 h |
 | M4.5 Single-edit enforcement in the runtime, mesh changes refused | [#23](https://github.com/sujitojha1/3d-part-optimization-agent/issues/23) | 27 Sep | 28 Sep | 2–3 h |
@@ -150,7 +150,7 @@ Should items (M3.6, M6.5, M6.6, and requirements' LC2 tasks and second mutant in
 | Task | Issue | Start | Target | Effort |
 | --- | --- | --- | --- | --- |
 | M5.1 Structural and mass verifiers, with invalid results never passing | [#27](https://github.com/sujitojha1/3d-part-optimization-agent/issues/27) | 29 Sep | 29 Sep | 2–3 h |
-| M5.2 metal_am manufacturing check — PrusaSlicer overhang, FreeCAD ray-cast minimum wall | [#28](https://github.com/sujitojha1/3d-part-optimization-agent/issues/28) | 29 Sep | 29 Sep | 3–5 h |
+| M5.2 cnc_3axis check — CAM Workbench job per setup, PathSimulator residual stock, minimum wall | [#28](https://github.com/sujitojha1/3d-part-optimization-agent/issues/28) | 29 Sep | 29 Sep | 5–8 h |
 | M5.4 Load-direction check against the generated .inp | [#30](https://github.com/sujitojha1/3d-part-optimization-agent/issues/30) | 29 Sep | 29 Sep | 1–2 h |
 | M5.10 The FEA-reasoning SKILL.md | [#36](https://github.com/sujitojha1/3d-part-optimization-agent/issues/36) | 29 Sep | 1 Oct | 2–3 h |
 | M5.3 Singularity protocol — halved MeshRegion re-solve, 20% rule calibrated on ge_bracket | [#29](https://github.com/sujitojha1/3d-part-optimization-agent/issues/29) | 30 Sep | 30 Sep | 3–4 h |
@@ -196,7 +196,7 @@ M1.1 (#1) and M1.2 (#2) are closed. M2.8 (#51) is merged into M2.7. M1.11 (#58) 
 | 1 | Does a prompt route 8113 → 8111 and come back, with both test suites green? |
 | 2 | Can a contour image be rendered off-screen here **and** reach a vision model through the gateway? |
 | 3 | Does FreeCAD, run headless from the FEM environment, mesh and solve its bundled CalculiX cantilever and reproduce −86.93 mm? |
-| 4 | Does the PrusaSlicer CLI slice an STL headless and report whether support material was generated? |
+| 4 | Does a FreeCAD CAM Job run headless — operations recompute, G-code post-processes, and `PathSimulator` returns a stock mesh? |
 
 **Tasks.** Most of the time goes to M1.6, which builds the FEM environment:
 
@@ -205,13 +205,15 @@ M1.1 (#1) and M1.2 (#2) are closed. M2.8 (#51) is merged into M2.7. M1.11 (#58) 
 3. Freeze the result as an explicit lock (package URLs plus SHA-256) and create `vendor/fem-env` from that lock.
 4. Commit the lock, not the environment.
 
-M1.7 then runs `ccxtools` on FreeCAD's bundled cantilever through `vendor/fem-env/bin/python`, and it doubles as V1's first half. M1.11 pins the PrusaSlicer 2.9.6 app by URL and SHA-256 and slices one overhanging test STL with supports on.
+M1.7 then runs `ccxtools` on FreeCAD's bundled cantilever through `vendor/fem-env/bin/python`, and it doubles as V1's first half. M1.11 builds a CAM Job headless on a pocketed test block, using the pattern FreeCAD's own `CAMTests` use (`Path.Main.Job.Create`, `Path.Op.Profile.Create`, GUI calls guarded off). It adds Adaptive, Profile and Drilling operations from a committed ToolBit library, post-processes G-code, and replays it through `PathSimulator.PathSim` (`BeginSimulation`, `ApplyCommand`, `GetResultMesh`). A test block with a deliberate undercut must show residual stock, and the same block without it must not. Time each step, because the check runs on every evaluation.
 
 **Gate 2b fallbacks, in preference order:**
 
 1. Add a multimodal path to your own `glc_v5` fork. It is your fork, and this doubles as a course Part-2 contribution.
 2. Call the vision model directly from the capability, route only text through the gateway, and document the deviation.
 3. Drop to a numeric-plus-region-label encoding, and revise the intent's vision claim honestly.
+
+**Gate 4 fallback.** If `PathSimulator` will not run headless, keep the CAM Job and `cam_ops` rule, and replace `residual_stock` with ray-cast tool access along each setup direction plus concave radius ≥ smallest tool radius (D-11).
 
 **Gate 3 fallback.** If conda-forge FreeCAD will not run headless, use the signed FreeCAD 1.1.3 app's `FreeCADCmd` with conda-forge `calculix` beside it. The package pins change; the architecture does not.
 
@@ -234,7 +236,8 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
 1. **Build the parametric `ge_bracket` and freeze it** (M2.1).
    - Build a FreeCAD document with a Spreadsheet of named parameters: base plate, four bolt bosses, two clevis arms, arm-root fillets, and base pockets or lightening holes. Place the interfaces at SimJEB's coordinates: pin Ø 19.05 mm, bolt holes Ø 9.525 mm.
    - Write the frozen record: baseline values, at most six parameters, each with its D-05 kind and min/max/step, and every thickness ≥ 1.27 mm.
-   - Write the D-06 region labels, and one **geometric face predicate** per constraint and mesh group (D-04).
+   - Write the D-06 region labels, and one **geometric face predicate** per constraint, mesh group and CAM operation (D-04).
+   - Declare the `cnc_3axis` setups (top, bottom, side for the pin bore and arm profile) and the ToolBit library. Record, for each `fillet_radius`, the smallest tool radius that can cut it.
    - Record why the other parts are deferred, and the `L_bracket` fallback trigger.
 2. **Freeze the load case** (M2.2).
    - LC1 `(0, 0, +35,585.77) N` in the SimJEB frame. Ti-6Al-4V at 903 MPa, SF 1.5 (602 MPa allowable), and a displacement limit of 1.1 × baseline.
@@ -282,7 +285,7 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
    - Compare displacement only.
    - SimJEB used RBE3 at the pin. If our pin model differs, a disagreement near the bore is expected, so record it rather than tuning it away.
 7. **Renderer** (M3.7): contour PNG with a fixed camera set and a legend range locked across a run (`REQ-OPT-001`).
-8. **Budget check** (M3.8): measure per-iteration wall time and confirm or revise D-13. Levers, in order: half model, min element size, and only then a coarser base mesh.
+8. **Budget check** (M3.8): measure per-iteration wall time, CAM jobs and simulation included, and confirm or revise D-13. Levers, in order: half model, min element size, and only then a coarser base mesh.
 9. *Should:* **V2** (M3.6), a stepped bar against a published `Kt`.
 
 ---
@@ -302,7 +305,7 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
 5. Single-edit enforcement **in the runtime**, with mesh-altering proposals refused. The edit is a spreadsheet cell or a material ID and nothing else. *(`REQ-OPT-003`, D-21)*
 6. Prediction record in the D-07 schema, persisted with its rationale before the tool call. *(`REQ-OPT-004`)*
 7. Prediction scoring against the next valid evaluation: region, direction and band as three booleans. *(`REQ-OPT-005`)*
-8. Material library JSON: 5 metal-AM alloys, all D-10 fields with explicit nulls and a cited source each, plus the exclusion rule. Ti-6Al-4V uses E = 113.8 GPa and ν = 0.342, matching SimJEB, with one cited density; SimJEB's deck (4.43 g/cm³) and its metadata (4.47) disagree. *(`REQ-OPT-006`, `REQ-OPT-007`)*
+8. Material library JSON: 5 machinable alloys — Ti-6Al-4V, Al 7075-T6, Al 6061-T6, 17-4PH, 4140 — with all D-10 fields, a cited machinability index, with explicit nulls and a cited source each, plus the exclusion rule. Ti-6Al-4V uses E = 113.8 GPa and ν = 0.342, matching SimJEB, with one cited density; SimJEB's deck (4.43 g/cm³) and its metadata (4.47) disagree. *(`REQ-OPT-006`, `REQ-OPT-007`)*
 
 > Task 1 will cost a day if it is missed. The harness deduplicates identical capability calls, but re-solving the same parameters after an edit is not a duplicate. Without the declaration, the loop silently stops iterating and looks like a hang.
 
@@ -317,13 +320,13 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
 **Tasks**
 
 1. Structural and mass verifiers. Invalid results are classified `unverified` and never pass. *(`REQ-VER-001`, `REQ-VER-002`, `REQ-VER-004`)*
-2. `metal_am` check. For overhang, FreeCAD exports an STL, the PrusaSlicer CLI slices it with a pinned config (45° threshold, supports on), and any support extrusion is a fail. For minimum wall, a ray cast on the FreeCAD shape checks ≥ 1.27 mm. A slicer failure is `invalid`. *(`REQ-VER-003`, D-11)*
+2. `cnc_3axis` check in the CAM Workbench, per declared setup: create the CAM Job headless with Adaptive, Profile and Drilling operations on predicate-selected faces; recompute; run Sanity Check; post-process G-code; replay through `PathSimulator`. The rules are `cam_ops` (non-empty paths, no errors), `residual_stock` (every part-surface sample reached within 0.2 mm by some setup, no setup cutting into the part) and `min_wall` (≥ 1.27 mm by ray cast). A CAM error or missing simulator result is `invalid`. Builds on Gate 4. *(`REQ-VER-003`, D-11)*
 3. Singularity protocol: halve the `MeshRegion` size, apply the 20% rise rule, and classify the result unverified unless it survives. Calibrate the threshold on `ge_bracket`, with `arm_root_fillet` at nominal against zero, at 3–4 refinement levels, so the threshold sits on a curve and not a slope. *(`REQ-VER-005`, D-12)*
 4. Load-direction check, comparing task intent with the generated `.inp`. *(`REQ-VER-006`)*
 5. The 3-task set — geometry-led, material-led, unachievable-target — each with an executable predicate that reads only structured output. Calibrate the unachievable target against the explored space and SimJEB's LC1 results. *(`REQ-DEL-004`, D-15)*
 6. The 3-mutant corpus with paired controls: `arm_root_fillet = 0`, LC1 sign-flipped, and the Ti card in Pa declared as MPa. *(`REQ-DEL-005`, D-16)*
 7. Detection-fraction and false-positive reporting, with zero executions reported as `not evaluated`. *(`REQ-DEL-005`)*
-8. Protected paths enforced over verifiers, tasks, materials and mutations, with every refusal recorded. *(`REQ-DEL-011`, D-20)*
+8. Protected paths enforced over verifiers, tasks, materials, mutations and tooling, with every refusal recorded. *(`REQ-DEL-011`, D-20)*
 9. Offline rescoring with model and solver access disabled. *(`REQ-DEL-007`)*
 10. The FEA-reasoning `SKILL.md`: behaviour in markdown, never authority. Write it from [fem-geometry-preparation §12–13](fem-geometry-preparation.md) — the four singularity causes and four remedies, why displacement converges when stress does not, and why a rigid support at a bolt hole reads hot.
 
@@ -340,7 +343,7 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
 1. Budget and repeat-failure ceilings, and the six terminal outcomes. *(`REQ-OUT-001`, `REQ-OUT-002`)*
 2. Explored frontier with scoped infeasibility wording, never a universal claim. *(`REQ-OUT-003`)*
 3. Recommendation linked to baseline comparison, change history and stored evidence. *(`REQ-OUT-004`)*
-4. Clean-machine run on a fresh macOS user account: one command that installs the FEM lock, the harness lock and PrusaSlicer, then runs a bundled task. This is on 2 Oct, not the last day. *(`REQ-DEL-003`)*
+4. Clean-machine run on a fresh macOS user account: one command that installs the FEM lock and the harness lock, then runs a bundled task. This is on 2 Oct, not the last day. *(`REQ-DEL-003`)*
 5. README someone can follow, and the demo video, including the failure cases and the refusal. The README cites SimJEB and the GE challenge as their licences require, and says the SimJEB files are fetched, not shipped.
 6. *Should:* skill A/B, one task with and without `SKILL.md`. *(`REQ-DEL-013`)*
 7. *Should:* run report covering mass delta, margins, prediction accuracy and mutation detection. *(`REQ-DEL-012`)*
@@ -356,12 +359,12 @@ The intent's stack, on macOS arm64. Availability was checked on 2026-09-17; noth
 | Parametric CAD | FreeCAD 1.1.3, conda-forge `osx-arm64` (Python 3.11) | **Available** — build `freecad-1.1.3-py311h7740527_0`. Headless run unproven (Gate 3) |
 | Mesh | Gmsh 4.15.2, conda-forge, driven by `FemMeshGmsh` | **Available** — FreeCAD's conda package depends on it |
 | FEA | CalculiX `ccx` 2.23, conda-forge `calculix-2.23-pl5321h33a25c5_4` | **Available** — links arpack, BLAS, gfortran and OpenMP, so it installs from the lock, not a zip |
-| Manufacturability | PrusaSlicer 2.9.6, signed macOS app, CLI | **Available** as a Homebrew cask and a direct download. CLI slicing unproven (Gate 4) |
+| Manufacturability | FreeCAD CAM Workbench and `PathSimulator`, in the same conda-forge FreeCAD | **Available**. FreeCAD's own `CAMTests` build Jobs and operations headless, and `PathSimulator` is an App module with a Python API. Not yet run here (Gate 4) |
 | Result parsing and render | `ccx2paraview`, `pyvista` in the FEM environment | Off-screen rendering on macOS unproven (Gate 2a) |
 | Harness | S17Code fork, its own `uv` lock | Forked and green (M1.1) |
 | Reference data | SimJEB sample (design 148) and metadata, Harvard Dataverse | Pins in [simjeb-dataset.md](simjeb-dataset.md). Dev-time only, never shipped |
 
-Three packaged artifacts are fetched, not committed: the FEM environment, from an explicit lock of package URLs plus SHA-256; the PrusaSlicer app, by URL and SHA-256; and CalculiX, which is GPL while this repo is public. SimJEB follows the same fetch-and-pin rule, because its CAD is licensed non-commercial.
+Nothing binary is committed. The FEM environment — FreeCAD with its FEM and CAM workbenches, Gmsh, and CalculiX (GPL, while this repo is public) — is fetched from an explicit lock of package URLs plus SHA-256. The ToolBit library and post-processor choice are committed as data. SimJEB follows the same fetch-and-pin rule, because its CAD is licensed non-commercial.
 
 ---
 
@@ -370,7 +373,7 @@ Three packaged artifacts are fetched, not committed: the FEM environment, from a
 **`ge_bracket` — the demo part.** A parametric FreeCAD rebuild of the GE jet engine bracket: base plate, four bolt bosses, two clevis arms and arm-root fillets around SimJEB's interface coordinates. It uses LC1 vertical, Ti-6Al-4V at 903 MPa, SF 1.5, and the half model about the clevis midplane.
 
 - The peak should land at the arm-root fillet or the bolt bosses. M2.2 predicts which, and M2.5 checks the prediction, so a correct visual reading is a checkable claim.
-- The mass levers are wall thickness (base, arms), fillet radius, and pocket or lightening-hole size.
+- The mass levers are wall thickness (base, arms), fillet radius, and pocket or lightening-hole size. All are ordinary 2.5D milling features, and the original GE bracket was a machined part.
 - Setting `arm_root_fillet` to 0 gives the sharp-corner mutant, and flipping LC1 gives the wrong-direction mutant.
 - The refusal target has an external reference: 381 human designs in SimJEB.
 
@@ -394,7 +397,9 @@ Three packaged artifacts are fetched, not committed: the FEM environment, from a
 | **Second-order meshing inverts elements at small fillet radii** | The agent's own `fillet_radius` edit fails at mesh time, not solve time | M2.3 meshes at the minimum radius. D-24 retries once with `SecondOrderLinear`, then marks the candidate `unverified` |
 | `ge_bracket` solves too slowly for D-13 | The loop cannot finish 8 evaluations | Measured in M2.5, with the 21 Sep trigger. Levers in order: half model (D-23), min element size (D-24), coarser base mesh last, then `L_bracket` |
 | No `*DISTRIBUTING COUPLING` in FreeCAD | The pin-load model differs from SimJEB's RBE3, so V3 disagrees near the bore | M2.2 chooses the pin model explicitly, and V3 records disagreement near the bore rather than tuning it away |
-| PrusaSlicer is an FDM slicer, not an LPBF one | The overhang verdict is a proxy | Stated in D-11. Threshold and config are pinned, and a slicer failure is `invalid`, never a pass |
+| `PathSimulator` will not run headless, or is too slow at a useful resolution | No `residual_stock` rule, or evaluations blow D-13 | Gate 4 measures both. Fallback: ray-cast tool access plus minimum concave radius (D-11). Simulator resolution is task data, like mesh size |
+| CAM operations reference faces that renumber after a parameter change | Operations cut the wrong feature, or produce empty paths that read as "unmachinable" | The same D-04 predicates select CAM faces; M2.4 checks them at parameter bounds, and a zero or multiple match is `unverified`, not a manufacturing fail |
+| The sharp-fillet mutant fails manufacturability as well as singularity | Detection could be credited to the wrong check | D-16 scores that mutant on the `REQ-VER-005` flag only |
 | Off-screen render fails on macOS | No contour to read | Gate 2a. Fallback: matplotlib over the surface mesh |
 | Label chain does not survive into the `.inp` | Spatial claims become unscoreable | M2.4, with element-centroid membership as the fallback (D-06) |
 | The contour renders but cannot be read | The vision step degrades to noise while every metric still looks fine | M2.6, judged by eye |
@@ -414,7 +419,7 @@ Ranked. The first two are settled by M1 and M2; the rest are live.
 4. **Single process only.** The harness's JSON stores are unsafe across processes, so candidates cannot be evaluated in parallel. That is a real throughput ceiling.
 5. **The Route B rubric is unstated.** The Session 16 and 17 rubrics in the class notes are different assignments.
 6. **`OD-B` and `OD-C` are unset** — release thresholds and numeric tolerances. They are correctly deferred to M5 data, but required before calling anything acceptable.
-7. **PrusaSlicer's support decision is geometry-based, but its thresholds are FDM-tuned.** Whether its 45° threshold setting maps cleanly onto an LPBF guideline is checked in Gate 4, not assumed.
+7. **Machining the arm-root fillet needs a side setup.** The fillet's axis is horizontal, so a flat endmill from +z cannot cut it; a Profile from the side setup can. Whether a 2.5D Profile on the arm outline is enough, or a 3D operation (which needs `opencamlib`, not in the lock) is required, is settled in M2.1 on the real geometry.
 
 ---
 
@@ -431,13 +436,13 @@ v0.4's questions about the `S17Code` fork and the reusable base are closed: the 
 1. **Nothing is built on unvalidated physics.** V1 and V3 pass before M4 starts.
 2. **The vision path is proven before it is depended on.** Gate 2b comes before all engineering work.
 3. **The chain is walked by hand before it is automated.** One part and one load case, with every intermediate artifact inspected. The integration shape is measured, not assumed.
-4. **The judge is unreachable.** Verifiers, tasks, materials and mutations are protected paths.
+4. **The judge is unreachable.** Verifiers, tasks, materials, mutations and the ToolBit library are protected paths.
 5. **The solver is a capability, not an allowlisted command.** A tight allowlist and a typed contract, crossing a process boundary into the FEM environment.
 6. **Re-solving is not a duplicate.** Declared rerunnable, and asserted by a test.
-7. **Binaries are fetched, never committed.** CalculiX, FreeCAD and PrusaSlicer are pinned by URL and SHA-256.
+7. **Binaries are fetched, never committed.** FreeCAD, Gmsh and CalculiX come from an explicit lock of URLs and SHA-256.
 8. **Reference data is fetched, never committed, and never treated as ground truth.** SimJEB displacements are a cross-check; its first-order stresses are not a target.
 9. **Faces are found by geometry, never by index.** Every constraint and mesh group is re-selected after every recompute.
-10. **No new reference documents until M4 exits.** The stack's documentation is captured, and any further research is attached to the task that needs it.
+10. **No new reference documents until M4 exits.** The stack's documentation — FEM, CAM, geometry preparation — is captured, and any further research is attached to the task that needs it.
 
 ---
 
@@ -449,4 +454,4 @@ v0.4's questions about the `S17Code` fork and the reusable base are closed: the 
 | 0.2 | 2026-09-09 | Design section and execution order |
 | 0.3 | 2026-09-12 | M0.5 hand walk added |
 | 0.4 | 2026-09-13 | Three-week timeline with per-task dates; GE bracket and SimJEB as reference inputs |
-| 0.5 | 2026-09-17 | Re-planned from 17 Sep with a fixed 3 Oct end. Milestones renamed M1–M6 to match the board. macOS arm64 only. The intent's stack (FreeCAD, Gmsh, CalculiX, PrusaSlicer) restored. `ge_bracket` is the demo part, with `L_bracket` as fallback. Gate 4 (PrusaSlicer) added as M1.11; M2.8 merged into M2.7; V3 promoted and V2 made Should; 3 tasks, 3 mutants, 5 alloys; skill A/B and run report made Should. Dated cut triggers replace the cut list. FreeCAD-reference changes 1–11 folded into tasks |
+| 0.5 | 2026-09-17 | Re-planned from 17 Sep with a fixed 3 Oct end. Milestones renamed M1–M6 to match the board. macOS arm64 only. The intent's stack restored and centred on FreeCAD: FEM Workbench for Gmsh and CalculiX, CAM Workbench for manufacturability (no slicer). `ge_bracket` is the demo part, with `L_bracket` as fallback. Gate 4 (headless CAM Job and `PathSimulator`) added as M1.11; M2.8 merged into M2.7; V3 promoted and V2 made Should; 3 tasks, 3 mutants, 5 machinable alloys; skill A/B and run report made Should. Dated cut triggers replace the cut list. FreeCAD-reference changes 1–11 folded into tasks |

@@ -5,7 +5,7 @@
 | Source | [GrabCAD — GE jet engine bracket challenge](https://grabcad.com/challenges/ge-jet-engine-bracket-challenge) |
 | Sponsor | GE Aviation, run on GrabCAD, June–December 2013 |
 | Accessed | 2026-09-13 |
-| Status | **Adopted as the demo part** `ge_bracket` in requirements v0.5 (D-14): a parametric FreeCAD rebuild, LC1, `metal_am` profile. Section 7's CadQuery suggestion is superseded by D-04 |
+| Status | **Adopted as the demo part** `ge_bracket` in requirements v0.5 (D-14): a parametric FreeCAD rebuild, LC1, checked for **3-axis CNC machining** in FreeCAD's CAM Workbench (D-11) — a departure from the challenge's additive brief, consistent with the original machined part (§1). Section 7's CadQuery, FDM and `metal_am` suggestions are superseded by D-04 and D-11 |
 | Related | [SimJEB dataset](simjeb-dataset.md) · [Requirements](requirements.md) · [Plan](plan.md) · [Solution architecture](solution-architecture.md) |
 
 This page turns the challenge web page into markdown. Sections 1–5 give the
