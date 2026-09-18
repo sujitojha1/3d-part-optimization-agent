@@ -86,7 +86,7 @@ coordinates in every design, within picking accuracy.
 
 | File | Content |
 | --- | --- |
-| `<id>.csv` | One row per mesh node: `id, surf, x, y, z`, then for each prefix `ver_`, `hor_`, `dia_`, `tor_`: `xdisp, ydisp, zdisp, magdisp, stress`. `surf` = 1 marks a surface node. Units mm and MPa |
+| `<id>.csv` | One row per mesh node: `id, surf, x, y, z`, then for each prefix `ver_`, `hor_`, `dia_`, `tor_`: `xdisp, ydisp, zdisp, magdisp, stress`. `surf` codes the node: 0 interior, 1 free surface, 2 bolt-hole surface, 3 pin-bore surface (read from design 148, where the codes 2 and 3 sit at the bolt holes and pin). Every nonzero code is on the surface mesh, and design 148's peak LC1 stress is on a `surf` = 2 node, so filter on `surf` ≠ 0, not `surf` = 1. Units mm and MPa |
 | `<id>.vtk` | Legacy VTK binary unstructured grid (`# vtk DataFile Version 2.0`, "Created by Gmsh"). Node count matches the CSV |
 | `<id>.obj` | Wavefront OBJ surface mesh, written by VTK |
 | `<id>.fem` | Full OptiStruct/Nastran-format bulk deck (GRID, CTETRA, RBE2, RBE3, SPC, FORCE, MOMENT, MAT1) |
