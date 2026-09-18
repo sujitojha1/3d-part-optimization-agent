@@ -232,6 +232,15 @@ Poisson contraction across the whole root section, which no beam formula models.
 *L*/*h* = 8 this box is also stubby enough that Euler–Bernoulli is itself the
 approximation. Section 7 turns this into a change to M3.5.
 
+**Measured in Gate 3 (2026-09-19): the low answer is mostly the mesh.** `scripts/gate3_ccx.py`
+reproduces −86.9271 mm from the example's bundled mesh, which is only 79 Tet10 elements. Re-meshed
+by FemMeshGmsh as Tet10, the same analysis gives −87.57 mm at the default size, −87.77 mm at
+500 mm and −87.97 mm at 250 mm. That converges *above* closed form, as shear deformation
+predicts. So −86.93 mm is a reference for this exact mesh, not a converged answer, and the
+clamped-face stiffening above is at most a small part of the gap. Separately, a FemMeshGmsh
+object built in Python defaults to `ElementOrder` "1st". Those Tet4 elements give about −36 mm,
+some 59 % too stiff, and the value changes between runs. Set `ElementOrder = "2nd"` explicitly.
+
 ---
 
 ## 5. The comprehensive table
