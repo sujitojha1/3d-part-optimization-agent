@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "tools": [
+    {"nr": 1, "path": "Bit/6mm_Endmill.fctb"},
+    {"nr": 2, "path": "Bit/3mm_Endmill.fctb"},
+    {"nr": 3, "path": "Bit/5mm_Drill.fctb"}
+  ]
+}
