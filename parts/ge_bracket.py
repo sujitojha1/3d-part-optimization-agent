@@ -37,8 +37,7 @@ PIN_D = 19.05
 CLEVIS_GAP = 21.64  # inner arm faces, measured -85.52 and -63.88
 
 # Fixed design choices: not agent parameters.
-BOSS_D = 20.0  # clears the 14.173 mm nut-face OD
-BOSS_RAISE = 3.0  # boss top above the base top
+BOSS_D = 20.0  # base lobe round each bolt; clears the 14.173 mm nut-face OD
 FOOT_AHEAD = 35.0  # arm foot runs from the lug's -x tangent to pin x + this
 POCKET_CLEAR_ARM = 12.0  # pocket edge to arm outer face, in y
 POCKET_WALL = 6.0  # pocket edge to base outline
@@ -89,8 +88,7 @@ def layout(p):
     y_in = (py + CLEVIS_GAP / 2, py - CLEVIS_GAP / 2)  # +y arm, -y arm
     y_out = (y_in[0] + p["arm_thickness"], y_in[1] - p["arm_thickness"])
     return {"lug_r": lug_r, "x0": px - lug_r, "x1": px + FOOT_AHEAD,
-            "y_in": y_in, "y_out": y_out, "base_top": p["base_thickness"],
-            "boss_top": p["base_thickness"] + BOSS_RAISE}
+            "y_in": y_in, "y_out": y_out, "base_top": p["base_thickness"]}
 
 
 def _base_outline(g):
@@ -160,15 +158,16 @@ def build_shape(p):
     g = layout(p)
     outline = _base_outline(g)
     solid = outline.extrude(Vector(0, 0, g["base_top"]))
-    parts = [Part.makeCylinder(BOSS_D / 2, g["boss_top"], Vector(x, y, 0)) for x, y in BOLT_CENTRES]
-    parts += [_arm(g, g["y_in"][0], g["y_out"][0]), _arm(g, g["y_out"][1], g["y_in"][1])]
+    # The bosses are the outline's lobes round each bolt, flush with the base
+    # top: a raised boss left a sharp root corner that was singular under LC1.
+    parts = [_arm(g, g["y_in"][0], g["y_out"][0]), _arm(g, g["y_out"][1], g["y_in"][1])]
     solid = solid.fuse(parts).removeSplitter()
     solid = solid.makeFillet(p["arm_root_fillet"], _arm_root_edges(solid, g))
 
     px, py, pz = PIN
     span = 400.0
     cuts = [Part.makeCylinder(PIN_D / 2, span, Vector(px, py - span / 2, pz), Vector(0, 1, 0))]
-    cuts += [Part.makeCylinder(BOLT_HOLE_D / 2, g["boss_top"] + 2, Vector(x, y, -1))
+    cuts += [Part.makeCylinder(BOLT_HOLE_D / 2, g["base_top"] + 2, Vector(x, y, -1))
              for x, y in BOLT_CENTRES]
     cuts.append(Part.makeCylinder(p["centre_hole_diameter"] / 2, g["base_top"] + 2,
                                   Vector(CENTRE_HOLE_X, py, -1)))
@@ -270,12 +269,6 @@ def _bolt_hole(i):
 def _boss_side(i):
     x, y = BOLT_CENTRES[i]
     return lambda f, g: _cyl(f, BOSS_D / 2, (0, 0, 1)) and _axis_through(f, x, y)
-
-
-def _boss_top(i):
-    x, y = BOLT_CENTRES[i]
-    return lambda f, g: (_plane(f, (0, 0, 1), g["boss_top"], "z")
-                         and math.hypot(f.CenterOfMass.x - x, f.CenterOfMass.y - y) < 1)
 
 
 def _pin_bore(side):
@@ -388,7 +381,6 @@ def _pocket_wall(f, g):
 PREDICATES = {
     **{f"bolt_hole_{i + 2}": _bolt_hole(i) for i in range(4)},
     **{f"boss_side_{i + 2}": _boss_side(i) for i in range(4)},
-    **{f"boss_top_{i + 2}": _boss_top(i) for i in range(4)},
     "pin_bore_pos_y": _pin_bore(1), "pin_bore_neg_y": _pin_bore(-1),
     "lug_pos_y": _lug(1), "lug_neg_y": _lug(-1),
     "arm_outer_pos_y": _arm_face(1, "outer"), "arm_outer_neg_y": _arm_face(-1, "outer"),
@@ -430,12 +422,12 @@ REGIONS = {
                         for w in ("inner", "outer", "x0", "x1")] + ["fillet_corner"],
     "base_plate": ["base_top", "base_bottom", "centre_hole", "pocket_floor_pos_y",
                    "pocket_floor_neg_y", "base_side", "pocket_wall"],
-    "bolt_boss": [f"{n}_{i}" for i in (2, 3, 4, 5) for n in ("bolt_hole", "boss_side", "boss_top")],
+    "bolt_boss": [f"{n}_{i}" for i in (2, 3, 4, 5) for n in ("bolt_hole", "boss_side")],
 }
 # D-11 cnc_3axis: setups, and the operations each runs on predicate-selected faces.
 CAM = {
     "top_+z": {"Profile": ["base_bottom", "centre_hole"] + [f"bolt_hole_{i}" for i in (2, 3, 4, 5)],
-               "Adaptive": ["base_top"] + [f"boss_top_{i}" for i in (2, 3, 4, 5)]},
+               "Adaptive": ["base_top"]},
     "bottom_-z": {"Adaptive": ["pocket_floor_pos_y", "pocket_floor_neg_y"]},
     "side_+y": {"Profile": ["lug_pos_y", "arm_slope_pos_y", "arm_end_pos_y", "pin_bore_pos_y"],
                 "Adaptive": ["arm_outer_pos_y"]},

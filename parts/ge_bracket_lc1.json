@@ -1,0 +1,100 @@
+{
+  "name": "LC1",
+  "part": "ge_bracket",
+  "frame": "SimJEB: mm, +z up, 'out' is -x",
+  "units": {
+    "length": "mm",
+    "force": "N",
+    "stress": "MPa"
+  },
+  "load": {
+    "vector_n": [
+      0.0,
+      0.0,
+      35585.77
+    ],
+    "magnitude_n": 35585.77,
+    "source": "SimJEB 148.fem FORCE 2 on node 129265 (8,000 lbf vertical)",
+    "applied_at": [
+      -21.036,
+      -75.065,
+      44.801
+    ],
+    "load_faces": [
+      "pin_bore_pos_y",
+      "pin_bore_neg_y"
+    ],
+    "pin_model": {
+      "choice": "rigid",
+      "freecad": "Rigid Body Constraint on pin_bore_pos_y and pin_bore_neg_y; reference node at applied_at; translations x, y, z in Load mode with the vector's components; rotations Free",
+      "written_as": "*RIGID BODY with REF NODE; the vector is one CLOAD on the reference node",
+      "rejected": "half_bore: Force on the upper half of each bore (splits the bore faces; FreeCAD writes 0.118 % less force than declared)"
+    }
+  },
+  "support": {
+    "predicates": [
+      "bolt_hole_2",
+      "bolt_hole_3",
+      "bolt_hole_4",
+      "bolt_hole_5"
+    ],
+    "model": "FreeCAD Fixed on each bolt-hole face: every node on the hole held in all DOF, as SimJEB's RBE2 spiders with SPC 123456",
+    "singular": true,
+    "zone": {
+      "radius_mm": 10.0,
+      "about": "each bolt axis, in plan, full height (the boss lobe)",
+      "why": "fixed hole faces are a stress singularity: the peak on a hole edge moves between holes and does not converge with refinement"
+    }
+  },
+  "material": {
+    "name": "Ti-6Al-4V",
+    "youngs_mpa": 113800,
+    "poisson": 0.342,
+    "density_kg_m3": 4430,
+    "yield_mpa": 903.2,
+    "source": "E, nu, rho from SimJEB 148.fem MAT1; yield 131 ksi set by the challenge"
+  },
+  "safety_factor": 1.5,
+  "allowable_vm_mpa": 602.1,
+  "displacement_limit": {
+    "quantity": "max nodal displacement magnitude",
+    "rule": "1.1 x baseline",
+    "baseline_mm": 0.4506,
+    "limit_mm": 0.4957,
+    "measured": "rigid pin model, FemMeshGmsh 2nd order, HighOrderOptimize Optimization, max 4 mm, min 1 mm; re-measure when M2.3 freezes D-24 sizing"
+  },
+  "model_extent": "full",
+  "mutant_wrong_direction": {
+    "vector_n": [
+      0.0,
+      0.0,
+      -35585.77
+    ],
+    "note": "D-16: LC1 with the sign flipped"
+  },
+  "stress_check": {
+    "quantity": "max nodal von Mises outside the support zone",
+    "limit_mpa": 602.1,
+    "also_report": "raw max von Mises and its location, flagged as the support singularity"
+  },
+  "model_extent_why": "D-23 does not hold: the SimJEB bolt pattern is not symmetric about the clevis midplane (ge-bracket-part.md section 7)",
+  "baseline_result": {
+    "peak_vm_outside_support_zone_mpa": 457.8,
+    "at_mm": [
+      -13.43,
+      -136.79,
+      0.0
+    ],
+    "region": "base_plate",
+    "raw_peak_vm_mpa": 781.0,
+    "raw_peak_region": "bolt hole 3 edge (support singularity)",
+    "arm_root_fillet_peak_mpa": 255.7,
+    "max_disp_mm": 0.4506,
+    "reaction_by_bolt_fz_n": {
+      "bolt_hole_2": 3520.0,
+      "bolt_hole_3": -20938.4,
+      "bolt_hole_4": -21208.9,
+      "bolt_hole_5": 3041.6
+    }
+  }
+}

@@ -43,8 +43,10 @@ never refers to an edge or face index. Open the document with the repository roo
 - **Base plate:** the convex hull of the four bolt centres and the two arm footprints, offset
   outward by the boss radius, extruded to `base_thickness`. The outline is convex, so it has
   no inside corners for a tool to miss.
-- **Bolt bosses:** Ø 20 cylinders, 3 mm proud of the base top. They clear the 14.173 mm
-  nut-face OD. The bolt holes go through boss and base.
+- **Bolt bosses:** the outline's Ø 20 lobes round each bolt, **flush with the base top**.
+  They clear the 14.173 mm nut-face OD, and the nut seats on the base top. The bolt holes go
+  through the base. M2.2 removed the original 3 mm raise because its sharp root corner was a
+  singularity under LC1 ([ge-bracket-lc1.md §5](ge-bracket-lc1.md)).
 - **Clevis arms:** two plates normal to y, each a lug (radius 9.525 + `lug_wall` about the
   pin) hulled onto a foot. The foot runs along x from the lug's −x tangent to pin x + 35 mm.
 - **Arm-root fillets:** `arm_root_fillet` on the full root loop of each arm: the two long
@@ -54,7 +56,7 @@ never refers to an edge or face index. Open the document with the repository roo
   4 mm inside corners.
 - **Centre hole:** through the base at (39.5, pin y), on the clevis midplane.
 
-Fixed choices, not agent parameters: boss Ø 20 and 3 mm raise, foot length, and the pocket
+Fixed choices, not agent parameters: boss Ø 20, foot length, and the pocket
 clearances and corner radius. Material Ti-6Al-4V at 4.43 g/cm³, from the SimJEB deck.
 
 ## 3. Parameter record (D-05)
@@ -68,8 +70,8 @@ clearances and corner radius. Material Ti-6Al-4V at 4.43 g/cm³, from the SimJEB
 | `base_pocket_depth` | `pocket_depth` | 3.0 | 1.0 | 8.0 | 0.5 |
 | `centre_hole_diameter` | `hole_diameter` | 14.0 | 8.0 | 20.0 | 1.0 |
 
-All values are in mm. Baseline mass is **1,211 g**, and the range over all 64 bound corners
-is 587–1,821 g. SimJEB 148 weighs 582 g.
+All values are in mm. Baseline mass is **1,199 g**, and the range over all 64 bound corners
+is 574–1,808 g. SimJEB 148 weighs 582 g.
 
 - **Thickness floor:** the thinnest section anywhere in the box is 4.0 mm (pocket floor at
   `base_thickness` 12, `base_pocket_depth` 8), above the 1.27 mm floor. `lug_wall` ≥ 5 and
@@ -94,7 +96,7 @@ label whatever those leave, and they may match any number of faces.
 | `clevis_arm` | per side: `lug_*` (cylinder r = 9.525 + `lug_wall` about the pin), `arm_outer_*` and `arm_inner_*` (planes ⟂ y at the arm faces), `arm_end_*` (plane ⟂ x at the lug's −x tangent), `arm_slope_*` (plane with normal in +x+z) | — |
 | `arm_root_fillet` | per side: `fillet_inner_*`, `fillet_outer_*`, `fillet_x0_*`, `fillet_x1_*`: non-planar, starting on the base top, beside that edge of the arm footprint | `fillet_corner`: corner blends OCC adds where two root fillets meet. Seen at 8 mm, not at 5 mm |
 | `base_plate` | `base_top`, `base_bottom`, `centre_hole`, `pocket_floor_pos_y`, `pocket_floor_neg_y` | `base_side` (outline walls), `pocket_wall` |
-| `bolt_boss` | per interface 2–5: `bolt_hole_N` (cylinder r 5.15, axis ∥ z through that bolt), `boss_side_N`, `boss_top_N` | — |
+| `bolt_boss` | per interface 2–5: `bolt_hole_N` (cylinder r 5.15, axis ∥ z through that bolt), `boss_side_N` (the outline's r 10 lobe round that bolt) | — |
 | `bulk` | — | Empty on this part: every face has a label |
 
 **Constraints use:** `bolt_hole_2`–`5` (fixed interfaces) and `pin_bore_pos_y` and
@@ -113,7 +115,7 @@ cutting edge), a 3 mm endmill (20 mm) and a 5 mm drill.
 
 | Setup | Operation → predicate-selected faces | Reach needed |
 | --- | --- | --- |
-| `top_+z` | Profile: outline (`base_bottom` contour), `centre_hole`, `bolt_hole_2`–`5`. Adaptive: `base_top`, `boss_top_*` | holes ≤ 27 mm (boss top at max base) |
+| `top_+z` | Profile: outline (`base_bottom` contour), `centre_hole`, `bolt_hole_2`–`5`. Adaptive: `base_top` | holes ≤ 24 mm (at max base) |
 | `bottom_-z` | Adaptive: `pocket_floor_*` | ≤ 8 mm |
 | `side_+y`, `side_-y` | Profile: `lug_*`, `arm_slope_*`, `arm_end_*`, `pin_bore_*`. Adaptive: `arm_outer_*` | ≤ 12 mm (arm thickness) |
 | `end_-x`, `end_+x` | Profile: the four long `fillet_inner_*` and `fillet_outer_*`. Adaptive: `arm_inner_*` (the clevis slot) | half the foot, ≤ 29.8 mm |
@@ -130,6 +132,10 @@ may leave residual stock under any 2.5D operation. That is **unverified until M5
 only reachable from the ends.
 
 ## 6. Sizing solve — provisional, not M2.2
+
+*Superseded by [ge-bracket-lc1.md](ge-bracket-lc1.md), which solves the frozen LC1 record on
+the flush-boss part. These runs used the raised bosses, and the "outside the bosses" value
+here is the boss-root corner that M2.2 removed.*
 
 This solve was run by hand, only to check the baseline wasn't absurd. M2.2 owns the load
 record, the pin model and the pass/fail check. The setup: LC1 +35,585.77 N spread evenly on
