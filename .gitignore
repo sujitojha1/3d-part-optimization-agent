@@ -9,6 +9,3 @@ vendor/
 out/
 
 __pycache__/
-tooling/
-scripts/
-env/
