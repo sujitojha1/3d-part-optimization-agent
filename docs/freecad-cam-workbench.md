@@ -198,7 +198,10 @@ Tools, bits, and the Tool Library are managed through the ToolBit architecture: 
 
 **Not used:** 3D Surface and Waterline (experimental, and they need `opencamlib`), the dressups, 4th-axis, the Turning add-on, engraving, V-carve and thread milling.
 
-**Open until Gate 4:** whether `PathSimulator` runs headless on macOS arm64 from conda-forge FreeCAD, and how long one Job plus simulation takes at a useful resolution. If it fails, the fallback in D-11 is ray-cast tool access plus a minimum concave radius.
+**Gate 4 passed on 2026-09-18** (`python3 scripts/gate4_cam.py`, conda-forge FreeCAD 1.1.3 on macOS arm64). `scripts/cam_check.py` builds a 60 × 40 × 20 mm block with a filleted pocket and a through hole, then runs Profile, Adaptive and Drilling from the committed `tooling/` library, Sanity Check, the `refactored_linuxcnc` post processor and `PathSimulator` on a 0.25 mm heightmap. The clean block leaves 0 mm³ of residual stock. A copy with a 4 mm slot under an overhang leaves 620 mm³, up to 4.0 mm thick. One block takes about 0.7 s in process and 1.25 s as a subprocess, FreeCAD start-up included. So the D-11 fallback is not needed. What we learned:
+- FreeCAD 1.1.3's `PathUtils.findToolController` fails headless when a Job has more than one tool controller. `cam_check.py` installs a stand-in for the GUI prompt and then sets each operation's controller explicitly.
+- `ApplyCommand` takes straight moves only. Arcs are split into chords and drill cycles expanded into moves, as the legacy simulator does.
+- Residual stock is the simulated stock height minus the part's solid length in each column, so material trapped under an overhang counts. Cells at walls alias by one cell, so a cell counts only when its four neighbours are also above the 0.5 mm tolerance.
 
 ---
 

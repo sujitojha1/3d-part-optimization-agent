@@ -1,3 +1,14 @@
 docs/private_class_notes/*
 # SimJEB reference data (M1.10): licensed non-commercial, never commit
 data/
+
+# FEM environment (M1.6): micromamba, package cache and vendor/fem-env, built from env/*.lock
+vendor/
+
+# Run outputs: G-code, sanity reports, result JSON
+out/
+
+__pycache__/
+tooling/
+scripts/
+env/
