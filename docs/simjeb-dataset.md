@@ -46,6 +46,12 @@ here are small:
 Download URL pattern: `https://dataverse.harvard.edu/api/access/datafile/<id>`.
 The sample zip we fetched has SHA-256
 `ce91d436cc29f6c1e51aa7ee7ec6174d054f7d8370006ad15eae97da37c1c62f`.
+Fetch `all_bracket_metadata.tab` with `?format=original`. That returns the CSV as
+uploaded (149,888 bytes), which matches the MD5 above and has SHA-256
+`e6dae5909c899875112191a0dd80a1bfaa30769e696363f24931831936762dd2`. Without it,
+Dataverse serves a tab-separated copy it generated on ingest, with a different
+checksum. `scripts/fetch_simjeb.py` downloads both files by these IDs, checks
+their SHA-256, and unzips the sample into the gitignored `data/simjeb/`.
 
 ## 2. Simulation setup (read from the sample deck `148.fem`)
 
