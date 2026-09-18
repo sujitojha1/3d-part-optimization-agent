@@ -169,11 +169,10 @@ Dropped from v0.1 as redundant or merged, IDs retired and not reused: v0.1 `OPT-
 
 | ID | Question | Blocks |
 | --- | --- | --- |
-| OD-D | Can `glc_v5` carry an image part to the model? Nothing in the course material exercises that path, and the intent's central claim depends on it. | `REQ-OPT-001`, M1 Gate 2b |
 | OD-B | Release thresholds: prediction accuracy, mutation detection rate, control false-positive ceiling. | `REQ-DEL-004`, `REQ-DEL-005` |
 | OD-C | Numeric tolerances: mass comparison, load-direction angle, V1 signed band, V3 displacement agreement. | `REQ-VER-001`, `REQ-VER-006`, `REQ-OPT-005`, `REQ-DEL-009` |
 
-`OD-A` is **resolved**: the harness base is the owner's `S17Code` fork (plan M1.1, closed 2026-09-12). OD-D blocks work and is answered in M1 Gate 2b. OD-B and OD-C do not block building; they block declaring the result acceptable, and are set from M5 data rather than guessed now.
+`OD-A` is **resolved**: the harness base is the owner's `S17Code` fork (plan M1.1, closed 2026-09-12). `OD-D` is **resolved**: `glc_v5` carries an image part unmodified, through both `/v1/vision` and an OpenAI-shape `image_url` block on `/v1/chat`, and routes it past the non-vision Ollama slot to Gemini (plan M1.5 Gate 2b, `scripts/gate2b_vision.py`, 2026-09-19). No fallback is needed. OD-B and OD-C do not block building; they block declaring the result acceptable, and are set from M5 data rather than guessed now.
 
 ## 8. Execution order
 
@@ -195,3 +194,4 @@ Sequencing, the M1 gates, the risk register and the cut list live in **[plan.md]
 | 0.3 | 2026-09-09 | Stack corrected to what the machine could run — CadQuery replaces FreeCAD, uv replaces conda, CalculiX fetched rather than vendored. Added D-19 to D-22 and REQ-DEL-009 to 011/013. `OD-A` restated, `OD-D` added. Execution order moved to `plan.md` |
 | 0.4 | 2026-09-12 | M0.5 added to the execution order; section 8 records that M0.5 fixes `REQ-OPT-001`'s render settings |
 | 0.5 | 2026-09-17 | Owner decisions: macOS arm64 only, 3 Oct fixed, GE-style bracket as the demo part, and the intent's stack centred on FreeCAD. D-04 returns to FreeCAD 1.1.3 with spreadsheet parameters and predicate face selection; D-02/D-03 drive Gmsh and CalculiX through the FEM Workbench; D-11 is a `cnc_3axis` check in the CAM Workbench (CAM operations, `PathSimulator` residual stock, minimum wall) — no slicer; D-09 five machinable alloys; D-17 one conda-forge explicit lock plus the harness `uv` lock. D-08 LC1; D-12 calibrated on the demo part; D-14/D-15 one part, 3 tasks; D-16 3 mutants; D-22 V1 on FreeCAD's cantilever, V3 promoted, V2 Should; D-23 and D-24 added; REQ-OPT-008 added. `OD-A` resolved. Section 2.1 records departures from intent. Milestones renamed M1–M6 |
+| 0.6 | 2026-09-19 | `OD-D` resolved by Gate 2b: `glc_v5` carries images to a vision model |
