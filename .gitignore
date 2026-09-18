@@ -9,3 +9,6 @@ vendor/
 out/
 
 __pycache__/
+
+# FreeCAD backup copies written on save
+*.FCBak
