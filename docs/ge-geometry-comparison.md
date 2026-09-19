@@ -34,4 +34,6 @@ Local generated artifacts (gitignored, regenerate from fetched/local CAD):
 
 ## Still required before analysis
 
+Done in M2A.1: see the [frozen source record](ge-manual-geometry.md). It records provenance, units, interfaces, the deck-frame transform and the working copy. The file turns out to be a 2013 challenge entry (SimJEB id 474), not GE's original. The text below is the pre-check list, kept as written.
+
 Complete M2A.1: verify source attribution, STEP units, the four nut-seat patches, pin/bolt interface dimensions, and the load coordinate transform. In particular, this STEP is stored in a tilted frame; do not paste SimJEB load vectors into its original axes. Inspect the approximately 9.557 mm pin-bore radius against the GE 9.525 mm radius and document clearance/deviations. The original-envelope match cannot be established from a perspective image. No stress analysis, material assignment or CAM-readiness claim is made by this comparison.

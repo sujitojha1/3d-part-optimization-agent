@@ -18,7 +18,7 @@ Sources: [GE brief](ge-jet-engine-bracket.md), [SimJEB](simjeb-dataset.md), [fro
 
 ## M2A.1 — Identify and freeze the selected GE geometry file
 
-Task: [#59](https://github.com/sujitojha1/3d-part-optimization-agent/issues/59)
+Task: [#59](https://github.com/sujitojha1/3d-part-optimization-agent/issues/59) · Record: [ge-manual-geometry.md](ge-manual-geometry.md)
 
 Use `data/simjeb/Iteration1.stp`, selected after rendering all seven local candidates against the GE challenge images. SHA-256: `a0ba77206bce822bc607722f07734f6d989a6375992545921921c887e6ea0e0e`. See `docs/ge-geometry-comparison.md`. Visual selection is complete; provenance, dimensional and interface checks below remain open. This file has not been established as GE's original CAD. Preserve the separate parametric agent baseline.
 
