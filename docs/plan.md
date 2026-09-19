@@ -2,17 +2,21 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.5 |
-| Date | 2026-09-17 |
+| Version | 0.6 |
+| Date | 2026-09-19 |
 | Owner | Sujit Ojha |
 | Budget | 12 Sep → **Sat 3 Oct 2026, fixed**. Re-planned on 17 Sep with 17 days left. See [Timeline](#timeline) |
 | Board | [Project #10](https://github.com/users/sujitojha1/projects/10) — milestones, tasks and dates below are mirrored there |
 | Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) v0.5 — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
 | Reference inputs | [GE jet engine bracket brief](ge-jet-engine-bracket.md) — the demo part · [SimJEB dataset](simjeb-dataset.md) — interface coordinates, load vectors, V3 · [FEM Workbench](fem-workbench.md), [CAM Workbench](freecad-cam-workbench.md), [FEM geometry preparation](fem-geometry-preparation.md), [FreeCAD tutorials](freecad-tutorials.md) — the stack's own documentation |
 
-Six milestones, M1–M6, numbered as on the board. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
+Seven milestones: M1–M6 plus M2A, numbered as on the board. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
 
 ---
+
+## v0.6 addition — manual GE challenge workflow
+
+Added **M2A — Manual GE challenge analysis and CAM readiness**, requested on 19 September: identify one geometry, document meshing and quality, assign five material options, fix the nut locations, load the lug under all four GE cases, report stress maps/mass/displacement for 20 combinations, and assess CAM readiness manually. See [the detailed procedure and deliverables](ge-manual-workflow.md). It requires no agent setup. Existing M2 evidence can be reused; M2A is additional scope with dates and effort unassigned. The fixed release date is unchanged, but the original totals below exclude this addition and require re-estimation.
 
 ## Why v0.5 exists
 
@@ -44,15 +48,17 @@ Decision 4 makes the FreeCAD reference pages useful. They now document the stack
 | --- | --- | --- | --- |
 | **M1** | Foundations and de-risking | 17–19 Sep | Four gates pass, or a named fallback is written down |
 | **M2** | One part, one load case, walked by hand | 19–22 Sep | A frozen FreeCAD `ge_bracket` and LC1 record, one hand pass to a contour, and a written LLM integration spec |
+| **M2A** | Manual GE challenge analysis and CAM readiness | Unscheduled; before M3 | One geometry, accepted mesh, five materials × four cases reported, and manual CAM readiness assessed |
 | **M3** | Engineering loop, no agent | 23–25 Sep | A parameter dict returns a verified result, and V1 and V3 pass |
 | **M4** | The agent loop closes | 26–28 Sep | One full cycle on disk: read → predict → edit → re-run → score |
 | **M5** | Judgement | 29 Sep – 1 Oct | Mutation detection and false-positive rates are reportable numbers |
 | **M6** | Refusal and packaging | 1–3 Oct | Someone else runs one command on a clean Mac and gets a result |
 
-Three hard orderings:
+Four hard orderings:
 
 - **Nothing depends on the vision path** until M1 Gate 2b answers `OD-D`.
 - **No pipeline code before M2 has walked the chain by hand** on the frozen part and load case. The decisions M3 would otherwise make silently are still cheap to change there: face predicates, mesh groups, the pin-load model, the camera set, the legend, and the exchange shape.
+- **M2A completes the manual four-case engineering study before M3 promotion.** It does not wait for M2’s LLM tasks; reuse evidence where applicable and re-estimate the schedule.
 - **No agent work before V1 and V3 pass.** An agent reasoning over wrong physics produces confident nonsense that looks like a working demo.
 
 ---
@@ -62,6 +68,8 @@ Three hard orderings:
 Thu 17 Sep → Sat 3 Oct: **17 days**. Each task shows its window and an effort band. A milestone ends on the day the next one starts, and that shared day holds the handover work.
 
 ### Milestone windows
+
+The dated table below is the original M1–M6 baseline. M2A adds seven required tasks with effort and dates to be estimated; totals and daily effort below exclude M2A.
 
 | Milestone | Window | Days | Must tasks | Should | Must effort |
 | --- | --- | --- | --- | --- | --- |
@@ -81,7 +89,7 @@ That is **5.9–9.5 h a day, every day, weekends included**. The Must work only 
 | --- | --- | --- |
 | End of 19 Sep | Gates 2b, 3 and 4 pass | Take the Gate 2b or Gate 4 fallback in [M1](#m1--foundations-and-de-risking-1719-sep). If Gate 3 fails, stop and re-plan, because nothing downstream runs |
 | End of 21 Sep | `ge_bracket` meshes and solves by hand in ≤ 60 s (half model) | Switch the demo part to `L_bracket` (D-14 fallback). M2.1–M2.5 repeat on it for about 6 h |
-| End of 22 Sep | The integration spec exists | Merge M2.10 into M2.9 and start M3 regardless. The spec is M4's input, not M3's |
+| End of 22 Sep | The integration spec exists | Merge M2.10 into M2.9. M3 may proceed once the manual M2A exit criterion is met; the LLM spec is M4's input, not M3's |
 | End of 25 Sep | V1 and V3 pass | Reduce V3 to reactions balance only. Release is still gated on V1 |
 | End of 28 Sep | One scored cycle is on disk | Drop M5.10 to a one-page skill and fold M5.9 into M5.7 |
 | End of 1 Oct | Detection and false-positive rates are computed | Ship with the mutation numbers as they stand. M6.4 and M6.7 are not cut |
@@ -263,6 +271,30 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
    - Keep the transcripts, token counts and latency.
 8. **Write the LLM integration spec** (M2.9). Cover turn structure, image encoding and size, the prompt and response contracts, where the single-edit rule is enforced, what belongs in `SKILL.md` versus the runtime, and the cost and latency of one iteration.
 9. **Write the walkthrough record and plan delta** (M2.10). One page covering what the pass proved and what broke, the frozen records, measured timings, and every decision this milestone changes: D-13, D-23, D-24, the render settings, and architecture questions 1, 2 and 6.
+
+---
+
+## M2A — Manual GE challenge analysis and CAM readiness (unscheduled)
+
+**Expectation.** Manually establish the complete engineering study on the selected geometry before automating it. No agent or LLM setup is required.
+
+**Exit criterion.** One frozen geometry, accepted mesh-quality and convergence report, five sourced material cards, fixed nut locations and lug load transfer, four independent load cases, a 20-combination stress/mass/displacement report with maps, and a documented CAM readiness assessment.
+
+See [M2A detailed steps](ge-manual-workflow.md) for procedures, dependencies and acceptance criteria.
+
+[GitHub milestone](https://github.com/sujitojha1/3d-part-optimization-agent/milestone/7)
+
+| Task | Issue | Schedule |
+| --- | --- | --- |
+| M2A.1 Identify and freeze the selected GE geometry file | [#59](https://github.com/sujitojha1/3d-part-optimization-agent/issues/59) | Unassigned |
+| M2A.2 Document manual meshing steps and report mesh quality | [#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60) | Unassigned |
+| M2A.3 Prepare and assign five material options manually | [#61](https://github.com/sujitojha1/3d-part-optimization-agent/issues/61) | Unassigned |
+| M2A.4 Fix the four nut locations and define lug load transfer | [#62](https://github.com/sujitojha1/3d-part-optimization-agent/issues/62) | Unassigned |
+| M2A.5 Set up four independent GE static load cases | [#63](https://github.com/sujitojha1/3d-part-optimization-agent/issues/63) | Unassigned |
+| M2A.6 Run the manual material/load matrix and publish stress, mass and displacement report | [#64](https://github.com/sujitojha1/3d-part-optimization-agent/issues/64) | Unassigned |
+| M2A.7 Walk through CAM readiness manually and document blockers | [#65](https://github.com/sujitojha1/3d-part-optimization-agent/issues/65) | Unassigned |
+
+M2A expands the manual engineering study; the existing agent task remains LC1 until separately revised. Ti-6Al-4V is the GE material baseline; other materials and CNC readiness are project extensions. Dates and effort are not yet assigned; the old M3 window must be reviewed against this added predecessor.
 
 ---
 
