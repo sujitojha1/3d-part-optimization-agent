@@ -31,7 +31,7 @@ Done when: exactly one file and checksum are selected, the working copy opens, a
 
 ## M2A.2 — Document manual meshing steps and report mesh quality
 
-Task: [#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60)
+Task: [#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60) · Record: [ge-manual-mesh.md](ge-manual-mesh.md)
 
 Depends on M2A.1.
 
