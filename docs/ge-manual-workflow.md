@@ -46,7 +46,7 @@ Done when: `docs/ge-manual-mesh.md` contains repeatable click-by-click steps, se
 
 ## M2A.3 — Prepare and assign five material options manually
 
-Task: [#61](https://github.com/sujitojha1/3d-part-optimization-agent/issues/61)
+Task: [#61](https://github.com/sujitojha1/3d-part-optimization-agent/issues/61) · Record: [ge-manual-materials.md](ge-manual-materials.md)
 
 Depends on M2A.1 and initial mesh generation in M2A.2.
 
