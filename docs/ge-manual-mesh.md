@@ -4,7 +4,7 @@
 | --- | --- |
 | Task | M2A.2 ([#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60)) · [M2A workflow](ge-manual-workflow.md) |
 | Date | 2026-09-19 |
-| Input | Working copy `data/ge_manual/Iteration1_manual.FCStd`, SHA-256 `fcc77c98…96c8b` ([M2A.1 record](ge-manual-geometry.md)) |
+| Input | Partitioned working copy `data/ge_manual/Iteration1_partitioned.FCStd`, SHA-256 `b025011c…790af6`: the [M2A.1](ge-manual-geometry.md) working copy with the four nut seats split at Ø 14.173 by [M2A.4](ge-manual-boundary-conditions.md) |
 | Tools | FreeCAD 1.1.3 FEM Workbench → `FemMeshGmsh` → Gmsh 4.15.2 (`vendor/fem-env/bin/gmsh`); quality from the Gmsh 4.15.2 Python API |
 | Script | `vendor/fem-env/bin/python scripts/ge_manual_mesh.py` (about 1 min). It builds the same objects as the manual steps in section 1 and writes `out/ge_manual_mesh/mesh-quality.json` |
 | Status | **Mesh and quality: done.** L1 passes the acceptance thresholds and is the only mesh level used. **L2 and L3 were dropped** on 2026-09-19 because the L2 solve ran out of memory (section 2), so there is no mesh-convergence study (section 6) |
@@ -14,7 +14,7 @@
 1. **Set Gmsh to one thread.** Edit → Preferences → FEM → Gmsh, and set the number of threads to **1**. With the
    default (all cores), the same input gave 321,322 nodes on one run and 321,501 on the next. The script sets this
    preference only for its own run and then restores it.
-2. **Open the geometry.** Open `data/ge_manual/Iteration1_manual.FCStd` and switch to the **FEM** workbench.
+2. **Open the geometry.** Open `data/ge_manual/Iteration1_partitioned.FCStd` and switch to the **FEM** workbench.
    `Bracket` is already in the SimJEB deck frame (+z up, out = −x).
 3. **Create the Analysis.** Model → **Analysis container**.
 4. **Create the mesh object.** Select `Bracket` in the tree, then Mesh → **FEM mesh from shape by Gmsh**.
@@ -33,15 +33,15 @@
    Picking 65 faces by hand is error-prone, so this Python console form sets the same references:
    ```python
    doc = App.ActiveDocument; b = doc.Bracket
-   doc.MeshRegion.References = [(b, ("Face31", "Face32", ...))]   # paste a list from below
+   doc.MeshRegion.References = [(b, ("Face35", "Face36", ...))]   # paste a list from below
    ```
 
    | Region | What it covers | Faces |
    | --- | --- | --- |
-   | `pin_bore` (12) | Both lug bores (r 9.557) and their 8 chamfer cones | Face31–Face42 |
-   | `arm_root` (65) | Curved blend faces where the clevis arms meet the body (centroids y −97…−52, x −40…40, z 10…40, bores excluded) | Face44 45 46 74 76 83 84 85 86 87 92 98 99 129 161 162 171 175 188 189 190 192 193 195 215 216 217 218 220 221 235 236 241 242 243 245 246 247 248 249 251 253 254 255 256 257 259 261 263 265 266 267 268 269 270 271 276 280 284 285 286 287 317 318 323 |
-   | `nut_seat` (20) | Bolt-hole walls, the four seat annuli (z = 7.849) and the seat-recess toroids | Face1–Face12, Face23–Face30 |
-   | `thin_section` (9) | Faces within 1 mm of M2A.1's thinnest wall samples (base end walls, about 4.66 mm) | Face21 65 66 115 116 136 139 142 144 |
+   | `pin_bore` (12) | Both lug bores (r 9.557) and their 8 chamfer cones | Face35–Face46 |
+   | `arm_root` (65) | Curved blend faces where the clevis arms meet the body (centroids y −97…−52, x −40…40, z 10…40, bores excluded) | Face48 49 50 78 80 87 88 89 90 91 96 102 103 133 165 166 175 179 192 193 194 196 197 199 219 220 221 222 224 225 239 240 245 246 247 249 250 251 252 253 255 257 258 259 260 261 263 265 267 269 270 271 272 273 274 275 280 284 288 289 290 291 321 322 327 |
+   | `nut_seat` (24) | Bolt-hole walls, the four seat annuli (z = 7.849; each now a nut patch and a free ring) and the seat-recess toroids | Face1–Face16, Face27–Face34 |
+   | `thin_section` (9) | Faces within 1 mm of M2A.1's thinnest wall samples (base end walls, about 4.66 mm) | Face25 69 70 119 120 140 143 146 148 |
 
    The script chooses these faces by geometric predicate (`select_regions`), not by stored index, and records
    the lists in `mesh-quality.json`. Face numbers are valid only for the working copy with the checksum above.
@@ -58,13 +58,13 @@ about 1 mm elements on all 151 of the r 2 mm fillets.
 
 | Level | Max | Min | Region size | Curvature (elements per 2π) | Element size on r 2 fillets | Nodes | C3D10 | Gmsh time |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| L1 | 5.0 | 1.0 | 2.0 | 4 | about 3.1 | 154,683 | 90,058 | 15.9 s |
+| L1 | 5.0 | 1.0 | 2.0 | 4 | about 3.1 | 155,203 | 90,353 | 14.9 s |
 
 All sizes are in mm. Element counts by type, identical between the FreeCAD `FemMesh` and the `.unv`:
 
 | Level | Line3 | Triangle6 | Tetrahedron10 |
 | --- | --- | --- | --- |
-| L1 | 5,066 | 34,080 | 90,058 |
+| L1 | 5,158 | 34,194 | 90,353 |
 
 **Why only L1.** The `ccx` in the FEM environment links **SPOOLES only**, a direct solver: PARDISO and PaStiX are
 not linked (checked with `otool` and `strings`). The host is an Apple M2 with 16 GB of memory. L1 (about 0.47 M
@@ -98,28 +98,27 @@ Other metrics: an edge-ratio aspect ratio is reported instead of Gmsh's `eta`/`S
 | Metric | L1 |
 | --- | --- |
 | Inverted (`minDetJac` ≤ 0) / zero volume | 0 / 0 |
-| `minSJ` min / p0.1 / p1 / p5 / median | 0.113 / 0.375 / 0.653 / 0.830 / 1.000 |
-| `gamma` min / p0.1 / p1 / median | 0.078 / 0.314 / 0.455 / 0.790 |
+| `minSJ` min / p0.1 / p1 / p5 / median | 0.113 / 0.373 / 0.647 / 0.826 / 1.000 |
+| `gamma` min / p0.1 / p1 / median | 0.079 / 0.314 / 0.455 / 0.790 |
 | Fraction with `gamma` < 0.2 | 0.016 % |
-| Aspect ratio median / p99.9 / max | 1.68 / 4.64 / 9.29 |
+| Aspect ratio median / p99.9 / max | 1.68 / 4.52 / 9.31 |
 | **Accepted** | **yes** |
 
 Worst elements, with element IDs as in the `.unv` and `FemMesh`, and centroids in the deck frame (mm):
 
 | Level | Worst by `minSJ` | Worst by `gamma` |
 | --- | --- | --- |
-| L1 | #116523 0.113 at (44.3, −119.9, 28.7); #40659 0.123 at (−4.5, −39.6, 27.3) | #115607 0.078 at (−21.9, −126.3, 12.2), min edge 0.09 mm |
+| L1 | #116953 0.113 at (44.3, −119.9, 28.7); #57913 0.114 at (−4.5, −39.6, 27.3) | #124214 0.079 at (−21.8, −126.6, 11.6), min edge 0.25 mm; #124192 0.106 at (−20.0, −29.9, 13.0) |
 
-**The worst gamma** is near (−21.9, −126.3, 12.2), with a twin near
-(−24.9, −30.6, 11.9). These are clusters of tiny B-spline faces in the source CAD: Face130–133 and Face278–279,
-0.3–1.4 mm² each, with edges down to 0.09 mm, on the −x side walls of the base. The mesh cannot be coarser than
-those edges there. They are geometry artifacts, not stress features, and they sit away from the pin, the seats
+**The worst gamma** is near (−21.8, −126.6, 11.6), with a twin near
+(−20.0, −29.9, 13.0). These are clusters of tiny B-spline faces in the source CAD: Face134–137 and Face282–283,
+0.3–1.4 mm² each, on the −x side walls of the base. The worst elements there have edges of 0.19–0.25 mm;
+the mesh cannot be coarser than those faces. They are geometry artifacts, not stress features, and they sit away from the pin, the seats
 and the arm roots.
 
-**Gmsh log.** Gmsh warns, for example "Volume mesh: worst distortion = −1.35 (87 elements with jac. < 0)" at L1.
-These counts come from the straight-sided mesh **before** high-order optimisation. The final meshes have zero
-elements with `minDetJac` ≤ 0. L1 also reports "1 ill-shaped tets are still in the mesh"; that element passes the
-thresholds above (L1 gamma minimum 0.078).
+**Gmsh log.** Gmsh gives two warnings: "Surface mesh: worst distortion = −1.53 (2 elements with jac. < 0)" and
+"Volume mesh: worst distortion = −1.35 (85 elements with jac. < 0)". These counts come from the straight-sided
+mesh **before** high-order optimisation. The final mesh has zero elements with `minDetJac` ≤ 0.
 
 ## 4. How the accepted settings were reached
 
@@ -140,7 +139,7 @@ geometry.
 
 ## 5. Repeatability, files and sections
 
-**Repeatability.** Single-threaded Gmsh reproduces node and element counts, connectivity and every quality number
+**Repeatability** (checked on the unpartitioned copy, before M2A.4). Single-threaded Gmsh reproduces node and element counts, connectivity and every quality number
 exactly. Node coordinates vary by up to 1×10⁻⁵ mm between runs, from the optimisers' floating-point order. The
 `.unv` and FCStd bytes, and so their SHA-256, therefore do **not** repeat. The mesh identity is the level settings
 plus the **connectivity SHA-256** (tet10 node lists in `.unv` order) and the node/element counts. The `.geo` and
@@ -148,7 +147,7 @@ plus the **connectivity SHA-256** (tet10 node lists in `.unv` order) and the nod
 
 | Level | Connectivity SHA-256 | `shape2mesh.geo` SHA-256 |
 | --- | --- | --- |
-| L1 | `f97466559fd0e67e400afdc94e71670722bd2d12e0ad8064c4db53d187a992d9` | `3e198fcecff947910840d7eb79b272c26cdc2f8701f2927eb39490ced12aeafa` |
+| L1 | `342e0de4406fb646df3ae22e589d470e601b036a9da57237bacf63b372280b83` | `7f7b6794ea333ea4b46f4be6eedf172c5bd83b2dc349b71064d6cbd737cbb740` |
 
 Full checksums of every file are in `out/ge_manual_mesh/mesh-quality.json`. The files are gitignored, because they
 are derived from GrabCAD non-commercial CAD:
