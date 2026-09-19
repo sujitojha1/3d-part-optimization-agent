@@ -148,14 +148,14 @@ def partition():
         print(label, p["patch"], p["ring"])
 
 
-def build(level, part_rec, case):
-    """Analysis objects for one case on a copy of the level's mesh document."""
+def build(level, part_rec, case, card="ti6al4v"):
+    """Analysis objects for one case and material card on a copy of the level's mesh document."""
     doc = FreeCAD.openDocument(str(MESH_DIR / level / f"Iteration1_mesh_{level}.FCStd"))
     part, analysis = doc.getObject("Bracket"), doc.getObject("Analysis")
     solver = ObjectsFem.makeSolverCalculiXCcxTools(doc, "CalculiXCcxTools")
     solver.AnalysisType = "static"
     analysis.addObject(solver)
-    c = CARDS["ti6al4v"]
+    c = CARDS[card]
     mat = ObjectsFem.makeMaterialSolid(doc, "Material")
     card = mat.Material
     card.update({"Name": c["name"], "YoungsModulus": f"{c['youngs_mpa']} MPa", "PoissonRatio": str(c["poisson"]),
