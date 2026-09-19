@@ -1,6 +1,7 @@
 """M2A.2: mesh the frozen GE working copy at three levels and report mesh quality.
 
-Opens data/ge_manual/Iteration1_manual.FCStd (M2A.1), and for each level builds
+Opens data/ge_manual/Iteration1_partitioned.FCStd (M2A.1 working copy with the
+M2A.4 nut-seat partition), and for each level builds
 the same objects a person creates by hand in the FEM Workbench: an Analysis, a
 Gmsh mesh of `Bracket` (second-order tetrahedra, C3D10) and four MeshRegions,
 whose faces are chosen by geometric predicate:
@@ -42,7 +43,9 @@ import ObjectsFem  # noqa: E402
 import Part  # noqa: E402
 from femmesh.gmshtools import GmshTools  # noqa: E402
 
-WORKING = ROOT / "data" / "ge_manual" / "Iteration1_manual.FCStd"
+# The M2A.4 partitioned working copy: nut seats split at the GE nut-face OD so
+# the supports can reference exactly the nut-contact patches.
+WORKING = ROOT / "data" / "ge_manual" / "Iteration1_partitioned.FCStd"
 GEOMETRY_CHECK = ROOT / "out" / "ge_manual_geometry" / "geometry-check.json"
 DATA = ROOT / "data" / "ge_manual" / "mesh"
 OUT = ROOT / "out" / "ge_manual_mesh"
