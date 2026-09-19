@@ -23,7 +23,7 @@ Outputs: out/ge_manual_bcs/bcs.json and views; data/ge_manual/bcs/<level>/
 
 Run with the FEM environment's Python:
     vendor/fem-env/bin/python scripts/ge_manual_bcs.py partition
-    vendor/fem-env/bin/python scripts/ge_manual_bcs.py setup [--level L2] [--solve]
+    vendor/fem-env/bin/python scripts/ge_manual_bcs.py setup [--level L1] [--solve]
 """
 
 import argparse
@@ -359,7 +359,7 @@ def setup(level, run_solve):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("step", choices=["partition", "setup"])
-    parser.add_argument("--level", default="L2")
+    parser.add_argument("--level", default="L1")
     parser.add_argument("--solve", action="store_true")
     args = parser.parse_args()
     if args.step == "partition":

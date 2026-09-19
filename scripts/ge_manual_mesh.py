@@ -1,7 +1,7 @@
-"""M2A.2: mesh the frozen GE working copy at three levels and report mesh quality.
+"""M2A.2: mesh the frozen GE working copy at level L1 and report mesh quality.
 
 Opens data/ge_manual/Iteration1_partitioned.FCStd (M2A.1 working copy with the
-M2A.4 nut-seat partition), and for each level builds
+M2A.4 nut-seat partition), and builds
 the same objects a person creates by hand in the FEM Workbench: an Analysis, a
 Gmsh mesh of `Bracket` (second-order tetrahedra, C3D10) and four MeshRegions,
 whose faces are chosen by geometric predicate:
@@ -16,13 +16,13 @@ writes is then read into the Gmsh API for quality: signed Jacobian, scaled
 Jacobian, gamma and edge aspect ratio per element, judged against thresholds
 fixed in THRESHOLDS before any mesh is generated.
 
-Writes, per level, data/ge_manual/mesh/<level>/ (FCStd with Analysis + mesh,
+Writes data/ge_manual/mesh/L1/ (FCStd with Analysis + mesh,
 .geo, .brep, .unv; gitignored, derived from licensed CAD) and
-out/ge_manual_mesh/<level>/ (histogram, section and worst-element views), plus
+out/ge_manual_mesh/L1/ (histogram, section and worst-element views), plus
 out/ge_manual_mesh/mesh-quality.json.
 
 Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_manual_mesh.py [--levels L1 L2 L3]
+    vendor/fem-env/bin/python scripts/ge_manual_mesh.py
 """
 
 import argparse
@@ -50,16 +50,13 @@ GEOMETRY_CHECK = ROOT / "out" / "ge_manual_geometry" / "geometry-check.json"
 DATA = ROOT / "data" / "ge_manual" / "mesh"
 OUT = ROOT / "out" / "ge_manual_mesh"
 
-# Sizes in mm; curvature is Gmsh elements per 2*pi of radius. L1 starts from the
-# M2 evidence (max 4, min 1) at L2; each level refines every size by 1.25-1.5x.
-# FreeCAD's default curvature of 12 alone puts ~1 mm elements on all 151 r2
-# fillets (982k nodes at max 4), so curvature is a level parameter too. L3 is
-# capped near 0.85M nodes: this ccx links SPOOLES only and the host has 16 GB.
-# A region size below the global minimum would be clamped.
+# Sizes in mm; curvature is Gmsh elements per 2*pi of radius. FreeCAD's default
+# curvature of 12 alone puts ~1 mm elements on all 151 r2 fillets (982k nodes at
+# max 4), so curvature is set explicitly. Only L1 (~155k nodes) is meshed: this
+# ccx links SPOOLES only, and the L2 solve (322k nodes) ran out of memory on the
+# 16 GB host. A region size below the global minimum would be clamped.
 LEVELS = {
     "L1": {"max": 5.0, "min": 1.0, "region": 2.0, "curvature": 4},
-    "L2": {"max": 4.0, "min": 1.0, "region": 1.5, "curvature": 6},
-    "L3": {"max": 3.0, "min": 0.75, "region": 1.0, "curvature": 9},
 }
 
 # Acceptance thresholds, fixed before meshing (Gmsh 4.15.2 definitions, see doc).
@@ -318,7 +315,7 @@ def plots(level, out, conn, xyz, q, summary, part_shape):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--levels", nargs="+", default=list(LEVELS))
+    parser.add_argument("--levels", nargs="+", choices=list(LEVELS), default=list(LEVELS))
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     geom = json.loads(GEOMETRY_CHECK.read_text())

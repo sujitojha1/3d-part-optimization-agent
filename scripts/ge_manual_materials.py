@@ -1,7 +1,7 @@
 """M2A.3: assign the five material cards to the GE working mesh and verify each deck.
 
 For each card in CARDS (sources and conditions in docs/ge-manual-materials.md),
-opens the provisional L2 mesh document from M2A.2, adds what a person adds by
+opens the L1 mesh document from M2A.2, adds what a person adds by
 hand in the FEM Workbench (a CalculiX solver and one MaterialSolid on the whole
 solid), saves it, exports the CalculiX .inp and reads the material back:
 
@@ -35,7 +35,7 @@ import FreeCAD  # noqa: E402
 import ObjectsFem  # noqa: E402
 from femtools import ccxtools  # noqa: E402
 
-MESH_DOC = ROOT / "data" / "ge_manual" / "mesh" / "L2" / "Iteration1_mesh_L2.FCStd"
+MESH_DOC = ROOT / "data" / "ge_manual" / "mesh" / "L1" / "Iteration1_mesh_L1.FCStd"
 MESH_QUALITY = ROOT / "out" / "ge_manual_mesh" / "mesh-quality.json"
 DATA = ROOT / "data" / "ge_manual" / "materials"
 OUT = ROOT / "out" / "ge_manual_materials"
@@ -113,7 +113,7 @@ def c3d10_in(text, elset):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    mesh_q = json.loads(MESH_QUALITY.read_text())["levels"]["L2"]
+    mesh_q = json.loads(MESH_QUALITY.read_text())["levels"]["L1"]
     report = {"mesh_doc": str(MESH_DOC.relative_to(ROOT)), "mesh_connectivity_sha256": mesh_q["connectivity_sha256"],
               "freecad_version": ".".join(FreeCAD.Version()[:3]), "cards": {}}
     for key, c in CARDS.items():
@@ -133,7 +133,7 @@ def main():
         analysis.addObject(mat)
         doc.recompute()
         volume = part.Shape.Volume
-        doc.saveAs(str(work / f"Iteration1_{key}_L2.FCStd"))
+        doc.saveAs(str(work / f"Iteration1_{key}_L1.FCStd"))
 
         rec = {**c, "density_t_per_mm3": c["density_kg_m3"] * 1e-12, "volume_mm3": round(volume, 3),
                "mass_g": round(volume * c["density_kg_m3"] * 1e-6, 1), "decks": {}}

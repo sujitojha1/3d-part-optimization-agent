@@ -4,7 +4,7 @@
 | --- | --- |
 | Task | M2A.3 ([#61](https://github.com/sujitojha1/3d-part-optimization-agent/issues/61)) · [M2A workflow](ge-manual-workflow.md) |
 | Date | 2026-09-19 |
-| Geometry / mesh | Working copy from [M2A.1](ge-manual-geometry.md), volume **283,729.68 mm³**. Provisional L2 mesh from [M2A.2](ge-manual-mesh.md), connectivity SHA-256 `805b99be…40eb0b`, 195,035 C3D10 elements |
+| Geometry / mesh | Working copy from [M2A.1](ge-manual-geometry.md), volume **283,729.68 mm³**. Recorded on the L2 mesh from [M2A.2](ge-manual-mesh.md) (connectivity SHA-256 `805b99be…40eb0b`, 195,035 C3D10 elements). **L2 has since been dropped** (only L1 is used, see the [mesh record](ge-manual-mesh.md)); the script now uses L1, and the element counts in section 4 need a re-run on L1 |
 | Script | `vendor/fem-env/bin/python scripts/ge_manual_materials.py` (about 1 min). It builds the same objects as section 3's manual steps and writes `out/ge_manual_materials/materials.json` |
 | Decision | [D-09](requirements.md) names these five alloys and conditions: Ti-6Al-4V annealed, 7075-T6, 6061-T6, 17-4PH H1025, and 4140 quenched and tempered. This page fixes the product form, the governing specification and each value |
 
@@ -81,8 +81,8 @@ allowable.
 
 Repeat these steps for each card. Geometry, mesh, supports and loads stay fixed. Only the material changes.
 
-1. **Open the mesh document.** Open the accepted mesh document; for now that is
-   `data/ge_manual/mesh/L2/Iteration1_mesh_L2.FCStd` from M2A.2. Switch to the FEM workbench.
+1. **Open the mesh document.** Open the mesh document
+   `data/ge_manual/mesh/L1/Iteration1_mesh_L1.FCStd` from M2A.2. Switch to the FEM workbench.
 2. **Add the solver.** Select `Analysis`, then Solve → **Solver CalculiX Standard**.
 3. **Add the material.** Model → Materials → **Material for solid**.
    - In the task panel, choose any metal as a template, then click **Edit** or open the property editor.
@@ -92,7 +92,7 @@ Repeat these steps for each card. Geometry, mesh, supports and loads stay fixed.
 4. **Assign it to the whole solid.** In the reference list, click **Add** and pick the solid (`Solid1` of
    `Bracket`). With one solid, leaving the list empty also means "all", but the explicit reference is what the
    script uses.
-5. **Save** as `Iteration1_<card>_L2.FCStd`.
+5. **Save** as `Iteration1_<card>_L1.FCStd`.
 6. **Check the exported deck.** Select the solver, choose **Write .inp file**, then open the deck:
    - `*MATERIAL, NAME=…` is followed by `*ELASTIC` with `E,ν` in MPa.
    - `*SOLID SECTION, ELSET=MaterialSolid, MATERIAL=…` appears exactly once.
@@ -148,5 +148,5 @@ The script's check found every card **verified** in both decks. Decks are in `da
 | GE 903.2 MPa for Ti; one consistent density | Done (the deck's 4,430 kg/m³, not the metadata's 4,470) |
 | Assign to the complete solid in a manual Analysis and verify in the exported deck | Done (sections 3 and 4). **A person still needs to do one GUI pass**; the numbers come from the script |
 | Record volume and mass in grams | Done (section 4) |
-| Geometry, mesh, supports and loads fixed across cards | Geometry and mesh fixed. Supports and loads come in M2A.4/M2A.5 and must be added identically to each card's document. If M2A.2's convergence freezes a mesh other than L2, re-run the script against it; mass does not change |
+| Geometry, mesh, supports and loads fixed across cards | Geometry and mesh fixed. Supports and loads come in M2A.4/M2A.5 and must be added identically to each card's document. The script now uses L1 (L2 was dropped); re-run it to refresh section 4's element counts. Mass does not change |
 | Ti baseline versus project comparisons; project safety factor and displacement criteria labelled | Done (scope note and section 5) |
