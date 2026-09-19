@@ -280,6 +280,10 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
 
 **Exit criterion.** One frozen geometry, accepted mesh-quality and convergence report, five sourced material cards, fixed nut locations and lug load transfer, four independent load cases, a 20-combination stress/mass/displacement report with maps, and a documented CAM readiness assessment.
 
+**Selected geometry:** `data/simjeb/Iteration1.stp`, the closest visual match among seven local candidates to the GE challenge images. See [the comparison and checksum](ge-geometry-comparison.md). M2A.1 still verifies provenance, units, dimensions, interfaces and the load-frame transform before analysis. This selection applies to the manual study; `parts/ge_bracket.FCStd` remains the separate parametric agent baseline.
+
+**Study matrix:** Ti-6Al-4V, Al 7075-T6, Al 6061-T6, 17-4PH and 4140 steel, each under LC1 vertical, LC2 horizontal, LC3 diagonal (42° from vertical), and LC4 torsion. Twenty manual analyses report stress maps, maximum von Mises stress, mass and maximum displacement; the CAM assessment covers the selected geometry and material-specific tooling/setup assumptions.
+
 See [M2A detailed steps](ge-manual-workflow.md) for procedures, dependencies and acceptance criteria.
 
 [GitHub milestone](https://github.com/sujitojha1/3d-part-optimization-agent/milestone/7)
