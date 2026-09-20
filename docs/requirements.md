@@ -2,8 +2,8 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.5 |
-| Date | 2026-09-17 |
+| Version | 0.7 |
+| Date | 2026-09-21 |
 | Status | Draft for owner approval |
 | Owner | Sujit Ojha |
 | Budget | Three weeks, one engineer — 12 Sep to **3 Oct 2026, fixed end date** |
@@ -11,6 +11,10 @@
 | Execution order | [Plan](plan.md) — milestones M1 to M6 |
 | Design | [Solution architecture](solution-architecture.md) — how it is built |
 | Conventions | EARS statements ([Mavin](https://alistairmavin.com/ears/)); structure informed by ISO/IEC/IEEE 29148:2018, tailored — not audited compliance |
+
+## Progress audit — 21 September
+
+See [the complete requirement-by-requirement audit](progress-review-2026-09-21.md) and [current recovery plan](plan.md). No Must requirement is waived by this review. Manual four-case studies remain separate from the parametric LC1 agent task. Current scripts and documents disagree on geometry identity, raw-versus-excluded stress acceptance, support idealisation, material tempers and experimental CAM scope; those discrepancies remain open implementation/decision work, not implicit requirement amendments. `OD-B`/`OD-C` must be frozen before the corresponding scored validation runs. D-23 below corrects the symmetry assumption using the already-recorded geometry evidence.
 
 ## 1. How to read this
 
@@ -48,7 +52,7 @@ These were open decisions `OD-01`–`OD-10` in v0.1. Each is now resolved toward
 | D-20 | **Protected paths:** `verifiers/**`, `tasks/**`, `materials/**`, `mutations/**`, and `tooling/**` (the D-11 ToolBit library and post-processor config) join the harness defaults (`tests/**`, `conftest.py`, `.github/**`). The solver is exposed as a capability, not added to the command allowlist. Code-editing capabilities are disabled. | The judge must be unreachable by the thing being judged: an agent asked to reduce mass that can edit `tasks/` will lower the safety factor instead of removing material, and one that can edit `tooling/` will add a smaller endmill instead of opening a corner radius. |
 | D-21 | **Mesh density is not an agent-controllable parameter.** Every D-24 size and field setting is task data, and a proposal that changes one is refused. | The cheapest way to make a stress concentration disappear is to coarsen the mesh until it vanishes. |
 | D-22 | **Solver validation gate** — must pass before any agent result is meaningful. **V1:** FreeCAD's bundled *CalculiX Cantilever 3D* example rebuilt through our pipeline must reproduce its published −86.93 mm, and a slender variant (*L*/*h* ≥ 20) must agree with `δ = PL³/3EI` and `σ = Mc/I` within a signed band. **V3:** SimJEB design 148 (`148.stp`) under LC1, bolt holes as FreeCAD **Rigid Body Constraints** (`*RIGID BODY`), the pin load applied as settled in M2.2, reactions balanced via a **Section Print** feature (`*SECTION PRINT`), nodal displacement compared against `148.csv`. **Should:** V2, a shoulder-fillet stepped bar against a published `Kt`. | V1 checks units, material card, element formulation and extraction against both a formula and someone else's CalculiX run; slender, because a clamped stubby bar is stiffer than beam theory ([freecad-tutorials §6.4](freecad-tutorials.md)). The demo part is supported through couplings that neither closed-form case exercises, so V3 is a gate. It compares displacement only: SimJEB's first-order stresses are not ground truth. FreeCAD has no `*DISTRIBUTING COUPLING` tool ([fem-workbench §9.1](fem-workbench.md)), so how the pin load enters is a hand-walk decision, not an assumption. |
-| D-23 | **Half model by default** for `ge_bracket` LC1 (and LC2) tasks, cut at the midplane between the clevis arms, applied as a FreeCAD Displacement constraint blocking translation normal to the cut face, and the pin force halved. Mass and region results are reported for the full part. Full model if M2.4 finds the label chain does not survive the cut. | Geometry, supports and LC1/LC2 are all symmetric about that plane — the four conditions [fem-geometry-preparation §6.3](fem-geometry-preparation.md) requires. It halves every solve without touching mesh density. LC4 torsion is antisymmetric and cannot use it. |
+| D-23 | **Full model for the current `ge_bracket`.** The measured bolt pattern is asymmetric about the clevis midplane ([frozen part](ge-bracket-part.md), [LC1 record](ge-bracket-lc1.md)); apply the full load and report full-part mass. A future half model requires independent geometry, support and load symmetry evidence plus verified label mapping. | The original symmetry assumption was disproved during the hand walk. Do not halve force or double mass on the current full model. LC4 requires separate symmetry reasoning. |
 | D-24 | **Mesh sizing** on `FemMeshGmsh`: each task declares `CharacteristicLengthMax`, `CharacteristicLengthMin`, and one **`MeshRegion`** size on the `arm_root_fillet` and `pin_bore` faces. `HighOrderOptimize` is on. If Gmsh reports inverted elements (negative Jacobians), the pipeline retries once with `SecondOrderLinear = true` and records it; a second failure makes the candidate `unverified` with a mesh diagnostic. | FreeCAD's guide: automatic meshers are too coarse by default, a minimum size stops tiny elements forming around small features, and refinement belongs at the concentrations ([§10.1](fem-geometry-preparation.md)). Distance-based refinement would grade more smoothly but only arrives in FreeCAD 26.3; `MeshRegion` is what 1.1.3 has. Second-order meshing inverts elements at small radii, which the agent's own `fillet_radius` edits reach ([§12](fem-geometry-preparation.md)). |
 
 Two rendering constraints follow from D-07 and are normative, not stylistic: contour images use a **fixed camera set and a legend range locked across all iterations of a run** (`REQ-OPT-001`). An auto-rescaling color bar makes cross-iteration visual comparison meaningless.
@@ -195,3 +199,5 @@ Sequencing, the M1 gates, the risk register and the cut list live in **[plan.md]
 | 0.4 | 2026-09-12 | M0.5 added to the execution order; section 8 records that M0.5 fixes `REQ-OPT-001`'s render settings |
 | 0.5 | 2026-09-17 | Owner decisions: macOS arm64 only, 3 Oct fixed, GE-style bracket as the demo part, and the intent's stack centred on FreeCAD. D-04 returns to FreeCAD 1.1.3 with spreadsheet parameters and predicate face selection; D-02/D-03 drive Gmsh and CalculiX through the FEM Workbench; D-11 is a `cnc_3axis` check in the CAM Workbench (CAM operations, `PathSimulator` residual stock, minimum wall) — no slicer; D-09 five machinable alloys; D-17 one conda-forge explicit lock plus the harness `uv` lock. D-08 LC1; D-12 calibrated on the demo part; D-14/D-15 one part, 3 tasks; D-16 3 mutants; D-22 V1 on FreeCAD's cantilever, V3 promoted, V2 Should; D-23 and D-24 added; REQ-OPT-008 added. `OD-A` resolved. Section 2.1 records departures from intent. Milestones renamed M1–M6 |
 | 0.6 | 2026-09-19 | `OD-D` resolved by Gate 2b: `glc_v5` carries images to a vision model |
+
+| 0.7 | 2026-09-21 | Added complete progress audit; corrected D-23 to the evidenced full model; identified unresolved implementation deviations without weakening Must acceptance |

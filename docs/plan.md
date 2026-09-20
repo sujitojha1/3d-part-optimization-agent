@@ -2,19 +2,51 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.6 |
-| Date | 2026-09-19 |
+| Version | 0.7 |
+| Date | 2026-09-21 |
 | Owner | Sujit Ojha |
-| Budget | 12 Sep → **Sat 3 Oct 2026, fixed**. Re-planned on 17 Sep with 17 days left. See [Timeline](#timeline) |
+| Budget | 12 Sep → **Sat 3 Oct 2026, fixed**. Reviewed on 21 Sep with 13 calendar days including today remaining. See [Timeline](#timeline) |
 | Board | [Project #10](https://github.com/users/sujitojha1/projects/10) — milestones, tasks and dates below are mirrored there |
-| Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) v0.5 — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
+| Companion documents | [Intent](intent.md) — why · [Requirements](requirements.md) v0.7 — what · [Solution architecture](solution-architecture.md) — how · this — when and in what order |
 | Reference inputs | [GE jet engine bracket brief](ge-jet-engine-bracket.md) — the demo part · [SimJEB dataset](simjeb-dataset.md) — interface coordinates, load vectors, V3 · [FEM Workbench](fem-workbench.md), [CAM Workbench](freecad-cam-workbench.md), [FEM geometry preparation](fem-geometry-preparation.md), [FreeCAD tutorials](freecad-tutorials.md) — the stack's own documentation |
 
 Seven milestones: M1–M6 plus M2A, numbered as on the board. Each states an **expectation** (what it is for), an **exit criterion** (a single observable fact that ends it), and its tasks. Where this document and `requirements.md` disagree, requirements win on *what* and this wins on *order*.
 
 ---
 
-## v0.6 addition — manual GE challenge workflow
+## Current recovery plan — 21 September
+
+**Release is at risk; engineering validation is the critical path.** The [detailed audit](progress-review-2026-09-21.md) covers all 35 normative requirements and all 63 board items. M1 is historically complete. M2 has a working parametric model and LC1 experiments, but lacks final mesh/region/readability/integration acceptance. M2A has 20 solver-valid current-part runs, but its mesh is rejected and its prose records describe an older geometry. M3–M6 have no completed integrated exit evidence.
+
+**Current identity:** manual scripts select `GE_Challenge_Bracket`, generated from FVZ's outer shell. `Iteration1` is the earlier study, and `ge_bracket` remains the separate parametric agent baseline. #66 is additional M2A.8 scope and is not Done: current L1 gamma minimum is 0.014993 against 0.05, and BOP curve-on-surface errors remain. No accepted three-level/four-case convergence study exists. The 20 successful solver exits are not verified engineering passes.
+
+The table below and the board dates supersede every older window in this document. Historical task tables remain as the original estimates and acceptance checklist, not current commitments. Open Should tasks have no scheduled dates. Closed #59/#61 retain their historical scope; replacement-geometry reconciliation is tracked in #66/#60/#62–#65.
+
+| Milestone | Current state | Recovery window | Remaining effort estimate | Exit evidence still required |
+| --- | --- | --- | --- | --- |
+| M1 | Historical gates complete | Completed | 0 h | Retain gate evidence; integrated packaging still belongs to M6 |
+| M2 | In progress | 21–23 Sep | 10–16 h | Final D-24 mesh; volume-region chain; accepted contour; real prediction exchange; integration spec |
+| M2A | In progress, acceptance blocked | 21–23 Sep | 12–24 h | #66 quality repair/re-freeze, convergence, current-geometry records, GUI evidence and CAM readiness report |
+| M3 | Todo; depends on M2/M2A | 24–26 Sep | 16–26 h | Integrated parameter-to-result pipeline; slender V1 and V3; whole-evaluation timing |
+| M4 | Todo; depends on V1/V3 | 27–29 Sep | 16–24 h | Stored read/predict/edit/solve/score cycle, runtime guardrails and material library |
+| M5 | Todo | 30 Sep–1 Oct | 20–32 h | Structural/CAM/singularity verifiers, task predicates, paired mutations, protected judge and offline rescoring |
+| M6 | Todo | 2–3 Oct | 10–17 h | Scoped refusal/frontier, six outcomes, clean-Mac run on 2 Oct, README/video on 3 Oct |
+| Total | Planning estimate, not measured velocity | 13 calendar days | **84–139 h** | **6.5–10.7 h/day**, no contingency |
+
+These are remaining-work estimates allowing reuse of prototypes, not a promise that all repairs fit. M2/M2A alone require 22–40 h in three days; the upper range cannot fit ordinary working hours. If their exit fails on 23 Sep, reforecast the downstream dates and explicitly report that the full Must scope cannot be claimed complete by 3 Oct. Keep the fixed deadline visible; do not weaken acceptance to make the schedule look green.
+
+**Next actions, in order:**
+
+1. #66/#60: repair the current mesh's failed quality rule and resolve BOP evidence; rerun quality with existing thresholds. Freeze geometry, mesh and artifact identities before downstream acceptance.
+2. #62–#65: reconcile the current-part decks, matrix, maps and CAM records with their written reports. Diagnose op20's reported gouge; finish the CAM readiness assessment. Complete convergence and record the required manual inspection. Keep the older Iteration1 study explicitly historical.
+3. #45/#47/#48: freeze the parametric task mesh, disjoint element-region membership and baseline evidence. Resolve raw-peak versus exclusion-zone acceptance before claiming the baseline passes; preserve D-12 singularity checks.
+4. #49/#50/#52/#53: accept readable fixed views, exercise image-only and image-plus-numbers prediction, then freeze the integration spec. Gate 2b transport is already proved, but one recorded peak-quadrant reading was wrong.
+5. #15/#57: declare numeric tolerances before validation and pass full V1/V3 before #19–#25 agent integration. No reactions-only substitute for required V3 displacement validation.
+6. #26/#28: reconcile material conditions and experimental opencamlib/CAM scope with D-09/D-11/D-17. Complete D-10 fields, 0.2 mm residual-stock, min-wall and invalid-result checks for the released agent.
+
+The 21 Sep timing fallback is evaluated on the **full model**, because the bolt pattern is asymmetric. A historical rigid-pin LC1 solve took 16.45 s; it does not trigger L_bracket on timing alone. Re-measure with the accepted D-24 mesh and include CAM for D-13. No mesh coarsening that fails quality is a schedule remedy.
+
+## Historical v0.6 addition — manual GE challenge workflow
 
 Added **M2A — Manual GE challenge analysis and CAM readiness**, requested on 19 September: identify one geometry, document meshing and quality, assign five material options, fix the nut locations, load the lug under all four GE cases, report stress maps/mass/displacement for 20 combinations, and assess CAM readiness manually. See [the detailed procedure and deliverables](ge-manual-workflow.md). It requires no agent setup. Existing M2 evidence can be reused; M2A is additional scope with dates and effort unassigned. The fixed release date is unchanged, but the original totals below exclude this addition and require re-estimation.
 
@@ -44,15 +76,7 @@ Decision 4 makes the FreeCAD reference pages useful. They now document the stack
 
 ## Milestone map
 
-| # | Milestone | Window | Exit criterion |
-| --- | --- | --- | --- |
-| **M1** | Foundations and de-risking | 17–19 Sep | Four gates pass, or a named fallback is written down |
-| **M2** | One part, one load case, walked by hand | 19–22 Sep | A frozen FreeCAD `ge_bracket` and LC1 record, one hand pass to a contour, and a written LLM integration spec |
-| **M2A** | Manual GE challenge analysis and CAM readiness | Unscheduled; before M3 | One geometry, accepted mesh, five materials × four cases reported, and manual CAM readiness assessed |
-| **M3** | Engineering loop, no agent | 23–25 Sep | A parameter dict returns a verified result, and V1 and V3 pass |
-| **M4** | The agent loop closes | 26–28 Sep | One full cycle on disk: read → predict → edit → re-run → score |
-| **M5** | Judgement | 29 Sep – 1 Oct | Mutation detection and false-positive rates are reportable numbers |
-| **M6** | Refusal and packaging | 1–3 Oct | Someone else runs one command on a clean Mac and gets a result |
+Current states, dates and effort are in the recovery table above. M1 → M2/M2A → M3 → M4 → M5 → M6; M2A.8 (#66) repairs the geometry before its replacement study can be accepted.
 
 Four hard orderings:
 
@@ -63,7 +87,7 @@ Four hard orderings:
 
 ---
 
-## Timeline
+## Historical timeline — superseded by the 21 Sep recovery plan
 
 Thu 17 Sep → Sat 3 Oct: **17 days**. Each task shows its window and an effort band. A milestone ends on the day the next one starts, and that shared day holds the handover work.
 
@@ -90,7 +114,7 @@ That is **5.9–9.5 h a day, every day, weekends included**. The Must work only 
 | End of 19 Sep | Gates 2b, 3 and 4 pass | Take the Gate 2b or Gate 4 fallback in [M1](#m1--foundations-and-de-risking-1719-sep). If Gate 3 fails, stop and re-plan, because nothing downstream runs |
 | End of 21 Sep | `ge_bracket` meshes and solves by hand in ≤ 60 s (half model) | Switch the demo part to `L_bracket` (D-14 fallback). M2.1–M2.5 repeat on it for about 6 h |
 | End of 22 Sep | The integration spec exists | Merge M2.10 into M2.9. M3 may proceed once the manual M2A exit criterion is met; the LLM spec is M4's input, not M3's |
-| End of 25 Sep | V1 and V3 pass | Reduce V3 to reactions balance only. Release is still gated on V1 |
+| Recovery checkpoint, 26 Sep | V1 and V3 pass | Block M4 and release until both pass; reforecast. REQ-DEL-009 forbids reducing V3 to reactions alone |
 | End of 28 Sep | One scored cycle is on disk | Drop M5.10 to a one-page skill and fold M5.9 into M5.7 |
 | End of 1 Oct | Detection and false-positive rates are computed | Ship with the mutation numbers as they stand. M6.4 and M6.7 are not cut |
 
@@ -274,13 +298,13 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
 
 ---
 
-## M2A — Manual GE challenge analysis and CAM readiness (unscheduled)
+## M2A — Manual GE challenge analysis and CAM readiness (21–23 Sep recovery target)
 
 **Expectation.** Manually establish the complete engineering study on the selected geometry before automating it. No agent or LLM setup is required.
 
 **Exit criterion.** One frozen geometry, accepted mesh-quality and convergence report, five sourced material cards, fixed nut locations and lug load transfer, four independent load cases, a 20-combination stress/mass/displacement report with maps, and a documented CAM readiness assessment.
 
-**Selected geometry:** `data/simjeb/Iteration1.stp`, the closest visual match among seven local candidates to the GE challenge images. See [the comparison and checksum](ge-geometry-comparison.md). M2A.1 still verifies provenance, units, dimensions, interfaces and the load-frame transform before analysis. This selection applies to the manual study; `parts/ge_bracket.FCStd` remains the separate parametric agent baseline.
+**Selected geometry:** scripts select `data/ge_manual/GE_Challenge_Bracket.stp`, derived from FVZ's outer shell. Its replacement acceptance is still blocked in #66/#60. Earlier Iteration1 records remain historical. The agent baseline `parts/ge_bracket.FCStd` is separate; manual replacement does not silently replace it.
 
 **Study matrix:** Ti-6Al-4V, Al 7075-T6, Al 6061-T6, 17-4PH and 4140 steel, each under LC1 vertical, LC2 horizontal, LC3 diagonal (42° from vertical), and LC4 torsion. Twenty manual analyses report stress maps, maximum von Mises stress, mass and maximum displacement; the CAM assessment covers the selected geometry and material-specific tooling/setup assumptions.
 
@@ -290,15 +314,16 @@ See [M2A detailed steps](ge-manual-workflow.md) for procedures, dependencies and
 
 | Task | Issue | Schedule |
 | --- | --- | --- |
-| M2A.1 Identify and freeze the selected GE geometry file | [#59](https://github.com/sujitojha1/3d-part-optimization-agent/issues/59) | Unassigned |
-| M2A.2 Document manual meshing steps and report mesh quality | [#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60) | Unassigned |
-| M2A.3 Prepare and assign five material options manually | [#61](https://github.com/sujitojha1/3d-part-optimization-agent/issues/61) | Unassigned |
-| M2A.4 Fix the four nut locations and define lug load transfer | [#62](https://github.com/sujitojha1/3d-part-optimization-agent/issues/62) | Unassigned |
-| M2A.5 Set up four independent GE static load cases | [#63](https://github.com/sujitojha1/3d-part-optimization-agent/issues/63) | Unassigned |
-| M2A.6 Run the manual material/load matrix and publish stress, mass and displacement report | [#64](https://github.com/sujitojha1/3d-part-optimization-agent/issues/64) | Unassigned |
-| M2A.7 Walk through CAM readiness manually and document blockers | [#65](https://github.com/sujitojha1/3d-part-optimization-agent/issues/65) | Unassigned |
+| M2A.1 Identify and freeze the selected GE geometry file | [#59](https://github.com/sujitojha1/3d-part-optimization-agent/issues/59) | 21–23 Sep recovery |
+| M2A.2 Document manual meshing steps and report mesh quality | [#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60) | 21–23 Sep recovery |
+| M2A.3 Prepare and assign five material options manually | [#61](https://github.com/sujitojha1/3d-part-optimization-agent/issues/61) | 21–23 Sep recovery |
+| M2A.4 Fix the four nut locations and define lug load transfer | [#62](https://github.com/sujitojha1/3d-part-optimization-agent/issues/62) | 21–23 Sep recovery |
+| M2A.5 Set up four independent GE static load cases | [#63](https://github.com/sujitojha1/3d-part-optimization-agent/issues/63) | 21–23 Sep recovery |
+| M2A.6 Run the manual material/load matrix and publish stress, mass and displacement report | [#64](https://github.com/sujitojha1/3d-part-optimization-agent/issues/64) | 21–23 Sep recovery |
+| M2A.7 Walk through CAM readiness manually and document blockers | [#65](https://github.com/sujitojha1/3d-part-optimization-agent/issues/65) | 21–23 Sep recovery |
+| M2A.8 Build and qualify the replacement solid from FVZ outer surface | [#66](https://github.com/sujitojha1/3d-part-optimization-agent/issues/66) | 21–23 Sep recovery |
 
-M2A expands the manual engineering study; the existing agent task remains LC1 until separately revised. Ti-6Al-4V is the GE material baseline; other materials and CNC readiness are project extensions. Dates and effort are not yet assigned; the old M3 window must be reviewed against this added predecessor.
+M2A expands the manual engineering study; the existing agent task remains LC1 until separately revised. Ti-6Al-4V is the GE material baseline; other materials and CNC readiness are project extensions. Dates and remaining effort are assigned in the current recovery table; M3 waits for accepted M2A evidence.
 
 ---
 
@@ -388,7 +413,7 @@ M2A expands the manual engineering study; the existing agent task remains LC1 un
 
 ## Reference — the stack
 
-The intent's stack, on macOS arm64. Availability was checked on 2026-09-17; nothing has been run yet.
+The intent's stack, on macOS arm64. The table below is the historical 17 Sep availability assessment. Gates subsequently ran; see the current audit for measured evidence and limitations.
 
 | Layer | Choice | Status |
 | --- | --- | --- |
@@ -406,7 +431,7 @@ Nothing binary is committed. The FEM environment — FreeCAD with its FEM and CA
 
 ## Reference — the demo problem
 
-**`ge_bracket` — the demo part.** A parametric FreeCAD rebuild of the GE jet engine bracket: base plate, four bolt bosses, two clevis arms and arm-root fillets around SimJEB's interface coordinates. It uses LC1 vertical, Ti-6Al-4V at 903 MPa, SF 1.5, and the half model about the clevis midplane.
+**`ge_bracket` — the demo part.** A parametric FreeCAD rebuild of the GE jet engine bracket: base plate, four bolt bosses, two clevis arms and arm-root fillets around SimJEB's interface coordinates. It uses LC1 vertical, Ti-6Al-4V at 903 MPa, SF 1.5, and the full model because the measured bolt pattern is asymmetric.
 
 - The peak should land at the arm-root fillet or the bolt bosses. M2.2 predicts which, and M2.5 checks the prediction, so a correct visual reading is a checkable claim.
 - The mass levers are wall thickness (base, arms), fillet radius, and pocket or lightening-hole size. All are ordinary 2.5D milling features, and the original GE bracket was a machined part.
@@ -449,7 +474,7 @@ Nothing binary is committed. The FEM environment — FreeCAD with its FEM and CA
 
 Ranked. The first two are settled by M1 and M2; the rest are live.
 
-1. **Images through the gateway are unproven.** → Gate 2b, then exercised on the real contour in M2.7.
+1. **Images through the gateway are proven.** Real-contour region/prediction quality is still open in M2.7.
 2. **The pin-load model has no FreeCAD tool that matches SimJEB.** → M2.2.
 3. **Material data provenance.** MatWeb's data is not freely redistributable, so use published handbook or public datasheet values, cited per record.
 4. **Single process only.** The harness's JSON stores are unsafe across processes, so candidates cannot be evaluated in parallel. That is a real throughput ceiling.
@@ -491,3 +516,6 @@ v0.4's questions about the `S17Code` fork and the reusable base are closed: the 
 | 0.3 | 2026-09-12 | M0.5 hand walk added |
 | 0.4 | 2026-09-13 | Three-week timeline with per-task dates; GE bracket and SimJEB as reference inputs |
 | 0.5 | 2026-09-17 | Re-planned from 17 Sep with a fixed 3 Oct end. Milestones renamed M1–M6 to match the board. macOS arm64 only. The intent's stack restored and centred on FreeCAD: FEM Workbench for Gmsh and CalculiX, CAM Workbench for manufacturability (no slicer). `ge_bracket` is the demo part, with `L_bracket` as fallback. Gate 4 (headless CAM Job and `PathSimulator`) added as M1.11; M2.8 merged into M2.7; V3 promoted and V2 made Should; 3 tasks, 3 mutants, 5 machinable alloys; skill A/B and run report made Should. Dated cut triggers replace the cut list. FreeCAD-reference changes 1–11 folded into tasks |
+
+| 0.6 | 2026-09-19 | Added M2A manual four-case study before M3 |
+| 0.7 | 2026-09-21 | Audited intent, every requirement and 63 board items; added M2A.8, current geometry/mesh blockers and recovery dates/remaining effort; retained V1 and full V3 release gates; separated historical studies from current acceptance |

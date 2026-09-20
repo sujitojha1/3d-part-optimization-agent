@@ -1,5 +1,8 @@
 # GE manual analysis report — 5 materials × 4 load cases on L1 (M2A.6)
 
+> **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
+> The linked CSV already contains the current 2052.2 g Ti baseline; the 1256.9 g narrative below is the earlier study and has not yet been regenerated for the replacement.
+
 | | |
 | --- | --- |
 | Task | M2A.6 ([#64](https://github.com/sujitojha1/3d-part-optimization-agent/issues/64)) · [M2A workflow](ge-manual-workflow.md) |

@@ -1,5 +1,7 @@
 # GE geometry visual comparison — 19 September 2026
 
+> **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
+
 **Selected for the manual M2A study: `data/simjeb/Iteration1.stp`.** It is the closest visual match among the seven local files to the stored GE original-bracket image: broad sloped body, continuous four-corner base, twin narrow clevis arms with root gussets, and four recessed bolt locations. This is a qualitative visual selection, not proof of original-file identity or challenge compliance.
 
 Compared with both [GE original image](assets/ge-bracket/original-bracket.png) and [GE load/interface graphic](assets/ge-bracket/load-conditions-and-interfaces.png), already sourced in [the GE brief](ge-jet-engine-bracket.md). No new geometry was downloaded.

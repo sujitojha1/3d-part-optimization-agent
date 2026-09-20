@@ -5,7 +5,7 @@
 | Version | 0.3 |
 | Date | 2026-09-17 |
 | Owner | Sujit Ojha |
-| Status | Design sketch. Nothing here is built yet |
+| Status | Design target; CAD/FEM/CAM prototypes exist, integrated capability seam and judge remain unbuilt. See [21 Sep audit](progress-review-2026-09-21.md) |
 | Companions | [Intent](intent.md) — why · [Requirements](requirements.md) — what · [Plan](plan.md) — when · this — how |
 
 This is the design document. It records structure and technical choices with their reasoning, so that a decision made in week 1 can be re-examined in week 3 without re-deriving it. It deliberately does **not** restate requirements; where a choice is already fixed, it cites the decision ID (`D-nn`) rather than repeating the rationale.
@@ -83,7 +83,7 @@ CandidateSpec ──▶ FreeCAD doc ──▶ Part shape ──▶ FemMeshGmsh �
 
 - **Offline rescoring** (`REQ-DEL-007`) — the scorer reads stored results; nothing needs re-running.
 - **Provenance** (`REQ-DEL-006`) — the spec *is* the provenance.
-- **Caching** — an identical spec can return a stored result without re-solving.
+- **Artifact identity** — identical specs have comparable hashes, but D-19 and REQ-DEL-010 require explicit rerunnable evaluations to execute and be recorded; hashing must not silently deduplicate them.
 
 ```python
 CandidateSpec = {

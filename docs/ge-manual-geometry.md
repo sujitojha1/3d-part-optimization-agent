@@ -1,5 +1,7 @@
 # GE manual geometry — frozen source record (M2A.1)
 
+> **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
+
 | | |
 | --- | --- |
 | Task | M2A.1 ([#59](https://github.com/sujitojha1/3d-part-optimization-agent/issues/59)) · [M2A workflow](ge-manual-workflow.md) |
