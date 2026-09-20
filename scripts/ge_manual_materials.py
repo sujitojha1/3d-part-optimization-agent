@@ -30,12 +30,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 import FreeCAD  # noqa: E402
+from ge_part import PART  # noqa: E402  the part M2A is locked to
 import ObjectsFem  # noqa: E402
 from femtools import ccxtools  # noqa: E402
 
-MESH_DOC = ROOT / "data" / "ge_manual" / "mesh" / "L1" / "Iteration1_mesh_L1.FCStd"
+MESH_DOC = ROOT / "data" / "ge_manual" / "mesh" / "L1" / f"{PART}_mesh_L1.FCStd"
 MESH_QUALITY = ROOT / "out" / "ge_manual_mesh" / "mesh-quality.json"
 DATA = ROOT / "data" / "ge_manual" / "materials"
 OUT = ROOT / "out" / "ge_manual_materials"
@@ -133,7 +135,7 @@ def main():
         analysis.addObject(mat)
         doc.recompute()
         volume = part.Shape.Volume
-        doc.saveAs(str(work / f"Iteration1_{key}_L1.FCStd"))
+        doc.saveAs(str(work / f"{PART}_{key}_L1.FCStd"))
 
         rec = {**c, "density_t_per_mm3": c["density_kg_m3"] * 1e-12, "volume_mm3": round(volume, 3),
                "mass_g": round(volume * c["density_kg_m3"] * 1e-6, 1), "decks": {}}

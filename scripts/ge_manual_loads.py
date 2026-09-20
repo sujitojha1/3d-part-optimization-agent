@@ -36,6 +36,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from ge_part import PART  # noqa: E402  the part M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -154,7 +155,7 @@ def main():
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     part_rec = json.loads((BCS_OUT / "partition.json").read_text())
-    mesh_doc = MESH_DIR / LEVEL / f"Iteration1_mesh_{LEVEL}.FCStd"
+    mesh_doc = MESH_DIR / LEVEL / f"{PART}_mesh_{LEVEL}.FCStd"
     mesh_sha = sha256(mesh_doc)
     report = {"level": LEVEL, "mesh_doc": str(mesh_doc.relative_to(ROOT)), "mesh_doc_sha256": mesh_sha,
               "freecad_version": ".".join(FreeCAD.Version()[:3]), "frame": "SimJEB deck frame: +z up, out = -x",
@@ -165,7 +166,7 @@ def main():
         shutil.rmtree(work, ignore_errors=True)
         work.mkdir(parents=True)
         doc, part, analysis, solver = build(LEVEL, part_rec, case)
-        doc.saveAs(str(work / f"Iteration1_{name}_{LEVEL}.FCStd"))
+        doc.saveAs(str(work / f"{PART}_{name}_{LEVEL}.FCStd"))
         fea = ccxtools.FemToolsCcx(analysis, solver)
         fea.update_objects()
         fea.write_inp_file()

@@ -44,6 +44,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+from ge_part import PART  # noqa: E402  the part M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -57,7 +58,10 @@ from ge_manual_materials import CARDS  # noqa: E402
 
 LEVEL = "L1"
 CCX = ROOT / "vendor" / "fem-env" / "bin" / "ccx"
-DATA = ROOT / "data" / "ge_manual" / "matrix" / LEVEL
+# Keyed by part as well as level. Without the part in the path, re-running the
+# matrix for a different geometry silently reused the previous part's solved
+# fields and stamped the new geometry checksum and mass onto them.
+DATA = ROOT / "data" / "ge_manual" / "matrix" / PART / LEVEL
 OUT = ROOT / "out" / "ge_manual_matrix"
 MESH_QUALITY = ROOT / "out" / "ge_manual_mesh" / "mesh-quality.json"
 MATERIALS = ROOT / "out" / "ge_manual_materials" / "materials.json"
@@ -65,7 +69,7 @@ MATERIALS = ROOT / "out" / "ge_manual_materials" / "materials.json"
 BOLT_EXCLUSION_R = 10.0            # mm, plan radius about each bolt axis (as M2's LC1)
 PIN_EXCLUSION = 3.0                # mm from the lug bore and chamfer faces (M2A.2 pin_bore region)
 PIN_AXIS = np.array([0.030278, -0.999542, 0.0])
-PARTITIONED = ROOT / "data" / "ge_manual" / "Iteration1_partitioned.FCStd"
+PARTITIONED = ROOT / "data" / "ge_manual" / f"{PART}_partitioned.FCStd"
 _PIN_MASK = {}
 BALANCE_TOL = 0.005                # residual <= 0.5 % of the applied load
 L_REF = 100.0                      # mm, converts between force and moment scales
@@ -174,7 +178,7 @@ def run_one(card, case_name, part_rec, force):
            "applied_force_N": list(case["force"]), "applied_moment_Nmm": list(case["moment"]), "problems": []}
 
     doc, part, analysis, solver = build(LEVEL, part_rec, case, card)
-    fcstd = work / f"Iteration1_{card}_{case_name}_{LEVEL}.FCStd"
+    fcstd = work / f"{PART}_{card}_{case_name}_{LEVEL}.FCStd"
     doc.saveAs(str(fcstd))
     fea = ccxtools.FemToolsCcx(analysis, solver)
     fea.update_objects()

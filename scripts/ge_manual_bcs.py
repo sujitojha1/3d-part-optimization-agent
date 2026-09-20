@@ -3,9 +3,9 @@
 Two steps:
 
   partition  Imprint a coplanar disc of the GE nut-face OD (14.173 mm) on each of
-             the four nut seats of data/ge_manual/Iteration1_manual.FCStd, so each
+             the four nut seats of data/ge_manual/<PART>_manual.FCStd, so each
              seat splits into a nut-contact patch (hole edge to 14.173 mm) and a
-             free outer ring. Writes data/ge_manual/Iteration1_partitioned.FCStd,
+             free outer ring. Writes data/ge_manual/<PART>_partitioned.FCStd,
              the geometry M2A.2 meshes and everything later uses.
 
   setup      On a mesh level's document from M2A.2, add what a person adds by hand:
@@ -36,9 +36,11 @@ import time
 from pathlib import Path
 
 import numpy as np
+from ge_part import PART  # noqa: E402  the part M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import FreeCAD  # noqa: E402
@@ -49,8 +51,8 @@ from femtools import ccxtools  # noqa: E402
 from ge_manual_materials import CARDS  # noqa: E402
 
 GEOMETRY_CHECK = ROOT / "out" / "ge_manual_geometry" / "geometry-check.json"
-SOURCE = ROOT / "data" / "ge_manual" / "Iteration1_manual.FCStd"
-PARTITIONED = ROOT / "data" / "ge_manual" / "Iteration1_partitioned.FCStd"
+SOURCE = ROOT / "data" / "ge_manual" / f"{PART}_manual.FCStd"
+PARTITIONED = ROOT / "data" / "ge_manual" / f"{PART}_partitioned.FCStd"
 MESH_DIR = ROOT / "data" / "ge_manual" / "mesh"
 DATA = ROOT / "data" / "ge_manual" / "bcs"
 OUT = ROOT / "out" / "ge_manual_bcs"
@@ -129,10 +131,10 @@ def partition():
         if len(p["patch"]) != 1 or len(p["ring"]) != 1:
             sys.exit(f"{label}: expected one patch and one ring, got {p}")
 
-    new = FreeCAD.newDocument("Iteration1_partitioned")
+    new = FreeCAD.newDocument(f"{PART}_partitioned")
     part = new.addObject("Part::Feature", "Bracket")
     part.Shape = solid
-    part.Label = "Bracket (Iteration1.stp, deck frame, nut seats partitioned)"
+    part.Label = f"Bracket ({PART}.stp, deck frame, nut seats partitioned)"
     ref = new.addObject("Part::Vertex", "PinReference")
     ref.X, ref.Y, ref.Z = pin_xyz
     new.recompute()
@@ -150,7 +152,7 @@ def partition():
 
 def build(level, part_rec, case, card="ti6al4v"):
     """Analysis objects for one case and material card on a copy of the level's mesh document."""
-    doc = FreeCAD.openDocument(str(MESH_DIR / level / f"Iteration1_mesh_{level}.FCStd"))
+    doc = FreeCAD.openDocument(str(MESH_DIR / level / f"{PART}_mesh_{level}.FCStd"))
     part, analysis = doc.getObject("Bracket"), doc.getObject("Analysis")
     solver = ObjectsFem.makeSolverCalculiXCcxTools(doc, "CalculiXCcxTools")
     solver.AnalysisType = "static"
@@ -335,7 +337,7 @@ def setup(level, run_solve):
         shutil.rmtree(work, ignore_errors=True)
         work.mkdir(parents=True)
         doc, part, analysis, solver = build(level, part_rec, case)
-        doc.saveAs(str(work / f"Iteration1_bcs_{level}_{name}.FCStd"))
+        doc.saveAs(str(work / f"{PART}_bcs_{level}_{name}.FCStd"))
         fea = ccxtools.FemToolsCcx(analysis, solver)
         fea.update_objects()
         fea.write_inp_file()

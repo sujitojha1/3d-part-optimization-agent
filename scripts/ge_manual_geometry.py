@@ -1,6 +1,6 @@
 """M2A.1: check the selected GE geometry and write its manual-analysis working copy.
 
-Reads the frozen source data/simjeb/Iteration1.stp (never writes it) after
+Reads the frozen source data/simjeb/<PART>.stp (never writes it) after
 checking its SHA-256, then records
 
 - STEP header identity, declared units and B-rep validity;
@@ -16,8 +16,8 @@ checking its SHA-256, then records
   centres and checked against its independent pin load node.
 
 Writes out/ge_manual_geometry/geometry-check.json, annotated views, and the
-working copy data/ge_manual/Iteration1_manual.FCStd, built from a deck-frame
-STEP data/ge_manual/Iteration1_deck_frame.step (both gitignored: the CAD is
+working copy data/ge_manual/<PART>_manual.FCStd, built from a deck-frame
+STEP data/ge_manual/<PART>_deck_frame.step (both gitignored: the CAD is
 licensed non-commercial by GrabCAD), then reopens the working copy to check it.
 
 Run with the FEM environment's Python:
@@ -39,11 +39,12 @@ sys.path.insert(0, str(ROOT))
 import FreeCAD  # noqa: E402
 import Part  # noqa: E402
 
-SOURCE = ROOT / "data" / "simjeb" / "Iteration1.stp"
-SOURCE_SHA256 = "a0ba77206bce822bc607722f07734f6d989a6375992545921921c887e6ea0e0e"
+from ge_part import PART, SOURCE_DIR, SOURCE_SHA256  # noqa: E402  the part M2A is locked to
+
+SOURCE = ROOT / "data" / SOURCE_DIR / f"{PART}.stp"
 DECK = ROOT / "data" / "simjeb" / "148.fem"
-WORKING = ROOT / "data" / "ge_manual" / "Iteration1_manual.FCStd"
-DECK_STEP = ROOT / "data" / "ge_manual" / "Iteration1_deck_frame.step"
+WORKING = ROOT / "data" / "ge_manual" / f"{PART}_manual.FCStd"
+DECK_STEP = ROOT / "data" / "ge_manual" / f"{PART}_deck_frame.step"
 OUT = ROOT / "out" / "ge_manual_geometry"
 
 # GE brief section 2 (docs/ge-jet-engine-bracket.md), inches converted to mm.
@@ -67,17 +68,29 @@ def vec(v):
 
 
 def step_header(path):
-    text = path.read_text(errors="replace")
+    """Header identity, tolerant of both writers we hold.
+
+    CATIA V5 writes each entity on one line; ST-Developer (FVZ) pretty-prints them
+    across lines with /* ... */ comments between the fields. Strip the comments and
+    collapse whitespace first, then one set of patterns fits both.
+    """
+    raw = path.read_text(errors="replace")
+    text = re.sub(r"\s+", " ", re.sub(r"/\*.*?\*/", " ", raw, flags=re.S))
     head = text[: text.index("ENDSEC;")]
-    units = re.findall(r"LENGTH_UNIT\(\)NAMED_UNIT\(\*\)SI_UNIT\(([^)]*)\)", text)
+    units = re.findall(r"LENGTH_UNIT\(\) ?NAMED_UNIT\(\*\) ?SI_UNIT\(([^)]*)\)", text)
     uncertainty = re.search(r"LENGTH_MEASURE\(([^)]*)\)[^;]*distance_accuracy_value", text)
+
+    def grab(pattern, where=head, group=1):
+        m = re.search(pattern, where)
+        return m.group(group) if m else None
+
     return {
-        "file_description": re.search(r"FILE_DESCRIPTION\(\('([^']*)'", head).group(1),
-        "file_name": re.search(r"FILE_NAME\('([^']*)'", head).group(1),
-        "timestamp": re.search(r"FILE_NAME\('[^']*','([^']*)'", head).group(1),
-        "preprocessor": re.findall(r"'([^']*)'", head.split("FILE_NAME(", 1)[1])[-3:],
-        "schema": re.search(r"FILE_SCHEMA\(\('([^']*)'", head).group(1),
-        "product": re.search(r"PRODUCT\('([^']*)'", text).group(1),
+        "file_description": grab(r"FILE_DESCRIPTION\s*\(\s*\('([^']*)'"),
+        "file_name": grab(r"FILE_NAME\s*\(\s*'([^']*)'"),
+        "timestamp": grab(r"FILE_NAME\s*\(\s*'[^']*'\s*,\s*'([^']*)'"),
+        "preprocessor": re.findall(r"'([^']*)'", head.split("FILE_NAME", 1)[1])[-3:],
+        "schema": grab(r"FILE_SCHEMA\s*\(\s*\('([^']*)'"),
+        "product": grab(r"PRODUCT\s*\(\s*'([^']*)'", text),
         "length_unit": units,
         "distance_accuracy_mm": float(uncertainty.group(1)) if uncertainty else None,
     }
@@ -173,25 +186,46 @@ def kabsch_2d(src, dst):
 
 
 def ray_thickness(shape, deflection):
-    """Local wall thickness: inward ray from each triangle centroid to the next surface hit."""
+    """Local wall thickness: inward ray from each outer-surface triangle centroid.
+
+    Rays start on the outer shell and are cast against the whole solid, so a ray stops
+    at an internal cavity and reports real material depth rather than the outer
+    envelope. On a single-shell part every face is the outer shell, so this is the
+    original measurement unchanged.
+
+    Normals are taken per shell. VTK's auto_orient_normals assumes one closed surface:
+    given a solid with an internal void it cannot tell which side of the cavity shell
+    is material, and the inverted cavity normals sent rays into the void to graze
+    neighbouring faces at concave creases, reporting 0.001 mm walls on a part whose
+    thinnest real wall is 3.17 mm. Orienting each shell on its own avoids that.
+
+    The measure is one-sided: it does not see a thin rib only reachable from inside a
+    sealed cavity. Section 5's shell-to-shell check covers that for a hollow part.
+    """
     import vtk
     import pyvista as pv
 
-    verts, tris = shape.tessellate(deflection)
-    mesh = pv.PolyData(np.array([[v.x, v.y, v.z] for v in verts]), np.c_[np.full(len(tris), 3), np.array(tris)].ravel())
-    mesh = mesh.compute_normals(cell_normals=True, point_normals=False, auto_orient_normals=True)
+    def poly(s):
+        v, t = s.tessellate(deflection)
+        return pv.PolyData(np.array([[p.x, p.y, p.z] for p in v]),
+                           np.c_[np.full(len(t), 3), np.array(t)].ravel())
+
+    shells = shape.Solids[0].Shells if shape.Solids else shape.Shells
+    outer = max(shells, key=lambda x: x.BoundBox.DiagonalLength)
+    target = poly(shape)
+    src = poly(outer).compute_normals(cell_normals=True, point_normals=False,
+                                      auto_orient_normals=True)
     tree = vtk.vtkOBBTree()
-    tree.SetDataSet(mesh)
+    tree.SetDataSet(target)
     tree.BuildLocator()
-    centres, normals = mesh.cell_centers().points, mesh.cell_data["Normals"]
+    centres, normals = src.cell_centers().points, src.cell_data["Normals"]
     hits, found = vtk.vtkPoints(), []
     for c, n in zip(centres, normals):
-        start = c - 1e-4 * n
-        tree.IntersectWithLine(start, c - 200.0 * n, hits, None)
+        tree.IntersectWithLine(c - 1e-4 * n, c - 200.0 * n, hits, None)
         ds = [np.linalg.norm(np.array(hits.GetPoint(k)) - c) for k in range(hits.GetNumberOfPoints())]
         ds = [d for d in ds if d > 1e-3]
         found.append(min(ds) if ds else np.nan)
-    return mesh, centres, np.array(found)
+    return src, centres, np.array(found)
 
 
 def main():
@@ -350,7 +384,7 @@ def main():
     }
 
     # Working copy: native solid with a Placement into the deck frame; source file untouched.
-    doc = FreeCAD.newDocument("Iteration1_manual")
+    doc = FreeCAD.newDocument(f"{PART}_manual")
     part = doc.addObject("Part::Feature", "Bracket")
     m = FreeCAD.Matrix(*(float(v) for v in np.vstack([np.c_[to_deck, shift], [0, 0, 0, 1]]).ravel()))
     # Bake the transform into the geometry with a STEP round trip. Left as a
@@ -370,7 +404,7 @@ def main():
         "roundtrip_volume_change_mm3": round(working.Volume - shape.Volume, 4),
     }
     part.Shape = working
-    part.Label = "Bracket (Iteration1.stp, SimJEB deck frame)"
+    part.Label = f"Bracket ({PART}.stp, SimJEB deck frame)"
     ref = doc.addObject("Part::Vertex", "PinReference")
     ref.X, ref.Y, ref.Z = (float(v) for v in pin_deck)
     ref.Label = "Pin reference (pin centreline x clevis midplane)"
@@ -435,7 +469,7 @@ def render(shape, to_deck, shift, record):
         p.enable_parallel_projection()
         p.reset_camera()
         p.camera.zoom(1.05)
-        p.add_text(f"Iteration1.stp in SimJEB deck frame | {name} | red annulus = GE nut face Ø{NUT_ID}/Ø{NUT_OD}", font_size=11, color="black")
+        p.add_text(f"{PART}.stp in SimJEB deck frame | {name} | red annulus = GE nut face Ø{NUT_ID}/Ø{NUT_OD}", font_size=11, color="black")
         p.screenshot(str(OUT / f"interfaces_{name}.png"))
         p.close()
 

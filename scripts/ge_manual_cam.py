@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from ge_part import PART  # noqa: E402  the part M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -31,7 +32,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import FreeCAD  # noqa: E402
 from FreeCAD import Vector  # noqa: E402
 
-GEOMETRY = ROOT / "data" / "ge_manual" / "Iteration1_partitioned.FCStd"
+GEOMETRY = ROOT / "data" / "ge_manual" / f"{PART}_partitioned.FCStd"
 OUT = ROOT / "out" / "ge_manual_cam"
 PIN_REF = Vector(-20.97366, -74.76046, 44.72459)
 PIN_AXIS = (0.030278, -0.999542, 0.0)
@@ -358,12 +359,26 @@ def build_job(setup_id, part, visibility):
     top = bs.BoundBox.ZMax
 
     def surface(name, tc, faces=None, stepover=10.0, sample=0.2, multipass=False, stepdown=2.0,
-                offset=0.0, final=None, pattern="ZigZag", angle=0.0):
+                offset=0.0, final=None, pattern="ZigZag", angle=0.0, boundbox="BaseBoundBox"):
+        """A Surface op. Ops with no Base faces must pass boundbox="Stock".
+
+        With BaseBoundBox and no Base faces, SurfaceSupport._preProcessEntireBase slices an
+        envelope of the part clipped to the op's depth range. getShapeSlice and
+        getCrossSection both reject that slice here, and the getSliceFromEnvelope fallback
+        assumes the envelope's top edges form one closed wire, so Part.Wire throws
+        "BRep_API: command not done". Path.Op.Base.execute swallows it into the object's
+        status string, leaving an operation with an empty path and a run that still looks
+        clean. The envelope is unstable too: the same call on the same shape returned 42
+        then 48 faces in one process, so whichever whole-model op draws the bad envelope
+        fails -- fixing only Rough moved the failure onto Finish. The stock box always
+        slices to a single wire, and for a whole-model pass clearing the stock is also the
+        right bound.
+        """
         op = PathSurface.Create(name)
         op.ToolController = tcs[tc]
         if faces:
             op.Base = [(base, faces)]
-        op.StepOver, op.SampleInterval, op.BoundBox = stepover, f"{sample} mm", "BaseBoundBox"
+        op.StepOver, op.SampleInterval, op.BoundBox = stepover, f"{sample} mm", boundbox
         op.CutPattern, op.CutPatternAngle = pattern, angle
         op.LayerMode = "Multi-pass" if multipass else "Single-pass"
         op.DepthOffset = f"{offset} mm"
@@ -386,15 +401,17 @@ def build_job(setup_id, part, visibility):
     blends = lambda d: face_list(lambda i, f: concave_blend(f) and vis(d, i), bs)  # noqa: E731
     if setup_id == "op10":      # base bottom at z = 0, part below; the cavity is at most 39.2 deep
         floor = -40.5
-        surface("Rough", 1, stepover=40, sample=0.5, multipass=True, stepdown=2.0, offset=0.5, final=floor)
-        surface("Finish", 3, stepover=10, sample=0.2, final=floor)
+        surface("Rough", 1, stepover=40, sample=0.5, multipass=True, stepdown=2.0, offset=0.5, final=floor,
+                boundbox="Stock")
+        surface("Finish", 3, stepover=10, sample=0.2, final=floor, boundbox="Stock")
         surface("Blends R2", 4, faces=blends("-z"), stepover=8, sample=0.15, final=floor)
         holes = one_per_hole(bs, face_list(lambda i, f: classify(f) in ("cylinder z r5.156", "cylinder z r5.334"), bs))
         helix("Bolt holes", 2, holes, start=0.0, final=-8.1)
     elif setup_id == "op20":    # base bottom at z = 0; the soft jaws reach z = 18
         floor = 18.5
-        surface("Rough", 1, stepover=40, sample=0.5, multipass=True, stepdown=2.0, offset=0.5, final=floor)
-        surface("Finish", 3, stepover=10, sample=0.2, final=floor)
+        surface("Rough", 1, stepover=40, sample=0.5, multipass=True, stepdown=2.0, offset=0.5, final=floor,
+                boundbox="Stock")
+        surface("Finish", 3, stepover=10, sample=0.2, final=floor, boundbox="Stock")
         surface("Blends R2", 4, faces=[f for f in blends("+z") if bs.Faces[int(f[4:]) - 1].BoundBox.ZMin >= floor - 0.01],
                 stepover=8, sample=0.15, final=floor)
         cb = one_per_hole(bs, face_list(lambda i, f: classify(f) == "cylinder z r10.541", bs))
@@ -594,6 +611,13 @@ def cam(setups):
                                       "status": op.getStatusString(),
                                       "z_min": round(min(zs), 3) if zs else None,
                                       "faces": len(op.Base[0][1]) if getattr(op, "Base", None) else "whole model"})
+        # Path.Op.Base.execute swallows an operation's exception into its status string, so an
+        # op can come back with an empty path and the run still look clean. Surface it here.
+        rec["failed_operations"] = [o["label"] for o in rec["operations"]
+                                    if o["status"] != "Valid" or o["commands"] == 0]
+        for label in rec["failed_operations"]:
+            print(f"{sid}: WARNING operation {label!r} produced no usable path "
+                  f"({[o['status'] for o in rec['operations'] if o['label'] == label][0]})", flush=True)
         doc.saveAs(str(DATA / f"{sid}.FCStd"))
         report = Sanity.CAMSanity(job, output_file=str(OUT / f"{sid}_setup_sheet.html"))
         rec["sanity"] = [{"type": q["squawkType"], "note": q["Note"]} for section in report.data.values()
@@ -774,9 +798,10 @@ def assess():
            "check": {"offset_mm": CHECK_OFFSET, "sim_resolution_mm": SIM_RES, "finished_fraction": FINISHED_FRACTION},
            "post_processor": POST_PROCESSOR, "spindle_max_rpm": SPINDLE_MAX_RPM, "gcode_material": MATERIAL,
            "cutting_assumptions": CUTTING, "feeds_by_material": material_feeds, "tool_reach": reach,
-           "setups": {sid: {k: r[k] for k in ("title", "direction", "workholding", "operations", "gcode_lines",
-                                               "simulated_moves", "timings_s", "sanity", "collisions",
-                                               "cleared_fraction_of_visible", "gouged_area_mm2")}
+           "setups": {sid: {k: r.get(k) for k in ("title", "direction", "workholding", "operations", "gcode_lines",
+                                                   "simulated_moves", "timings_s", "sanity", "collisions",
+                                                   "cleared_fraction_of_visible", "gouged_area_mm2",
+                                                   "failed_operations")}
                       for sid, r in setups.items()},
            "features": features}
     (OUT / "assessment.json").write_text(json.dumps(rec, indent=2, default=str))

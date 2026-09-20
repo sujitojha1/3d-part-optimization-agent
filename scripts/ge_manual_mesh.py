@@ -1,6 +1,6 @@
 """M2A.2: mesh the frozen GE working copy at level L1 and report mesh quality.
 
-Opens data/ge_manual/Iteration1_partitioned.FCStd (M2A.1 working copy with the
+Opens data/ge_manual/<PART>_partitioned.FCStd (M2A.1 working copy with the
 M2A.4 nut-seat partition), and builds
 the same objects a person creates by hand in the FEM Workbench: an Analysis, a
 Gmsh mesh of `Bracket` (second-order tetrahedra, C3D10) and four MeshRegions,
@@ -34,9 +34,11 @@ import time
 from pathlib import Path
 
 import numpy as np
+from ge_part import PART  # noqa: E402  the part M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 import FreeCAD  # noqa: E402
 import ObjectsFem  # noqa: E402
@@ -45,7 +47,7 @@ from femmesh.gmshtools import GmshTools  # noqa: E402
 
 # The M2A.4 partitioned working copy: nut seats split at the GE nut-face OD so
 # the supports can reference exactly the nut-contact patches.
-WORKING = ROOT / "data" / "ge_manual" / "Iteration1_partitioned.FCStd"
+WORKING = ROOT / "data" / "ge_manual" / f"{PART}_partitioned.FCStd"
 GEOMETRY_CHECK = ROOT / "out" / "ge_manual_geometry" / "geometry-check.json"
 DATA = ROOT / "data" / "ge_manual" / "mesh"
 OUT = ROOT / "out" / "ge_manual_mesh"
@@ -346,7 +348,7 @@ def main():
                "femmesh": {"nodes": fem.NodeCount, "volumes": fem.VolumeCount, "faces": fem.FaceCount,
                            "edges": fem.EdgeCount, "tetra": fem.TetraCount}}
         unv = Path(tools.temp_file_mesh)
-        doc.saveAs(str(work / f"Iteration1_mesh_{level}.FCStd"))
+        doc.saveAs(str(work / f"{PART}_mesh_{level}.FCStd"))
         FreeCAD.closeDocument(doc.Name)
         rec["files"] = {p.name: sha256(p) for p in sorted(work.iterdir()) if p.is_file() and p.suffix != ".FCBak"}
 
