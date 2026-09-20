@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "name": "12 mm Endmill, 45 reach",
+  "shape": "endmill.fcstd",
+  "shape-type": "Endmill",
+  "parameter": {
+    "CuttingEdgeHeight": "45.0000 mm",
+    "Diameter": "12.0000 mm",
+    "Length": "75.0000 mm",
+    "ShankDiameter": "12.0000 mm"
+  },
+  "attribute": {}
+}

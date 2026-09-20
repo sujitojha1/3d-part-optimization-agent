@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "name": "4 mm Ball End, 45 reach",
+  "shape": "ballend.fcstd",
+  "shape-type": "Ballend",
+  "parameter": {
+    "CuttingEdgeHeight": "45.0000 mm",
+    "Diameter": "4.0000 mm",
+    "Length": "70.0000 mm",
+    "ShankDiameter": "4.0000 mm"
+  },
+  "attribute": {}
+}

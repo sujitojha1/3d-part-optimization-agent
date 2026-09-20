@@ -24,7 +24,7 @@ MM_VERSION="2.9.0-0"
 MM_URL="https://github.com/mamba-org/micromamba-releases/releases/download/$MM_VERSION/micromamba-osx-arm64"
 MM_SHA256="ec2a072f028e1a7cf20f3e2e74d5a8127cf5a5f27636375b5359811565f4e5be"
 
-SPECS=("python=3.11" "freecad=1.1.3" "gmsh=4.15.2" "python-gmsh=4.15.2" "calculix=2.23" "pyvista" "ccx2paraview")
+SPECS=("python=3.11" "freecad=1.1.3" "gmsh=4.15.2" "python-gmsh=4.15.2" "calculix=2.23" "pyvista" "ccx2paraview" "opencamlib=2023.01.11")
 
 # Keep micromamba's package cache and config inside vendor/, not in $HOME.
 export MAMBA_ROOT_PREFIX="$VENDOR/mamba"
@@ -78,7 +78,7 @@ create_env() {
   # conda-forge installs FreeCAD.so in lib/, not site-packages.
   echo "import sys, os; sys.path.append(os.path.join(sys.prefix, 'lib'))" \
     > "$ENV_PREFIX/lib/python3.11/site-packages/freecad-lib.pth"
-  "$ENV_PREFIX/bin/python" -c "import FreeCAD, Fem, Path, PathSimulator, gmsh; print('ok      FreeCAD', '.'.join(FreeCAD.Version()[:3]))"
+  "$ENV_PREFIX/bin/python" -c "import FreeCAD, Fem, Path, PathSimulator, gmsh, opencamlib; print('ok      FreeCAD', '.'.join(FreeCAD.Version()[:3]))"
   # ccx -v prints its version but exits non-zero, so check the text only.
   local ccx_version
   ccx_version="$("$ENV_PREFIX/bin/ccx" -v 2>&1 || true)"
