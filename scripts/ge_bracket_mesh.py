@@ -135,10 +135,16 @@ def region_faces(shape, p, half):
     return faces, matched, ({} if half else bad)
 
 
-def build(radius, half, netgen=True, high_order_optimize="Optimization", region_size=None):
-    """Document, part object and Gmsh mesh object for one case, unmeshed."""
-    p = {k: r["baseline"] for k, r in gb.PARAMS.items()}
-    p["arm_root_fillet"] = radius
+def build(radius, half, netgen=True, high_order_optimize="Optimization", region_size=None,
+          params=None):
+    """Document, part object and Gmsh mesh object for one case, unmeshed.
+
+    `params` overrides the whole parameter dict; without it only arm_root_fillet
+    moves off the baseline, which is what M2.3's own cases need.
+    """
+    p = dict(params) if params else {k: r["baseline"] for k, r in gb.PARAMS.items()}
+    if params is None:
+        p["arm_root_fillet"] = radius
     shape = gb.build_shape(p)
     if half:
         shape = half_shape(shape)

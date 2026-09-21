@@ -278,10 +278,10 @@ The FreeCAD document built in M2.1 **is kept** and becomes M3.1's starting point
    - Record that the bolt-hole rigid supports are a singularity source, not only the load ([fem-geometry-preparation §13](fem-geometry-preparation.md)).
    - Hand-calculate that the baseline passes and where the peak should land.
 3. **Hand-mesh** (M2.3). Use `FemMeshGmsh` with D-24's max size, min size and `MeshRegion`, at nominal `arm_root_fillet` **and at its minimum**. Watch for negative Jacobians and try `SecondOrderLinear` if they appear. Keep element counts and timings. **Done 21 Sep**, recorded in [ge-bracket-mesh.md](ge-bracket-mesh.md): max 4.0 / min 1.0 / region 1.5 / curvature 8, four cases accepted, 96.7k-101.5k nodes and 3.7-3.8 s on the full model. Nothing inverted at either radius, so the retry was forced to record it, and it scores a meaningless minSJ 1.0. Two consequences for D-24: it must also name `OptimizeNetgen`, and a retried mesh must never be accepted on its Jacobian. The sizes stay provisional until M2.5 has solved on them.
-4. **Verify the label chain survives** (M2.4).
-   - Mesh Groups → `.inp` element sets, checked by reading the deck: every D-06 label is present, non-overlapping, and covers the part.
-   - At each parameter's min and max, every face predicate matches exactly one face.
-   - This is where the checkable-spatial-claim promise, and the topological-naming risk, get settled.
+4. **Verify the label chain survives** (M2.4). **Done 21 Sep**, recorded in [ge-bracket-labels.md](ge-bracket-labels.md).
+   - Mesh Groups → `.inp` element sets, checked by reading the deck: every D-06 label is present, non-overlapping, and covers the part. **Answer: no D-06 label reaches the ccxtools deck at all** — FreeCAD 1.1.3 hard-codes `group_param = False` in `femsolver/calculix/write_mesh.py`. Written directly with group data on, all ten sets arrive, but as overlapping node sets and *surface*-element sets; no group has element type `Volume`. So **D-06's element-centroid fallback is the route, not a contingency**: implemented, and exhaustive, disjoint and non-empty at all 13 meshed points. D-06 should say the labels are applied after the solve.
+   - At each parameter's min and max, every face predicate matches exactly one face. **77 CAD points pass** (baseline, 12 bounds, 64 corners); the face count moves 65 → 67 at `arm_root_fillet=max` without breaking a match.
+   - This is where the checkable-spatial-claim promise, and the topological-naming risk, get settled. **Topological naming is closed for this part; the deck route is not, and M3.1/M3.4 must carry the fallback.**
 5. **Hand-run the solve and parse it** (M2.5).
    - Run `ccxtools` `write_inp_file` → `ccx_run` → `load_results`.
    - Extract full-part mass in grams, max von Mises, max displacement, and peak element → label.
