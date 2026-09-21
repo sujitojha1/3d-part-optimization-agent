@@ -74,7 +74,7 @@ Status means accepted evidence for the complete requirement; Partial never means
 | D-19–D-21 | Rerunnable capabilities, protected paths and runtime mesh-edit refusal remain to integrate. |
 | D-22 | Bundled cantilever gate passed; slender V1 and V3 remain release blockers. |
 | D-23 | Full model required by measured asymmetric bolt pattern; corrected in requirements/plan. |
-| D-24 | Final parametric MeshRegions, minimum-fillet checks and retry path unproved; current manual mesh rejected. |
+| D-24 | Parametric MeshRegion sizing and the minimum-fillet check are now recorded ([ge-bracket-mesh.md](ge-bracket-mesh.md)); the sizes are provisional pending M2.5, D-24 omits the load-bearing `OptimizeNetgen` setting, the retry path is only exercised under force, and the current manual mesh is still rejected. |
 
 OD-B and OD-C remain unset. Define V1/V3 and numerical tolerances before evaluating validation fixtures; freeze prediction/mutation thresholds before the scored evaluation set, not after viewing those scores. No deadline trigger may silently remove a Must test.
 
@@ -84,7 +84,7 @@ Existing closed issues are historical completion records. Open tasks with concre
 
 | Issue | Status after audit | Evidence / remaining work |
 | --- | --- | --- |
-| #45 | In Progress | Nominal parametric LC1 mesh exists. Minimum-fillet D-24 MeshRegion evidence and inversion/retry checks remain. |
+| #45 | In Progress | Nominal parametric LC1 mesh exists. Minimum-fillet D-24 MeshRegion evidence and the inversion/retry check were added later the same day in [ge-bracket-mesh.md](ge-bracket-mesh.md) — four cases accepted at max 4.0 / min 1.0 / region 1.5, no inverted elements at either radius, retry recorded only under `--force-retry`. The sizes remain provisional until M2.5 solves on them, and no solve, convergence or element-set evidence exists yet. |
 | #47 | In Progress | CAD predicate checks exist at parameter bounds. The solver uses overlapping surface-node regions; exhaustive, disjoint volume-element labels in the deck or centroid fallback remain unproved. |
 | #48 | In Progress | ccxtools LC1 solves and parsed results exist (rigid full model about 16.45 s). Final D-24 mesh, full-part mass/result contract and unambiguous element-region evidence remain. |
 | #49 | In Progress | Renderer and reference/manual-study maps exist. Freeze and visually accept the parametric bracket camera/legend settings, then check SimJEB 148; generic gateway transport is insufficient. |
