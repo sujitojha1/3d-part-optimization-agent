@@ -12,7 +12,8 @@ geometric predicates in PREDICATES, re-run after every recompute (D-04,
 REQ-OPT-008). Each predicate must match exactly one face.
 
 The frozen record for this part is docs/ge-bracket-part.md. Importing this
-module needs FreeCAD, so run it with vendor/fem-env/bin/python. A saved
+module needs FreeCAD, so run it with the FEM environment's Python
+(scripts/fem_env.py finds it). A saved
 document stores the feature's class as parts.ge_bracket.GeBracket, so the
 repository root must be on sys.path when the document is opened.
 """

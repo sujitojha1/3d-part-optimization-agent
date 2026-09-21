@@ -4,8 +4,8 @@ Maps the von Mises field of SimJEB design 148 from its nodal CSV onto its
 surface mesh and renders it with no window, the way the pipeline will render
 contour images for the vision model.
 
-Run with the FEM environment's Python, after scripts/fetch_simjeb.py:
-    vendor/fem-env/bin/python scripts/render_field.py [--load-case ver|hor|dia|tor]
+Run with the FEM environment's Python (scripts/fem_env.py finds it), after scripts/fetch_simjeb.py:
+    $FEM_PYTHON scripts/render_field.py [--load-case ver|hor|dia|tor]
 
 Writes out/gate2a/148_<lc>_stress.png and prints a JSON result. Exit 0 when
 the image was written and is not blank, 2 otherwise.

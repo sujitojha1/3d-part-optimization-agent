@@ -27,9 +27,9 @@ copied to docs/ge-manual-analysis-matrix.csv; per run
 data/ge_manual/matrix/L1/<card>/<case>/ (FCStd, deck, ccx log, .dat, .frd, fields.npz;
 gitignored, derived from licensed CAD). Finished runs are skipped unless --force.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_manual_matrix.py [--cards ti6al4v ...] [--cases LC1 ...] [--force]
-    vendor/fem-env/bin/python scripts/ge_manual_matrix.py --report-only
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_manual_matrix.py [--cards ti6al4v ...] [--cases LC1 ...] [--force]
+    $FEM_PYTHON scripts/ge_manual_matrix.py --report-only
 """
 
 import argparse
@@ -52,12 +52,14 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import FreeCAD  # noqa: E402
 from femtools import ccxtools  # noqa: E402
 
+import fem_env  # noqa: E402
+
 from ge_manual_bcs import MESH_DIR, OUT as BCS_OUT, build, check, parse_deck, sha256  # noqa: E402
 from ge_manual_loads import CASES, load_checks  # noqa: E402
 from ge_manual_materials import CARDS  # noqa: E402
 
 LEVEL = "L1"
-CCX = ROOT / "vendor" / "fem-env" / "bin" / "ccx"
+CCX = fem_env.ccx()
 # Keyed by part as well as level. Without the part in the path, re-running the
 # matrix for a different geometry silently reused the previous part's solved
 # fields and stamped the new geometry checksum and mass onto them.

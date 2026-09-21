@@ -21,8 +21,8 @@ of the nearest surface element, written out as one `*ELSET` per region.
 There is no CadQuery here and none is planned; D-04 (v0.5) keeps FreeCAD, and the
 "CadQuery tags" in the task's original wording predate it.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_bracket_labels.py [--points baseline ...]
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_bracket_labels.py [--points baseline ...]
 
 Writes out/ge_bracket_labels/labels.json and, per point, the two decks and the
 fallback element sets. Exit 0 when every point's chain checks pass, 2 otherwise.
@@ -47,6 +47,7 @@ import ObjectsFem  # noqa: E402
 from FreeCAD import Vector  # noqa: E402
 from femtools import ccxtools  # noqa: E402
 
+import fem_env  # noqa: E402
 import ge_bracket_mesh as gm  # noqa: E402  D-24 sizing and the Gmsh runner (M2.3)
 from parts import ge_bracket as gb  # noqa: E402
 
@@ -54,8 +55,10 @@ OUT = ROOT / "out" / "ge_bracket_labels"
 LC1 = json.loads((ROOT / "parts" / "ge_bracket_lc1.json").read_text())
 
 # FreeCAD 1.1.3 hard-codes this in femsolver/calculix/write_mesh.py; it is why
-# no mesh group reaches the ccxtools deck. Checked at run time, not assumed.
-CCX_WRITER = ROOT / "vendor" / "fem-env" / "Mod" / "Fem" / "femsolver" / "calculix" / "write_mesh.py"
+# no mesh group reaches the ccxtools deck. Checked at run time, not assumed,
+# in whichever install is running (vendor/fem-env under D-17, else the system
+# FreeCAD) so the check cannot read one FreeCAD and solve with another.
+CCX_WRITER = fem_env.ccx_writer()
 
 SET_RE = re.compile(r"^\*(ELSET|NSET)\s*,\s*(?:ELSET|NSET)\s*=\s*([^\s,]+)", re.I | re.M)
 
@@ -193,6 +196,46 @@ def write_ccx_deck(doc, part, p, work):
     return Path(fea.inp_file_name), round(time.perf_counter() - t, 2)
 
 
+def closest_surface_cell(xyz, cells, points):
+    """Index of the closest triangle in `cells` for each point, one per point.
+
+    pyvista's `find_closest_cell` is a thin wrapper over `vtkStaticCellLocator`,
+    so the VTK branch is the same computation, not an approximation. It exists
+    because the FEM environment on the Windows machine (M2.5) carries VTK but
+    not pyvista; both branches are exercised, and the branch taken is recorded.
+    """
+    faces = np.c_[np.full(len(cells), 3), cells].ravel()
+    try:
+        import pyvista as pv
+    except ModuleNotFoundError:
+        pass
+    else:
+        return np.asarray(pv.PolyData(xyz, faces).find_closest_cell(points)), "pyvista"
+
+    import vtk
+    from vtk.util.numpy_support import numpy_to_vtk, numpy_to_vtkIdTypeArray
+
+    pts = vtk.vtkPoints()
+    pts.SetData(numpy_to_vtk(np.ascontiguousarray(xyz, dtype=float), deep=True))
+    array = vtk.vtkCellArray()
+    array.SetCells(len(cells), numpy_to_vtkIdTypeArray(faces.astype(np.int64), deep=True))
+    poly = vtk.vtkPolyData()
+    poly.SetPoints(pts)
+    poly.SetPolys(array)
+    locator = vtk.vtkStaticCellLocator()
+    locator.SetDataSet(poly)
+    locator.BuildLocator()
+
+    cell, cid, sub, d2 = vtk.vtkGenericCell(), vtk.reference(0), vtk.reference(0), vtk.reference(0.0)
+    found, hit = np.empty(len(points), dtype=np.int64), [0.0, 0.0, 0.0]
+    for i, point in enumerate(points):
+        locator.FindClosestPoint(list(point), hit, cell, cid, sub, d2)
+        found[i] = int(cid)
+    if (found < 0).any():
+        raise RuntimeError("the cell locator found no closest triangle for some element")
+    return found, "vtk"
+
+
 def centroid_labels(fm, got):
     """D-06's fallback: every volume element labelled by the nearest surface element.
 
@@ -202,8 +245,6 @@ def centroid_labels(fm, got):
     makes the labelling disjoint by construction - one closest cell per element -
     and exhaustive, which is exactly what the group route cannot give.
     """
-    import pyvista as pv
-
     nodes = fm.Nodes
     regions = list(gb.REGIONS)
     tris, tri_region = [], []
@@ -215,7 +256,6 @@ def centroid_labels(fm, got):
     index = {n: i for i, n in enumerate(used)}
     xyz = np.array([[nodes[n].x, nodes[n].y, nodes[n].z] for n in used])
     cells = np.array([[index[n] for n in t] for t in tris])
-    surface = pv.PolyData(xyz, np.c_[np.full(len(cells), 3), cells].ravel())
     tri_region = np.array(tri_region)
 
     vol_ids = list(fm.Volumes)
@@ -225,8 +265,8 @@ def centroid_labels(fm, got):
     vxyz = np.array([[nodes[n].x, nodes[n].y, nodes[n].z] for n in all_used])
     cents = vxyz[np.vectorize(vindex.get)(corners)].mean(axis=1)
 
-    closest = surface.find_closest_cell(cents)
-    label = tri_region[np.asarray(closest)]
+    closest, locator = closest_surface_cell(xyz, cells, cents)
+    label = tri_region[closest]
     sets = {regions[ri]: [vol_ids[i] for i in np.flatnonzero(label == ri)]
             for ri in range(len(regions))}
 
@@ -243,6 +283,7 @@ def centroid_labels(fm, got):
         "disjoint": overlaps == 0,
         "every_region_non_empty": all(len(v) > 0 for v in sets.values()),
         "surface_triangles_used": len(tris),
+        "locator": locator,
     }
     checks["ok"] = checks["exhaustive"] and checks["disjoint"] and checks["every_region_non_empty"]
     return sets, checks
@@ -315,7 +356,8 @@ def main():
     report = {"freecad": ".".join(FreeCAD.Version()[:3]), "sizes_mm": gm.SIZES,
               "d06_regions": list(gb.REGIONS),
               "ccx_writer_group_param": re.search(r"group_param\s*=\s*(\w+)", src).group(1),
-              "ccx_writer_source": str(CCX_WRITER.relative_to(ROOT)),
+              "ccx_writer_source": fem_env.rel(CCX_WRITER),
+              "d17_met": fem_env.on_d17(),
               "points": []}
 
     for name, p in points(args.points).items():

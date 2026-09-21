@@ -29,8 +29,8 @@ wrote, and is judged against THRESHOLDS, fixed here before any mesh is made.
 Writes out/ge_bracket_mesh/mesh.json, and per case a work directory with the
 FCStd, .geo, .brep and .unv plus a section view through the arm root.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_bracket_mesh.py [--cases nominal_full ...]
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_bracket_mesh.py [--cases nominal_full ...]
 """
 
 import argparse

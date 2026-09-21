@@ -11,8 +11,8 @@ load_results, with the conda-forge ccx on PATH.
 - gmsh_<order>: the same analysis re-meshed by FemMeshGmsh at its default size.
   Recorded, not gated: these show what the published number depends on.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/gate3_ccx.py
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/gate3_ccx.py
 
 Writes each case's .inp/.frd/.dat under out/gate3/<case>/ and a JSON result to
 out/gate3/result.json. Exit 0 when the bundled case reproduces -86.93 mm, 2

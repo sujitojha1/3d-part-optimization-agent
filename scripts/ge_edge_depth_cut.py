@@ -1,6 +1,7 @@
 """Create a native, editable Part Box/Cut on the marked long outer bracket face.
 
-Run: vendor/fem-env/bin/python scripts/ge_edge_depth_cut.py
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_edge_depth_cut.py
 The frozen analysis source is unchanged. Edit CuttingBlock.CutDepth in FreeCAD.
 """
 import hashlib

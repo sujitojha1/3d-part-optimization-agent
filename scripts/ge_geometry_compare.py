@@ -1,5 +1,6 @@
 """Render all local bracket candidates in interface-aligned views; no CAD edits.
-Run with vendor/fem-env/bin/python scripts/ge_geometry_compare.py.
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_geometry_compare.py
 Outputs under gitignored out/ge_geometry_comparison/.
 """
 import sys,json,hashlib

@@ -21,9 +21,9 @@ Two steps:
 Outputs: out/ge_manual_bcs/bcs.json and views; data/ge_manual/bcs/<level>/
 (gitignored, derived from licensed CAD).
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_manual_bcs.py partition
-    vendor/fem-env/bin/python scripts/ge_manual_bcs.py setup [--level L1] [--solve]
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_manual_bcs.py partition
+    $FEM_PYTHON scripts/ge_manual_bcs.py setup [--level L1] [--solve]
 """
 
 import argparse

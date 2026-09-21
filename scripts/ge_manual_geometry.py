@@ -20,8 +20,8 @@ working copy data/ge_manual/<PART>_manual.FCStd, built from a deck-frame
 STEP data/ge_manual/<PART>_deck_frame.step (both gitignored: the CAD is
 licensed non-commercial by GrabCAD), then reopens the working copy to check it.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_manual_geometry.py
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_manual_geometry.py
 """
 
 import hashlib

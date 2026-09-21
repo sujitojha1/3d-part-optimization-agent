@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Gate 4 (M1.11): a FreeCAD CAM Job runs headless on this Mac.
+"""Gate 4 (M1.11): a FreeCAD CAM Job runs headless.
 
-Runs scripts/cam_check.py on each test block in its own vendor/fem-env
+Runs scripts/cam_check.py on each test block in its own FEM-environment
 process, the way the L1 capability will call it, and checks the exit code and
 the result: the clean block leaves no residual stock, the undercut block does,
 and each block writes G-code. Prints the per-step timings.
@@ -16,7 +16,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PYTHON = ROOT / "vendor" / "fem-env" / "bin" / "python"
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import fem_env  # noqa: E402
+
+PYTHON = fem_env.python()
 EXPECT_RESIDUAL = {"clean": False, "undercut": True}
 
 
@@ -35,7 +39,8 @@ def main():
     parser.add_argument("--resolution", type=float, default=0.25, help="heightmap cell, mm")
     args = parser.parse_args()
     if not PYTHON.exists():
-        sys.exit(f"no FEM environment at {PYTHON}; run scripts/setup_fem_env.sh")
+        sys.exit(f"no FEM Python at {PYTHON}; run scripts/setup_fem_env.sh, "
+                 f"or point FEM_ENV at a FreeCAD 1.1.3 install")
 
     failures = []
     for block, expected in EXPECT_RESIDUAL.items():

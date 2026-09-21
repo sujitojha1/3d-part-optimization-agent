@@ -5,8 +5,8 @@ from the committed ToolBit library, runs Sanity Check, post-processes G-code
 with a pinned post processor, replays the toolpaths through PathSimulator and
 measures the stock left above the part.
 
-Run with the FEM environment's Python, one block per process:
-    vendor/fem-env/bin/python scripts/cam_check.py clean|undercut [--resolution MM]
+Run with the FEM environment's Python (scripts/fem_env.py finds it), one block per process:
+    $FEM_PYTHON scripts/cam_check.py clean|undercut [--resolution MM]
 
 Writes out/gate4/<block>/{result.json,<block>.ngc,sanity.html} and prints the
 result as JSON. Exit 0 when every step ran, whatever the residual stock; exit 2

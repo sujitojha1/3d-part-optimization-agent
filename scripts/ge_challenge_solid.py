@@ -19,7 +19,8 @@ Reads the frozen data/simjeb/Bracket_Modified_FVZ.stp (never writes it) after ch
 its SHA-256. Writes data/ge_manual/GE_Challenge_Bracket.stp and
 out/ge_challenge_solid/solid-check.json.
 
-    vendor/fem-env/bin/python scripts/ge_challenge_solid.py
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_challenge_solid.py
 """
 
 import hashlib

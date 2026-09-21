@@ -21,8 +21,8 @@ Writes data/ge_manual/mesh/L1/ (FCStd with Analysis + mesh,
 out/ge_manual_mesh/L1/ (histogram, section and worst-element views), plus
 out/ge_manual_mesh/mesh-quality.json.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_manual_mesh.py
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_manual_mesh.py
 """
 
 import argparse

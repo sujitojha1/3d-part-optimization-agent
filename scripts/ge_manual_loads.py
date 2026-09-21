@@ -23,8 +23,8 @@ Outputs: out/ge_manual_loads/loads.json and one view per case; data/ge_manual/lo
 L1/<case>/ (gitignored, derived from licensed CAD). Only L1 is used: the L2 solve ran
 out of memory (docs/ge-manual-mesh.md).
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_manual_loads.py [--solve]
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_manual_loads.py [--solve]
 """
 
 import argparse

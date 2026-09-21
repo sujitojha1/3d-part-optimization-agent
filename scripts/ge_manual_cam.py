@@ -13,7 +13,7 @@ Line of sight ignores the tool's radius and holder; radius and reach are checked
 separately. A face is reachable from a direction when a point 0.3 mm off the surface,
 along its outward normal, has no material above it along that direction.
 
-    vendor/fem-env/bin/python scripts/ge_manual_cam.py survey
+    $FEM_PYTHON scripts/ge_manual_cam.py survey
 """
 
 import argparse

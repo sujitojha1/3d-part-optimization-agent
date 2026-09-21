@@ -13,7 +13,7 @@ native frame and envelope, but they are lightweighted differently:
 Iteration1 stays selectable so its published results remain reproducible. Set the
 environment variable GE_PART to override for a one-off run, e.g.
 
-    GE_PART=Iteration1 vendor/fem-env/bin/python scripts/ge_manual_mesh.py
+    GE_PART=Iteration1 $FEM_PYTHON scripts/ge_manual_mesh.py
 """
 
 import os

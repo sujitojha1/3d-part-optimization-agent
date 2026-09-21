@@ -10,9 +10,10 @@ answers could only have come from the pixels:
 - chat: the same contour through /v1/chat as an OpenAI-shape image_url block,
   the form a multi-turn agent exchange uses.
 
-Run with the FEM environment's Python (for Pillow), after scripts/render_field.py
+Run with the FEM environment's Python for Pillow (scripts/fem_env.py finds
+it), after scripts/render_field.py
 and with glc_v5 serving on GLC_URL (default http://127.0.0.1:8111):
-    vendor/fem-env/bin/python scripts/gate2b_vision.py [--provider gemini]
+    $FEM_PYTHON scripts/gate2b_vision.py [--provider gemini]
 
 The gate is transport: every call's `checks` must pass. Each contour call also
 asks for the peak's image quadrant and records it under `reading`. That is a

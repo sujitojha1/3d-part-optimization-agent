@@ -17,8 +17,8 @@ Mass in grams is volume (working-copy solid, mm^3) x density.
 Writes data/ge_manual/materials/<card>/ (FCStd and decks; gitignored, derived
 from licensed CAD) and out/ge_manual_materials/materials.json.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_manual_materials.py
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_manual_materials.py
 """
 
 import hashlib

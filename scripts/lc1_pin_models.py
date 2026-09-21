@@ -18,8 +18,8 @@ declared load vector, the check REQ-VER-006 needs.
 Both fix the four bolt-hole faces, as SimJEB's RBE2 spiders plus SPC 123456
 do: every node on the hole surface held in all DOF.
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/lc1_pin_models.py [--model rigid|half_bore] [--hmax MM]
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/lc1_pin_models.py [--model rigid|half_bore] [--hmax MM]
 
 Writes each model's deck and results under out/lc1/<model>/ and a summary to
 out/lc1/result.json. Exit 0 when every requested model solved, 2 otherwise.

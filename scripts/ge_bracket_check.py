@@ -12,8 +12,8 @@ parameter alone at its min and at its max. At each point it checks that
 With --corners it also checks all 64 combinations of every parameter at its
 min or max (about 80 s).
 
-Run with the FEM environment's Python:
-    vendor/fem-env/bin/python scripts/ge_bracket_check.py [--corners]
+Run with the FEM environment's Python (scripts/fem_env.py finds it):
+    $FEM_PYTHON scripts/ge_bracket_check.py [--corners]
 
 Writes out/ge_bracket/check.json and prints a summary. Exit 0 when every point
 passes, 2 otherwise.
