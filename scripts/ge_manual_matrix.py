@@ -30,6 +30,11 @@ gitignored, derived from licensed CAD). Finished runs are skipped unless --force
 Run with the FEM environment's Python (scripts/fem_env.py finds it):
     $FEM_PYTHON scripts/ge_manual_matrix.py [--cards ti6al4v ...] [--cases LC1 ...] [--force]
     $FEM_PYTHON scripts/ge_manual_matrix.py --report-only
+    $FEM_PYTHON scripts/ge_manual_matrix.py --level L2 --cards ti6al4v   (convergence study)
+
+A level other than L1 is the M2A.2 convergence study: its runs and outputs go to
+data/ge_manual/matrix/<part>/<level>/ and out/ge_manual_matrix_<level>/, and the
+docs CSV is left alone, so the published L1 matrix is never overwritten.
 """
 
 import argparse
@@ -395,7 +400,8 @@ def write_report(runs, ranges):
               "displacement_limit_x_ti": DISP_LIMIT, "legend_ranges": ranges, "governing": governing,
               "valid_runs": sum(r["status"] == "valid" for r in runs), "runs": runs}
     (OUT / "matrix.json").write_text(json.dumps(report, indent=2, default=float))
-    shutil.copyfile(OUT / "matrix.csv", ROOT / "docs" / "ge-manual-analysis-matrix.csv")
+    if LEVEL == "L1":  # the published matrix; convergence levels stay in out/
+        shutil.copyfile(OUT / "matrix.csv", ROOT / "docs" / "ge-manual-analysis-matrix.csv")
     return report
 
 
@@ -405,7 +411,13 @@ def main():
     parser.add_argument("--cases", nargs="+", choices=list(CASES), default=list(CASES))
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--report-only", action="store_true")
+    parser.add_argument("--level", default="L1", help="mesh level; not L1 = convergence study, kept apart")
     args = parser.parse_args()
+    global LEVEL, DATA, OUT
+    if args.level != LEVEL:
+        LEVEL = args.level
+        DATA = DATA.parent / LEVEL
+        OUT = OUT.with_name(f"{OUT.name}_{LEVEL}")
     part_rec = json.loads((BCS_OUT / "partition.json").read_text())
     if not args.report_only:
         for card in args.cards:

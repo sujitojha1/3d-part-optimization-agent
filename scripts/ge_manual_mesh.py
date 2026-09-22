@@ -54,11 +54,15 @@ OUT = ROOT / "out" / "ge_manual_mesh"
 
 # Sizes in mm; curvature is Gmsh elements per 2*pi of radius. FreeCAD's default
 # curvature of 12 alone puts ~1 mm elements on all 151 r2 fillets (982k nodes at
-# max 4), so curvature is set explicitly. Only L1 (~155k nodes) is meshed: this
-# ccx links SPOOLES only, and the L2 solve (322k nodes) ran out of memory on the
-# 16 GB host. A region size below the global minimum would be clamped.
+# max 4), so curvature is set explicitly. L2 and L3 are the Iteration1 study's
+# levels, each refining every size by 1.25-1.5x. On Iteration1 the L2 solve
+# (322k nodes) ran out of memory with SPOOLES on a 16 GB host; they are back for
+# the convergence study on the smaller GE_Challenge_Bracket, and the default run
+# still meshes L1 only. A region size below the global minimum would be clamped.
 LEVELS = {
     "L1": {"max": 5.0, "min": 1.0, "region": 2.0, "curvature": 4},
+    "L2": {"max": 4.0, "min": 1.0, "region": 1.5, "curvature": 6},
+    "L3": {"max": 3.0, "min": 0.75, "region": 1.0, "curvature": 9},
 }
 
 # Acceptance thresholds, fixed before meshing (Gmsh 4.15.2 definitions, see doc).
@@ -317,7 +321,7 @@ def plots(level, out, conn, xyz, q, summary, part_shape):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--levels", nargs="+", choices=list(LEVELS), default=list(LEVELS))
+    parser.add_argument("--levels", nargs="+", choices=list(LEVELS), default=["L1"])
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     geom = json.loads(GEOMETRY_CHECK.read_text())
