@@ -60,6 +60,9 @@ why this task exists: medians of 110, 47 and 30 MPa against a 602.1 MPa allowabl
 
 ## 4. The legend, which is the whole problem
 
+*Measured at MeshRegion 1.5. Re-run on 22 Sep after D-24 went to 2.0: the ranking is unchanged and the
+proposed freeze's worst ΔE (800 × 600, `iso`) moves 9.6 → 9.1 ([walkthrough §5](m2-walkthrough.md#d-24-the-mesh-sizing--applied-at-20)).*
+
 Minimum ΔE over the three judged pairs, `turbo`, 1600 × 1200, worst camera:
 
 | Scheme | Range, MPa | Worst ΔE | Reads |

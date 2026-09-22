@@ -63,9 +63,11 @@ OUT = ROOT / "out" / "ge_bracket_mesh"
 # cannot go below CharacteristicLengthMin, which Gmsh would clamp. Curvature is
 # set explicitly (FreeCAD's default 12 elements per 2*pi puts ~1.6 mm elements
 # on the r3 fillet, below the region size and far below what LC1 needs).
-# region 1.5 puts about 3 quadratic elements across the quarter-arc of the
-# minimum r3 fillet; --region records the 2.0 and 1.0 alternatives beside it.
-SIZES = {"max": 4.0, "min": 1.0, "region": 1.5, "curvature": 8}
+# Region 2.0 is the owner's D-24 choice of 22 Sep: against 1.5 it halves the
+# LC1 mesh + solve (92.13 -> 48.63 s) and moves the governing peak 2.2 % at the
+# same node (docs/m2-walkthrough.md section 5). Do not go past 2.0: pin_bore
+# under-reads 23 % at 3.0. --region records the 1.5 and 1.0 alternatives.
+SIZES = {"max": 4.0, "min": 1.0, "region": 2.0, "curvature": 8}
 
 # The one MeshRegion's faces: D-06 regions arm_root_fillet and pin_bore.
 REGION_NAMES = ("arm_root_fillet", "pin_bore")

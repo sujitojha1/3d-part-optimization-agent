@@ -61,7 +61,8 @@ simulation pipeline and no evidence yet that an agent can read its output.
 
 The part ([ge-bracket-part.md](ge-bracket-part.md)) and the LC1 load record
 ([ge-bracket-lc1.md](ge-bracket-lc1.md)) are frozen and unchanged by this milestone. The
-measured numbers, all from the full model at D-24 MeshRegion 1.5:
+measured numbers, all from the full model at D-24 MeshRegion 1.5 (the size M2 ran at; see section 5
+for the 2.0 re-run that is now the record):
 
 | | |
 | --- | --- |
@@ -83,7 +84,7 @@ these runs can detect; the wall times are, and the cut-trigger decision rests on
 
 D-13 allows 8 evaluations or 20 minutes. The simulation half of one evaluation is **111.23 s**,
 so 8 evaluations are **14.8 min of the 20**, leaving 5.2 min for the D-11 CAM jobs that M3.8 has
-not timed yet. At MeshRegion 2.0 the same 8 evaluations are **8.3 min**. D-13's own wording
+not timed yet. At MeshRegion 2.0, now applied, the same 8 evaluations are **8.9 min**. D-13's own wording
 applies the levers in order once a nominal solve passes 60 s: D-23 half model, then D-24 minimum
 size. The first lever is unavailable (below), so the second is the one on the table.
 
@@ -93,15 +94,21 @@ Unavailable, and correctly so: the measured bolt pattern is asymmetric about the
 midplane. No change; recorded because D-13 names it as the first lever and it can now be struck
 off definitively rather than reconsidered each time the clock is tight.
 
-### D-24, the mesh sizing — a change is proposed and not applied
+### D-24, the mesh sizing — applied at 2.0
 
 | MeshRegion | Mesh + solve | Governing peak | Arm-root fillet | Pin bore | Max disp |
 | --- | --- | --- | --- | --- | --- |
 | **1.5** (current) | 92.13 s | 445.8 MPa | 261.5 | 277.4 | 0.4516 |
 | **2.0** (proposed) | **48.63 s** | 435.8 MPa | 259.3 | 232.6 | 0.4515 |
 
-2.0 clears the 60 s trigger and moves the governing peak 2.2 % at the same node in the same
-region. **Not applied — changing D-24 is an owner decision.** Do not go past 2.0: `pin_bore`
+2.0 clears the 60 s trigger and moves the governing peak 2.2 % at the same location in the same
+region. **Applied by the owner on 22 Sep** (`SIZES` in `scripts/ge_bracket_mesh.py`). The
+canonical `out/lc1_solve` record was re-run at 2.0: 72,046 nodes, mesh + solve **47.06 s**
+(7.58 Gmsh + 39.48 ccx), CAD → result **66.45 s**, so 8 evaluations are **8.9 min**. Governing
+peak 435.8 MPa → **1.38×**, raw (flagged) peak 618.1 MPa, max displacement 0.4515 mm, mass
+unchanged. The M2.6 contour study re-run on it leaves the proposed freeze standing: the worst
+ΔE for `turbo`, 800 × 600, allowable/2 is 9.1 at `iso` (was 9.6), `front` and `arm_root`
+unchanged, and the ranking of legend schemes is the same. Do not go past 2.0: `pin_bore`
 under-reads by 23 % at 3.0, and while it does not govern under LC1, any load case that makes the
 bore govern re-opens the mesh study.
 
@@ -158,7 +165,7 @@ Unchanged and still owner-facing: the **D-11 `metal_am` profile** (min-wall only
 
 1. **Run M2.7.** It is the only thing standing between this project and evidence for its central
    claim, and the contour it needs now exists.
-2. **Answer D-24's 1.5 → 2.0.** It sets whether D-13's budget has room for the CAM jobs.
+2. ~~**Answer D-24's 1.5 → 2.0.**~~ Done 22 Sep: 2.0 applied, leaving about 11 of D-13's 20 min for the CAM jobs.
 3. **Re-measure the timings under D-17**, then re-read the cut trigger against them.
 4. **Resolve the 2.56× hand-versus-FE disagreement**, or record why it is accepted.
 5. **Accept or amend M2.6's render freeze**, which M2.7 can proceed without but M3 cannot.

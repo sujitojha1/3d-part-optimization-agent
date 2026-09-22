@@ -1,5 +1,7 @@
 # The D-06 label chain into the CalculiX deck (M2.4)
 
+> **22 Sep:** D-24 `MeshRegion` is now **2.0** (owner decision); this record stays as measured at 1.5. See the [M2 walkthrough §5](m2-walkthrough.md#d-24-the-mesh-sizing--applied-at-20).
+
 | | |
 | --- | --- |
 | Task | M2.4 ([#47](https://github.com/sujitojha1/3d-part-optimization-agent/issues/47)) · [plan](plan.md) step 4 |

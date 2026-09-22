@@ -1,5 +1,7 @@
 # ge_bracket mesh — D-24 sizing at nominal and minimum arm_root_fillet (M2.3)
 
+> **22 Sep:** D-24 `MeshRegion` is now **2.0** (owner decision); this record stays as measured at 1.5. See the [M2 walkthrough §5](m2-walkthrough.md#d-24-the-mesh-sizing--applied-at-20).
+
 | | |
 | --- | --- |
 | Task | M2.3 ([#45](https://github.com/sujitojha1/3d-part-optimization-agent/issues/45)) · [plan](plan.md) step 3 |
