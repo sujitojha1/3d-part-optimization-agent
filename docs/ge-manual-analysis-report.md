@@ -1,43 +1,48 @@
 # GE manual analysis report — 5 materials × 4 load cases on L1 (M2A.6)
 
-> **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
-> The linked CSV already contains the current 2052.2 g Ti baseline; the 1256.9 g narrative below is the earlier study and has not yet been regenerated for the replacement.
+> **23 Sep:** regenerated for the current part, `GE_Challenge_Bracket`, from `out/ge_manual_matrix/matrix.json`
+> and the CSV beside it. The Iteration1 study this page used to describe (Ti 1,256.9 g) is in git history only.
+> **Solver-valid is not engineering-verified:** the L1 mesh is not yet accepted
+> ([#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60): one element fails the gamma threshold),
+> there is no convergence evidence, and the LC1/LC2 screening peaks sit 0.34 mm outside the bolt exclusion (section 5).
 
 | | |
 | --- | --- |
 | Task | M2A.6 ([#64](https://github.com/sujitojha1/3d-part-optimization-agent/issues/64)) · [M2A workflow](ge-manual-workflow.md) |
-| Date | 2026-09-19 |
-| Geometry | `data/ge_manual/Iteration1_partitioned.FCStd`, SHA-256 `b025011c…790af6` ([M2A.1](ge-manual-geometry.md), with the [M2A.4](ge-manual-boundary-conditions.md) partition) |
-| Mesh | **L1**: 155,203 nodes and 90,353 C3D10 elements, connectivity SHA-256 `342e0de4…280b83` ([M2A.2](ge-manual-mesh.md)) |
+| Date | 2026-09-19; regenerated 2026-09-23 |
+| Geometry | `data/ge_manual/GE_Challenge_Bracket_partitioned.FCStd`, SHA-256 `10e5c43fa30958f088b04507b95d658e9d3049588b91fd71fead68ae4de3b758` (the [M2A.4](ge-manual-boundary-conditions.md) partition) |
+| Mesh | **L1**: 93,659 nodes and 57,835 C3D10 elements, connectivity SHA-256 `5e6a3c41…ee71cf6` ([M2A.2](ge-manual-mesh.md)). **Not accepted**: gamma min 0.0150 < 0.05 on one element at the bottom edge of hole B2 |
 | Setup | Supports and rigid pin from [M2A.4](ge-manual-boundary-conditions.md); LC1–LC4 from [M2A.5](ge-manual-load-cases.md); cards from [M2A.3](ge-manual-materials.md) |
 | Tools | FreeCAD 1.1.3 FEM (CalculiX solver object) writes each deck; CalculiX 2.23 (SPOOLES) solves it |
-| Script | `vendor/fem-env/bin/python scripts/ge_manual_matrix.py` (about 20 min). `--report-only` rebuilds the tables and maps from the saved results |
+| Script | `$FEM_PYTHON scripts/ge_manual_matrix.py` (about 15 min). `--report-only` rebuilds the CSV, `matrix.json` and maps from the saved results |
 | Data | [`ge-manual-analysis-matrix.csv`](ge-manual-analysis-matrix.csv) (20 rows); `out/ge_manual_matrix/matrix.json`; maps in `out/ge_manual_matrix/maps/` |
-| Status | **20 of 20 runs solved and valid.** Every support force and moment balance is within 0.02 N and 1.7 N·mm. **Open quality issue: no mesh-convergence evidence** (L1 only; section 7). The stress results are screening values, not verified peaks |
+| Status | **20 of 20 runs solved and valid.** Every support force and moment balance is within 0.009 N and 1.2 N·mm. **Not verified:** mesh not accepted, no convergence evidence, and the LC1/LC2 screen hinges on the exclusion radius (section 7). The stress results are screening values, not verified peaks |
 
 ## Summary
 
 - **Ti-6Al-4V, the challenge baseline:** passes the project screen in every case.
-  - Outside the exclusion zones, the peak von Mises stress is **427 MPa (LC1)**, a safety factor of 2.11 on GE's
+  - Outside the exclusion zones, the peak von Mises stress is **336.5 MPa (LC1)**, a safety factor of 2.68 on GE's
     903.2 MPa yield.
-  - The maximum displacement is **0.414 mm (LC1)**.
-  - The mass is **1,256.9 g**.
+  - The maximum displacement is **0.2278 mm (LC1)**.
+  - The mass is **2,052.2 g**.
 - **The governing case is LC1 (vertical) for every material,** for both stress and displacement.
 - **The stress field barely depends on the material.** The supports are fixed displacements, so the stress
-  depends only on Poisson's ratio. Peaks outside the exclusions vary by 1.6 % across the five cards. Displacement
+  depends only on Poisson's ratio. Peaks outside the exclusions vary by 0.7 % across the five cards. Displacement
   scales with 1/E.
-- **Two alternatives fail the stress screen:**
-  - **Al 7075-T651** exceeds yield in LC1 (428.5 MPa against 421.3 MPa), and its LC3 safety factor is 1.03.
-  - **Al 6061-T651** exceeds yield in LC1 and LC3, and its LC2 safety factor is 1.12.
+- **Two alternatives fail the stress screen at the 10 mm exclusion:**
+  - **Al 7075-T651:** LC1 safety factor 1.25 (336.7 MPa against 421.3 MPa), below the project's 1.5. Yield is not
+    exceeded. **This verdict flips at a 10.5 mm exclusion** (SF 1.73): see section 5.
+  - **Al 6061-T651** exceeds yield in LC1 (SF 0.72), and its LC2 and LC3 safety factors are 1.15 and 1.11. It still
+    exceeds yield in LC1 at 10.5 mm (243.4 against 241.3 MPa).
   - A yield exceedance in a linear-elastic solve is a **failed screening result**, not a prediction of plastic
     collapse.
 - **Both aluminium alloys also fail the project displacement limit,** 1.1 × Ti, at 1.58–1.65 × Ti.
-- **17-4PH H1025 and AISI 4140 Q&T pass both screens,** with minimum safety factors of 2.30 and 1.59, but weigh
-  2,214.8 g, 1.76 × Ti.
+- **17-4PH H1025 and AISI 4140 Q&T pass both screens,** with minimum safety factors of 2.95 and 2.04, but weigh
+  3,616.2 g, 1.76 × Ti.
 - **The alternatives are project comparisons, not challenge-compliant designs:** GE fixes Ti-6Al-4V.
   - Ti uses GE's 903.2 MPa yield; the others use specification minimums ([M2A.3 §1](ge-manual-materials.md)).
 - **Raw peaks exceed yield in almost every run.** They sit at idealised support and pin boundaries, where the
-  stress is singular: up to 1,818 MPa at a fixed-patch edge. They are reported but not used for screening
+  stress is singular: up to 1,633 MPa at a fixed-patch edge. They are reported but not used for screening
   (section 5).
 
 ## 1. How each run was made
@@ -62,7 +67,7 @@ averaged over the elements that share each node. Von Mises is computed from that
 and table uses it. Displacement is the magnitude of the nodal translation. The rigid body's two extra nodes are
 not part of the mesh and are left out.
 
-**Mass** is the B-rep volume, 283,729.678 mm³, times the card density, the same as M2A.3. It is identical across
+**Mass** is the B-rep volume, 463,257.576 mm³, times the card density, the same as M2A.3. It is identical across
 LC1–LC4 for each material by construction.
 
 ## 2. Acceptance criteria
@@ -78,7 +83,7 @@ LC1–LC4 for each material by construction.
 
 - **Bolt zone:** plan distance from a bolt axis < **10 mm**, full height. It covers the fixed-patch edge at
   Ø 14.173 and the hole. The same radius was used for M2's LC1.
-- **Pin zone:** within **3 mm of the lug bore and chamfer faces**, Face35–46, the M2A.2 `pin_bore` mesh region.
+- **Pin zone:** within **3 mm of the lug bore and chamfer faces**, Face38–43 on the current part, the M2A.2 `pin_bore` mesh region.
   This is where the rigid pin meets the part.
 
   **This definition was amended after the first results.** The first definition was an axial slab: 11.1125 ≤
@@ -86,18 +91,9 @@ LC1–LC4 for each material by construction.
   - Nodes on the lug faces: the fitted pin axis leaves them ±0.015 mm outside the slab.
   - The chamfer cones on the outer ends of the bores.
 
-  As a result, LC2's and LC4's first "outside" peaks sat on a bore edge (Face46 and its chamfer Face42) in every
-  material. That is the rigid-bore artefact the zone was meant to cover, so the definition was corrected. LC1
-  and LC3 are unchanged; LC2 and LC4 change as follows:
-
-  | Case | First definition, Ti (MPa) | Corrected, Ti (MPa) | Corrected peak location |
-  | --- | --- | --- | --- |
-  | LC2 | 224.8, bore edge of the −y lug | **214.8** | Recess fillet (toroid Face29) round B1's boss, 10.3 mm from its axis |
-  | LC4 | 392.9, bore/chamfer edge of the −y lug | **154.6** | R 3.175 arm-root fillet (Face96/97) of the +y lug, 4.4 mm from the pin faces |
-
-  The other materials change in the same way. Each LC2 and LC4 run keeps its first value in its `result.json`,
-  as `stress_first_definition`. The correction doesn't change any material's overall verdict. It does change two
-  runs: under the first definition, Al 7075 LC4 and Al 6061 LC4 had safety factors below 1.5 (1.07 and 0.61).
+  On Iteration1 this put LC2's and LC4's first "outside" peaks on a bore edge in every material, so the
+  definition was corrected before the current part was run. The current part was run with the corrected zone
+  only; the Iteration1 before/after values are in git history.
 
 ## 3. Results, all 20 runs
 
@@ -108,31 +104,31 @@ LC1–LC4 for each material by construction.
 
 | Material | LC | Status | Wall (s) | Raw max vM (MPa), zone | vM outside exclusions (MPa) | Yield (MPa) | SF raw / outside | Max disp (mm) | ÷ Ti | Residual F (N) / M (N·mm) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Ti-6Al-4V** (baseline) | LC1 | valid | 50.9 | 1,717.2 (bolt) | 427.2 | 903.2 | 0.53 / 2.11 | 0.4142 | 1.000 | 0.011 / 0.7 |
-| **Ti-6Al-4V** (baseline) | LC2 | valid | 51.3 | 995.2 (bolt) | 214.8 | 903.2 | 0.91 / 4.21 | 0.2094 | 1.000 | 0.004 / 0.2 |
-| **Ti-6Al-4V** (baseline) | LC3 | valid | 51.2 | 946.7 (bolt) | 407.2 | 903.2 | 0.95 / 2.22 | 0.2742 | 1.000 | 0.004 / 0.2 |
-| **Ti-6Al-4V** (baseline) | LC4 | valid | 51.2 | 392.9 (pin) | 154.6 | 903.2 | 2.30 / 5.84 | 0.0531 | 1.000 | 0.001 / 0.0 |
-| Al 7075-T651 | LC1 | valid | 50.4 | 1,735.2 (bolt) | 428.5 | 421.3 | 0.24 / **0.98 (> yield)** | 0.6563 | **1.585** | 0.018 / 0.4 |
-| Al 7075-T651 | LC2 | valid | 51.2 | 1,003.0 (bolt) | 214.9 | 421.3 | 0.42 / 1.96 | 0.3312 | **1.582** | 0.003 / 0.2 |
-| Al 7075-T651 | LC3 | valid | 50.5 | 954.0 (bolt) | 408.8 | 421.3 | 0.44 / **1.03 (< 1.5)** | 0.4348 | **1.586** | 0.006 / 0.3 |
-| Al 7075-T651 | LC4 | valid | 49.7 | 394.0 (pin) | 155.8 | 421.3 | 1.07 / 2.70 | 0.0841 | **1.584** | 0.000 / 0.1 |
-| Al 6061-T651 | LC1 | valid | 50.3 | 1,735.2 (bolt) | 428.5 | 241.3 | 0.14 / **0.56 (> yield)** | 0.6826 | **1.648** | 0.018 / 0.4 |
-| Al 6061-T651 | LC2 | valid | 50.5 | 1,003.0 (bolt) | 214.9 | 241.3 | 0.24 / **1.12 (< 1.5)** | 0.3444 | **1.645** | 0.003 / 0.2 |
-| Al 6061-T651 | LC3 | valid | 50.3 | 954.0 (bolt) | 408.8 | 241.3 | 0.25 / **0.59 (> yield)** | 0.4522 | **1.649** | 0.006 / 0.3 |
-| Al 6061-T651 | LC4 | valid | 50.6 | 394.0 (pin) | 155.8 | 241.3 | 0.61 / 1.55 | 0.0874 | **1.646** | 0.000 / 0.1 |
-| 17-4PH H1025 | LC1 | valid | 50.7 | 1,817.5 (bolt) | 434.1 | 999.7 | 0.55 / 2.30 | 0.2332 | 0.563 | 0.014 / 1.7 |
-| 17-4PH H1025 | LC2 | valid | 50.2 | 1,038.9 (bolt) | 216.6 | 999.7 | 0.96 / 4.62 | 0.1166 | 0.557 | 0.004 / 0.5 |
-| 17-4PH H1025 | LC3 | valid | 50.2 | 987.1 (bolt) | 415.6 | 999.7 | 1.01 / 2.40 | 0.1549 | 0.565 | 0.005 / 0.3 |
-| 17-4PH H1025 | LC4 | valid | 50.5 | 398.9 (pin) | 161.5 | 999.7 | 2.51 / 6.19 | 0.0298 | 0.561 | 0.000 / 0.1 |
-| AISI 4140 Q&T | LC1 | valid | 50.3 | 1,792.7 (bolt) | 432.4 | 689.5 | 0.39 / 1.59 | 0.2339 | 0.565 | 0.019 / 0.6 |
-| AISI 4140 Q&T | LC2 | valid | 50.1 | 1,028.0 (bolt) | 216.0 | 689.5 | 0.67 / 3.19 | 0.1173 | 0.560 | 0.006 / 0.3 |
-| AISI 4140 Q&T | LC3 | valid | 50.2 | 977.2 (bolt) | 413.6 | 689.5 | 0.71 / 1.67 | 0.1553 | 0.566 | 0.008 / 0.5 |
-| AISI 4140 Q&T | LC4 | valid | 50.1 | 397.4 (pin) | 159.7 | 689.5 | 1.74 / 4.32 | 0.0299 | 0.563 | 0.000 / 0.0 |
+| **Ti-6Al-4V** (baseline) | LC1 | valid | 40.4 | 1,521.8 (bolt) | 336.5 | 903.2 | 0.59 / 2.68 | 0.2278 | 1.000 | 0.004 / 1.2 |
+| **Ti-6Al-4V** (baseline) | LC2 | valid | 41.1 | 1,030.9 (bolt) | 209.8 | 903.2 | 0.88 / 4.30 | 0.1731 | 1.000 | 0.004 / 0.4 |
+| **Ti-6Al-4V** (baseline) | LC3 | valid | 40.4 | 922.4 (bolt) | 217.6 | 903.2 | 0.98 / 4.15 | 0.0918 | 1.000 | 0.005 / 0.5 |
+| **Ti-6Al-4V** (baseline) | LC4 | valid | 40.4 | 373.1 (pin) | 151.2 | 903.2 | 2.42 / 5.97 | 0.0387 | 1.000 | 0.001 / 0.0 |
+| Al 7075-T651 | LC1 | valid | 40.4 | 1,540.5 (bolt) | 336.7 | 421.3 | 0.27 / **1.25 (< 1.5)** | 0.3604 | **1.582** | 0.009 / 0.5 |
+| Al 7075-T651 | LC2 | valid | 40.8 | 1,042.0 (bolt) | 210.6 | 421.3 | 0.40 / 2.00 | 0.2738 | **1.582** | 0.003 / 0.3 |
+| Al 7075-T651 | LC3 | valid | 40.8 | 931.9 (bolt) | 217.2 | 421.3 | 0.45 / 1.94 | 0.1453 | **1.583** | 0.008 / 0.5 |
+| Al 7075-T651 | LC4 | valid | 40.5 | 374.1 (pin) | 152.4 | 421.3 | 1.13 / 2.76 | 0.0612 | **1.581** | 0.001 / 0.0 |
+| Al 6061-T651 | LC1 | valid | 41.1 | 1,540.5 (bolt) | 336.7 | 241.3 | 0.16 / **0.72 (> yield)** | 0.3748 | **1.645** | 0.009 / 0.5 |
+| Al 6061-T651 | LC2 | valid | 40.2 | 1,042.0 (bolt) | 210.6 | 241.3 | 0.23 / **1.15 (< 1.5)** | 0.2847 | **1.645** | 0.003 / 0.3 |
+| Al 6061-T651 | LC3 | valid | 40.7 | 931.9 (bolt) | 217.2 | 241.3 | 0.26 / **1.11 (< 1.5)** | 0.1511 | **1.646** | 0.008 / 0.5 |
+| Al 6061-T651 | LC4 | valid | 39.7 | 374.1 (pin) | 152.4 | 241.3 | 0.65 / 1.58 | 0.0637 | **1.646** | 0.001 / 0.0 |
+| 17-4PH H1025 | LC1 | valid | 39.5 | 1,633.4 (bolt) | 338.7 | 999.7 | 0.61 / 2.95 | 0.1269 | 0.557 | 0.003 / 0.3 |
+| 17-4PH H1025 | LC2 | valid | 39.5 | 1,093.5 (bolt) | 214.8 | 999.7 | 0.91 / 4.65 | 0.0964 | 0.557 | 0.004 / 0.4 |
+| 17-4PH H1025 | LC3 | valid | 39.6 | 978.3 (bolt) | 215.7 | 999.7 | 1.02 / 4.63 | 0.0514 | 0.560 | 0.004 / 0.2 |
+| 17-4PH H1025 | LC4 | valid | 39.6 | 378.6 (pin) | 157.9 | 999.7 | 2.64 / 6.33 | 0.0215 | 0.556 | 0.000 / 0.0 |
+| AISI 4140 Q&T | LC1 | valid | 39.9 | 1,604.3 (bolt) | 337.9 | 689.5 | 0.43 / 2.04 | 0.1276 | 0.560 | 0.004 / 0.5 |
+| AISI 4140 Q&T | LC2 | valid | 39.5 | 1,077.9 (bolt) | 213.4 | 689.5 | 0.64 / 3.23 | 0.0970 | 0.560 | 0.005 / 0.3 |
+| AISI 4140 Q&T | LC3 | valid | 39.5 | 963.8 (bolt) | 216.1 | 689.5 | 0.72 / 3.19 | 0.0516 | 0.562 | 0.003 / 0.1 |
+| AISI 4140 Q&T | LC4 | valid | 39.8 | 377.3 (pin) | 156.2 | 689.5 | 1.83 / 4.41 | 0.0217 | 0.561 | 0.000 / 0.0 |
 
-- **Balance.** The largest residuals are 0.019 N and 1.7 N·mm. Relative to the applied load that is 0.0001 %,
+- **Balance.** The largest residuals are 0.009 N and 1.2 N·mm. Relative to the applied load that is 0.0001 %,
   far inside the 0.5 % tolerance.
 - **Solver messages.** ccx logged no warnings and no errors in any run.
-- **Timing.** Every solve took 49.7–51.3 s.
+- **Timing.** Every solve took 39.5–41.1 s.
 - **Files per run.** The CSV links each row's deck, `.frd` and map. Each run's folder also holds the FreeCAD
   document, the ccx log and the `.dat`.
 
@@ -140,15 +136,15 @@ LC1–LC4 for each material by construction.
 
 | Material | Mass (g) | Governing stress case | vM outside exclusions (MPa) | Min SF outside | Meets SF 1.5 (all LCs) | Yield exceeded outside exclusions | Governing displacement case | Max disp (mm) | Within 1.1 × Ti (all LCs) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Ti-6Al-4V** (baseline) | 1,256.9 | LC1 | 427.2 | 2.11 | yes | none | LC1 | 0.4142 | yes (reference) |
-| Al 7075-T651 | 797.3 | LC1 | 428.5 | 0.98 | **no** | LC1 | LC1 | 0.6563 | **no** |
-| Al 6061-T651 | 766.1 | LC1 | 428.5 | 0.56 | **no** | LC1, LC3 | LC1 | 0.6826 | **no** |
-| 17-4PH H1025 | 2,214.8 | LC1 | 434.1 | 2.30 | yes | none | LC1 | 0.2332 | yes |
-| AISI 4140 Q&T | 2,214.8 | LC1 | 432.4 | 1.59 | yes | none | LC1 | 0.2339 | yes |
+| **Ti-6Al-4V** (baseline) | 2,052.2 | LC1 | 336.5 | 2.68 | yes | none | LC1 | 0.2278 | yes (reference) |
+| Al 7075-T651 | 1,301.8 | LC1 | 336.7 | 1.25 | **no** | none | LC1 | 0.3604 | **no** |
+| Al 6061-T651 | 1,250.8 | LC1 | 336.7 | 0.72 | **no** | LC1 | LC1 | 0.3748 | **no** |
+| 17-4PH H1025 | 3,616.2 | LC1 | 338.7 | 2.95 | yes | none | LC1 | 0.1269 | yes |
+| AISI 4140 Q&T | 3,616.2 | LC1 | 337.9 | 2.04 | yes | none | LC1 | 0.1276 | yes |
 
-**Al 7075's LC1 failure is marginal.** 428.5 MPa is 1.7 % above its 421.3 MPa specification minimum. It sits at a
-fillet whose peak has not been checked for mesh convergence (section 7), so it could move either way with a finer
-mesh. Its LC3 safety factor, 1.03, fails the project's 1.5 regardless.
+**Al 7075's stress failure depends on the exclusion radius** (section 5). At 10 mm its LC1 peak is 336.7 MPa, SF
+1.25. At 10.5 mm it is 243.4 MPa, SF 1.73, and LC3 (217.2 MPa, SF 1.94) is next; it would then pass the stress
+screen. It fails the displacement screen either way.
 
 ## 5. Where the peaks are
 
@@ -156,18 +152,28 @@ Deck-frame coordinates in mm. The locations are the same for every material.
 
 | Case | Raw maximum | Maximum outside exclusions | Maximum displacement |
 | --- | --- | --- | --- |
-| LC1 | B3 fixed-patch edge (Face16/Face15 boundary at Ø 14.173), (−6.11, −144.51, 7.85) | R 3.175 arm-root fillet (Face48) outside the −y lug, 21 mm below the pin axis, (−25.90, −94.33, 23.20) | −x tip of the +y lug, (−38.71, −59.19, 49.00) |
-| LC2 | B2 seat next to the fixed-patch edge (r 7.3 mm against the edge's 7.09 mm), (−4.65, −5.69, 7.85) | Recess fillet round B1's boss (Face29), (53.73, −8.68, 9.40). **This is 0.3 mm outside the bolt zone, so it is still close to the support** | Top of the −y lug, (−29.88, −91.14, 59.82) |
-| LC3 | B3 fixed-patch edge, (−6.11, −144.51, 7.85) | Same fillet as LC1, (−26.47, −94.62, 22.73) | **Bottom edge of the unsupported −x side wall** under the lugs, (−23.35, −75.58, 1.24) |
-| LC4 | Bore/chamfer edge of the −y lug (pin zone), (−14.85, −92.05, 36.98) | R 3.175 arm-root fillet (Face96/97) of the +y lug, (−15.42, −56.49, 31.46) | −x tip of the −y lug, (−37.61, −92.80, 45.02) |
+| LC1 | B2 fixed-patch edge (r 6.9 mm against the edge's 7.09), (−1.49, −7.00, 7.85) | **Fillet ring round B2's boss, r 10.34 mm from its axis**, (−1.20, −10.34, 9.39): 0.34 mm outside the bolt zone | −x tip of the +y lug, (−37.74, −57.16, 52.00) |
+| LC2 | Same B2 patch-edge node | **Fillet ring round B1's boss, r 10.34 mm**, (57.24, −7.40, 9.39): 0.34 mm outside the bolt zone | Top of the +y lug, (−33.76, −57.04, 57.62) |
+| LC3 | Same B2 patch-edge node | Arm root of the −y lug, (−13.59, −92.88, 30.46), 57 mm from any bolt | −x tip of the +y lug, (−39.06, −57.20, 47.59) |
+| LC4 | Bore edge of the +y lug (pin zone), (−16.74, −57.16, 36.44) | Arm root of the −y lug, (−13.67, −92.65, 31.76) | −x tip of the −y lug, (−38.11, −93.39, 42.98) |
 
-- **Raw peaks are support artefacts.** Each sits exactly at an idealised boundary: the fixed-patch edge
-  (LC1–LC3; LC2's is one node off it) or the rigid bore (LC4), which are the risks listed in [M2A.4 §6](ge-manual-boundary-conditions.md).
-  Peaks like these keep growing as the mesh is refined and are **not** used for screening. They still exceed the Ti yield in LC1–LC3,
-  as they do for every material.
-- **LC3's maximum displacement is on the base's −x side wall,** at its bottom edge. The base bottom isn't
-  supported in this model: there is no contact with the mating surface ([M2A.4 §6](ge-manual-boundary-conditions.md)).
-  With that contact, this wall would be held.
+- **Raw peaks are support artefacts.** Each sits at an idealised boundary: the B2 fixed-patch edge (LC1–LC3) or
+  the rigid bore (LC4), which are the risks listed in [M2A.4 §6](ge-manual-boundary-conditions.md). Peaks like
+  these keep growing as the mesh is refined and are **not** used for screening.
+- **The LC1 and LC2 screening peaks sit on the edge of the exclusion.** Both are on the fillet ring round a bolt
+  boss at r 10.34 mm, about 3 mm from the singular fixed-patch edge at r 7.09 mm, where the L1 node spacing is
+  about 1 mm. It is a ring, not one node: in Ti LC1, 41 nodes between r 10 and 10.5 mm exceed the next peak.
+  Widening the bolt zone moves the screening peak (Ti shown; the other materials follow within 1 %):
+
+  | Bolt exclusion radius (mm) | 10 | 10.5 | 11 | 12 | 15 | 20 |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | LC1 peak outside (MPa) | 336.5 | 244.0 | 244.0 | 244.0 | 244.0 | 244.0 |
+  | LC2 peak outside (MPa) | 209.8 | 155.9 | 137.0 | 127.0 | 127.0 | 127.0 |
+
+  From 10.5 mm the LC1 peak is at (−17.37, −56.30, 29.21), the arm root of the +y lug, and it holds out to 20 mm.
+  Whether the r 10.34 mm ring is real stress or the tail of the patch-edge singularity cannot be told from L1
+  alone; that needs the convergence study (section 7). M2's parametric part had a similar case, where the peak
+  just outside 10 mm converged ([M2.7 §4](m2-exchange.md)), but its supports are different.
 
 ## 6. Maps
 
@@ -181,10 +187,10 @@ Deck-frame coordinates in mm. The locations are the same for every material.
 
   | Case | Stress range (MPa) | Displacement range (mm) | Deformation scale |
   | --- | --- | --- | --- |
-  | LC1 | 0–434.1 | 0–0.6826 | × 11.7 |
-  | LC2 | 0–216.6 | 0–0.3444 | × 23.2 |
-  | LC3 | 0–415.6 | 0–0.4522 | × 17.7 |
-  | LC4 | 0–161.5 | 0–0.0874 | × 91.5 |
+  | LC1 | 0–338.7 | 0–0.3748 | × 21.3 |
+  | LC2 | 0–214.8 | 0–0.2847 | × 28.1 |
+  | LC3 | 0–217.6 | 0–0.1511 | × 52.9 |
+  | LC4 | 0–157.9 | 0–0.0637 | × 125.6 |
 
   The stress top is the largest peak outside the exclusions among the five materials; anything above it is
   **magenta**, which in practice means only the excluded zones. The displacement top is the largest maximum
@@ -196,19 +202,17 @@ The maps are gitignored with the rest of `out/`. `--report-only` rebuilds them i
 
 ## 7. Open quality issues
 
-1. **No mesh-convergence evidence.** The workflow expects convergence checks before this matrix. Only L1 is
-   used: L2 ran out of memory with this SPOOLES-only CalculiX, and L2 and L3 were dropped
-   ([mesh record §6](ge-manual-mesh.md)).
+1. **The L1 mesh is not accepted.** One element fails gamma ≥ 0.05 (0.0150), at the bottom edge of hole B2
+   ([#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60)). Every run here is on that mesh.
+2. **No mesh-convergence evidence.** Only L1 is used: L2 ran out of memory with this SPOOLES-only CalculiX on the
+   16 GB host, and L2 and L3 were dropped ([mesh record §6](ge-manual-mesh.md)).
    - **Displacements and reactions** are probably close; displacement converges quickly.
-   - **The screening stresses are at R 3.175 fillets meshed at about 2 mm,** so they may be under-resolved and
-     probably low.
-   - **The M2A matrix is complete but not fully verified.** The Al 7075 LC1 verdict and the 4140 LC1 margin
-     (SF 1.59) are the results most sensitive to this.
-2. **Idealised supports.** The nut patches carry uplift, the base bottom has no contact and there is no bolt
-   preload ([M2A.4 §6](ge-manual-boundary-conditions.md)). This affects the stresses near the seats and LC3's
-   side-wall displacement.
-3. **The rigid pin with no contact** overstates bore stiffness and spreads bearing load all round the bore.
-4. **The pin exclusion zone was amended after seeing results** (section 2). The first values are kept.
+   - **The screening stresses are not verified.** LC1 and LC2 sit 0.34 mm outside the bolt zone, and the LC1
+     verdict for Al 7075 flips between 10 and 10.5 mm (section 5).
+   - **The M2A matrix is complete but not verified.**
+3. **Idealised supports.** The nut patches carry uplift, the base bottom has no contact and there is no bolt
+   preload ([M2A.4 §6](ge-manual-boundary-conditions.md)).
+4. **The rigid pin with no contact** overstates bore stiffness and spreads bearing load all round the bore.
 5. **The GUI has not been walked through once.** The runs come from the script; M2A.3–M2A.5 each still need one
    manual pass as well.
 
@@ -216,12 +220,12 @@ The maps are gitignored with the rest of `out/`. `--report-only` rebuilds them i
 
 | Requirement | Status |
 | --- | --- |
-| 20 analyses in FreeCAD FEM/CalculiX; documents, decks, logs and results retained | Done: `data/ge_manual/matrix/L1/<card>/<LC>/` (gitignored, about 1.8 GB) |
+| 20 analyses in FreeCAD FEM/CalculiX; documents, decks, logs and results retained | Done: `data/ge_manual/matrix/GE_Challenge_Bracket/L1/<card>/<LC>/` (gitignored) |
 | Per run: status and warnings, time, mesh ID, material, mass, max von Mises and location, max displacement and location | Done (sections 3 and 5, CSV) |
 | Support forces **and moments** against the applied load about a common origin, with tolerances | Done. Origin: the pin reference point; tolerance 0.5 %; every run passes (section 3) |
 | No failed solve reported as a pass | No run failed. The script marks any failure as INVALID, with the reason and no metrics |
 | Stress and displacement maps for every pair; units, view, deformation scale, consistent extraction; fixed cameras; common ranges | Done (sections 1 and 6) |
-| Raw maxima alongside stress excluding a defined singularity zone; exclusion and convergence evidence visible | Done for raw values and exclusions (sections 2 and 5). **Convergence evidence is missing** (section 7) |
+| Raw maxima alongside stress excluding a defined singularity zone; exclusion and convergence evidence visible | Done for raw values and exclusions, with the radius sensitivity (sections 2 and 5). **Convergence evidence is missing, and the mesh is not accepted** (section 7) |
 | Report and a 20-row CSV | This page and [`ge-manual-analysis-matrix.csv`](ge-manual-analysis-matrix.csv) |
 | Mass repeated and identical across LC1–LC4 | Done |
 | Governing case per material; Ti labelled as the baseline; no alternative called challenge-compliant; yield exceedance labelled as failed screening | Done (summary, section 4) |
