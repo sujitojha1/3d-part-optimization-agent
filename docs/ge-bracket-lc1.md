@@ -20,7 +20,7 @@ One load case (D-08), in SimJEB's convention: mm, N, MPa, **+z up**, "out" is �
 | Support | FreeCAD **Fixed** on each bolt-hole face `bolt_hole_2`–`5`: every hole node held in all DOF. Same as SimJEB's RBE2 spider with `SPC 123456` |
 | Material | Ti-6Al-4V: E 113,800 MPa, ν 0.342, ρ 4,430 kg/m³ (SimJEB `MAT1`); yield **903.2 MPa** (131 ksi, the challenge) |
 | Safety factor | **1.5**, so the allowable von Mises is **602.1 MPa** |
-| Stress check | Max nodal von Mises **outside the support zone** ≤ 602.1 MPa. The zone is a 10 mm radius in plan about each bolt axis, full height (section 4). The raw peak is reported and flagged too |
+| Stress check | Max nodal von Mises **outside the support zone** ≤ 602.1 MPa. The zone is a 10 mm radius in plan about each bolt axis, full height (section 4). The raw peak is reported and flagged too. **Region scoring** (D-07 region hit) reads a separate 25 mm zone, never pass/fail (owner, 2026-09-22; [M2.7 §4](m2-exchange.md)) |
 | Displacement limit | **1.1 × baseline** max displacement magnitude: baseline 0.4506 mm, **limit 0.4957 mm**. Re-measure when M2.3 freezes D-24's mesh sizes |
 | Model extent | **Full model.** D-23's half model does not apply, because SimJEB's bolt pattern is not symmetric about the clevis midplane |
 | Wrong-direction mutant (D-16) | This record with the vector **(0, 0, −35,585.77) N** |

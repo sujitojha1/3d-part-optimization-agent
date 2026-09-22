@@ -8,7 +8,7 @@
 | Field | M2.5's LC1 solve at D-24 `MeshRegion` 2.0 (`out/lc1_solve`) |
 | Model | `gemini-3.5-flash-lite` through `glc_v5` `/v1/chat` (router picked `gemini_1`/`gemini_2`), temperature 0, strict JSON schema |
 | Script | `scripts/m2_exchange.py` — record in `out/m2_exchange/`, probes in `out/m2_exchange_below/` and `out/m2_exchange_neutral/` |
-| Status | **Both questions answered yes; architecture question 1 answered; one disagreement with the pipeline's truth label goes to the owner** — section 4 |
+| Status | **Both questions answered yes; architecture question 1 answered.** The region disagreement in section 4 was settled by the owner the same day: region claims are scored against a 25 mm zone, and the stress check keeps 10 mm |
 
 **Measured outside D-17,** on the Windows-AMD64 machine; the gateway and model are the same ones Gate 2b used.
 
@@ -37,8 +37,7 @@ frozen 0 → 301 MPa legend — asking where the concentration is and whether it
 
 Every call returned a schema-valid answer. The typical exchange is
 `arm_root_fillet 5.0 → 5.5`, predicting `{arm_root_fillet, max_vm, down, 0–5% or 5–15%}`.
-In the record run, two of the nine edits differ: `arm_thickness 8.0 → 7.5` predicting `max_vm up` (B), and
-`arm_root_fillet → 4.5` predicting `max_vm up` (C). Both are coherent pairs of edit and prediction.
+In the record run, one of the nine edits differs: `arm_thickness 8.0 → 7.5`, predicting `max_vm up` (B), which is a coherent pair of edit and prediction.
 
 **SimJEB 148:** `bolt_holes`, `likely` mesh-driven, under both legends. Right on both counts against
 `148field.csv`: the peak, 1,719.3 MPa, is on a bolt-hole surface, a fixed constraint. Worth
@@ -54,7 +53,7 @@ the claim, the exchange becomes two turns". They did not move it, so a single tu
 
 **But the numbers are not inert.** In C's turn 2, the model writes the governing number into its own
 region claim — *"The maximum governing von Mises stress of 435.8 MPa occurs at the arm_root_fillet
-region"* — in **7 of 9** turn-2 answers across the three runs. Nothing in the prompt said where
+region"* — in **5 of 9** turn-2 answers across the three runs (1, 1 and 3 of 3 per run). Nothing in the prompt said where
 435.8 MPa is; it is at a `base_plate` node. B's answers never cite a number. So the risk is not the
 anchoring §9 feared (the number changing what the model sees). It is the reverse: **the image claim
 takes over the number**, and the reason text then asserts something false with a figure attached.
@@ -70,7 +69,7 @@ What this means for M2.9's integration spec:
 
 ## 4. The disagreement: the model says `arm_root_fillet`, the pipeline says `base_plate`
 
-**Region hit is 0 of 36** against M2.5's label. It is not noise: every claim, every run, says the arm root.
+**Region hit was 0 of 36** against M2.5's stress-check label. It is not noise: every claim, every run, says the arm root.
 
 **Where the pipeline's governing peak is.** 435.8 MPa sits at (−13.6, −136.6, 0.75) — the wall of
 the **underside pocket** beside bolt 3, **17.7 mm from the bolt axis**. The runner-up, 436.9 MPa, is
@@ -83,8 +82,10 @@ the same spot beside bolt 2. The LC1 record's support zone is a 10 mm plan radiu
 | 20 mm | 303.4 MPa, underside by bolt 3 | `base_plate` |
 | 25 mm and beyond | **259.3 MPa** | **`arm_root_fillet`** |
 
-So the pipeline's `base_plate` peak is still inside the stress field of a fixed bolt hole, and once
-that field is excluded the governing region is the one the model named.
+Once the region round each bolt is excluded, the governing region is the one the model named. But the
+`base_plate` peak is **not** a singularity: the LC1 record (§4) refined the mesh from 4 to 2.5 mm and
+it moved 0.4 % at the same node. It is a converged, real stress that sits in the visible red around a
+fixed hole.
 
 **Two probes rule out the easy explanations:**
 
@@ -97,34 +98,36 @@ that field is excluded the governing region is the one the model named.
   With the titles blanked and the cameras called "view 1–3", **12 of 12 claims were still
   `arm_root_fillet`**, with the same reasoning (`out/m2_exchange_neutral`).
 
-**This is a question about the truth label, not about the model.** The model treats everything round a fixed
-hole as support artifact, which is what the prompt told it and what an engineer would do. The pipeline
-calls anything beyond 10 mm real stress. **One of them has to move before region hit means anything**,
-and which one is the owner's decision. It is the same question as the raw-versus-exclusion question already open for
-`REQ-VER-002` and D-12 (the M2.5 record's `check.note`):
+**The owner's decision, 22 Sep: two zones, each for one job.**
 
-- **(a) widen the support zone** to about 25 mm for `ge_bracket`, so the pipeline's label agrees with the reading — or
-- **(b) keep 10 mm**, and change the prompt to say only the hole surface itself is the artifact, then
-  re-run this exchange to see whether the model can then find the pocket wall. That also needs an
-  underside camera, which means amending the freeze accepted this morning.
+- **Stress check — 10 mm, unchanged.** Pass/fail keeps reading the converged 435.8 MPa (margin 1.38).
+  Widening that zone would stop checking a real stress on exactly the wall `base_pocket_depth` moves,
+  and would inflate the margin to 2.32.
+- **Region scoring — 25 mm.** The label a vision claim is scored against (D-07's region hit) comes from
+  the peak outside a 25 mm plan radius: `support.region_scoring_zone` in `parts/ge_bracket_lc1.json`,
+  reported by `lc1_solve.py` as `peak_vm_for_region_scoring`. For the baseline that is **259.3 MPa on
+  `arm_root_fillet`**, and the element labels there agree.
 
-Either way the base-plate hot spot is a real design lever: `base_pocket_depth` is a permitted edit and
-it moves exactly that wall. An agent that files it under support artifacts will never pull that lever.
+Re-run against it (`out/m2_exchange`, 22 Sep), region hit is **12 of 12**; the two probes, rescored
+against the same label, are 24 of 24. The two zones will disagree in exactly one way, and M3's report should say so: a
+candidate can fail on a peak the region score does not look at. The known gap stays open: the agent
+files the pocket wall under bolt-hole artifact and will not pull `base_pocket_depth` for stress reasons. Only the stress check
+guards that wall.
 
 ## 5. What else the exchange shows
 
-- **The proposals chase stress, not mass.** 23 of 27 edits across the three runs *add* material
-  (`arm_root_fillet` 5.0 → 5.5 or 6.0), although the objective is to reduce mass at a 1.38 margin. Four remove
-  some: `arm_thickness 8 → 7.5` twice, `base_thickness 18 → 17.5` once, `arm_root_fillet → 4.5` once. That is a prompt and SKILL question for M2.9, not a transport one.
-- **Latency is not small.** Mean 20–47 s per call across conditions, one outlier at 112 s. Two turns per iteration, 8 iterations, is
-  on the order of **5–8 min** of wall clock inside D-13's 20, next to the 8.9 min of simulation.
+- **The proposals chase stress, not mass.** 24 of 27 edits across the three runs *add* material
+  (`arm_root_fillet` 5.0 → 5.5 or 6.0), although the objective is to reduce mass at a 1.38 margin. Three remove
+  some: `arm_thickness 8 → 7.5` twice and `base_thickness 18 → 17.5` once. That is a prompt and SKILL question for M2.9, not a transport one.
+- **Latency is not small.** Mean 14–35 s per call across conditions and runs, the slowest at 78 s. Two turns per iteration, 8 iterations, is
+  on the order of **4–9 min** of wall clock inside D-13's 20, next to the 8.9 min of simulation.
   **D-13 has to count the LLM time as well as the CAM time.** Measured on free-tier keys at 15 rpm, so provisional.
-- **Tokens and cost.** About 3.9k tokens in per call with three images (≈ 1.1k per image), 5.0k with
-  four; 110–150 out. The record's 14 calls cost **$0.012** in total.
+- **Tokens and cost.** About 3.8k tokens in per call with three images (≈ 1.1k per image), 5.0k with
+  four; 65–150 out. The record's 14 calls cost **$0.012** in total.
 - **Temperature 0 is not deterministic** across repeats (bands and one edit vary), which is expected
   across routed keys, and is why each condition ran three times.
 
 ## 6. Exit criterion
 
 Plan §2's M2 exit asks for *"a real exchange that returned a closed-set region label and a complete
-D-07 prediction"*. **Met, 36 of 36.** Whether the label is *right* depends on section 4's decision.
+D-07 prediction"*. **Met, 36 of 36**, and against the region-scoring label of section 4 the claim is right 12 of 12.

@@ -44,6 +44,12 @@
       "radius_mm": 10.0,
       "about": "each bolt axis, in plan, full height (the boss lobe)",
       "why": "fixed hole faces are a stress singularity: the peak on a hole edge moves between holes and does not converge with refinement"
+    },
+    "region_scoring_zone": {
+      "radius_mm": 25.0,
+      "about": "each bolt axis, in plan, full height",
+      "used_by": "the region label a vision claim is scored against (D-06, D-07 region hit) - never the stress check, which keeps the 10 mm zone",
+      "why": "owner, 2026-09-22 (M2.7): between 10 and 25 mm the governing peak is the underside pocket wall beside a fixed bolt. It converges, so the stress check keeps it, but it reads as part of the bolt-hole field on the contour. Beyond 25 mm the governing region is arm_root_fillet (docs/m2-exchange.md section 4)"
     }
   },
   "material": {

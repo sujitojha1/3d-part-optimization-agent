@@ -318,6 +318,15 @@ def solve(hmax, region_size, curvature, run_ccx, out=OUT):
     # same stress, so the argmax can move between meshes while the value barely
     # does. The runner-up is the highest node outside the zone and at least
     # RUNNER_UP_MIN_MM from the first peak: a second site, not the same hot spot.
+    # The region a vision claim is scored against reads a wider zone than the
+    # stress check (the LC1 record's region_scoring_zone): the pocket wall just
+    # outside 10 mm is a converged stress, so the check keeps it, but on the
+    # contour it is part of the bolt-hole field. Scoring only; never pass/fail.
+    scoring_r = LC1["support"]["region_scoring_zone"]["radius_mm"]
+    scoring_peak = max((n for n in vm
+                        if min(math.hypot(nodes[n].x - x, nodes[n].y - y)
+                               for x, y in gb.BOLT_CENTRES) > scoring_r), key=vm.get)
+
     far = [n for n in outside
            if (nodes[n] - nodes[zone_peak]).Length >= RUNNER_UP_MIN_MM]
     runner_up = max(far, key=vm.get) if far else None
@@ -348,6 +357,9 @@ def solve(hmax, region_size, curvature, run_ccx, out=OUT):
         "raw_peak_vm": {**report(raw_peak), "flag": "support singularity: fixed hole faces "
                         "(fem-geometry-preparation section 13); not a converged stress"},
         "peak_vm_outside_support_zone": {**report(zone_peak), "zone_radius_mm": zone_r},
+        "peak_vm_for_region_scoring": {**report(scoring_peak), "zone_radius_mm": scoring_r,
+                                        "use": "region-hit truth only; the stress check "
+                                               "reads peak_vm_outside_support_zone"},
         "peak_vm_outside_support_zone_runner_up": (
             {**report(runner_up), "min_separation_mm": RUNNER_UP_MIN_MM,
              "separation_mm": round((nodes[runner_up] - nodes[zone_peak]).Length, 1),

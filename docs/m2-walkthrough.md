@@ -137,7 +137,7 @@ argument". None can be answered yet:
 
 | # | Question | Assigned to | State |
 | --- | --- | --- | --- |
-| 1 | Numbers before or after the picture? | M2.7 (M2.8 merged into it) | **Answered 22 Sep** — the numbers moved 0 of 18 claims, but in a second turn the model attaches the governing number to its own claimed region. Two turns kept, and prose never locates a number ([record](m2-exchange.md) §3) |
+| 1 | Numbers before or after the picture? | M2.7 (M2.8 merged into it) | **Answered 22 Sep** — the numbers moved 0 of 18 claims, but in a second turn the model attaches the governing number to its own claimed region (5 of 9). Two turns kept, and prose never locates a number ([record](m2-exchange.md) §3) |
 | 2 | Does the proposal step live in a planner node or a capability? | M2.9 | **Open** — to be decided against a real transcript |
 | 6 | Does the agent get code-editing capability at all? | M2.9 | **Open** |
 
@@ -165,9 +165,9 @@ Unchanged and still owner-facing: the **D-11 `metal_am` profile** (min-wall only
 ## 6. What M2 hands to M3
 
 1. ~~**Run M2.7.**~~ Done 22 Sep ([record](m2-exchange.md)): closed-set label and complete D-07 in 36 of 36
-   calls. It opens one owner decision: the model's region (`arm_root_fillet`) and the pipeline's
-   (`base_plate`, 17.7 mm from a fixed bolt axis) disagree 36 of 36 times, until the support zone
-   is widened to about 25 mm (§4).
+   calls. The model's region (`arm_root_fillet`) and the stress check's (`base_plate`, a converged
+   peak 17.7 mm from a fixed bolt axis) disagreed. Settled the same day: region claims are scored
+   outside a 25 mm zone, and the stress check keeps 10 mm (§4). Region hit is now 12 of 12.
 2. ~~**Answer D-24's 1.5 → 2.0.**~~ Done 22 Sep: 2.0 applied, leaving about 11 of D-13's 20 min for the CAM jobs.
 3. **Re-measure the timings under D-17**, then re-read the cut trigger against them.
 4. **Resolve the 2.56× hand-versus-FE disagreement**, or record why it is accepted.

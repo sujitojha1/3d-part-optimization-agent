@@ -25,7 +25,10 @@ frozen 0 -> 301 MPa legend - and checked against the nodal field in
 data/simjeb/148field.csv.
 
 Truth for ge_bracket is M2.5's record at D-24 region 2.0 (out/lc1_solve):
-the governing peak outside the support zone is labelled base_plate. The D-07
+the label on peak_vm_for_region_scoring, the peak outside the LC1 record's
+25 mm region_scoring_zone (owner, 22 Sep). The first run scored against the
+10 mm stress-check peak, base_plate; docs/m2-exchange.md section 4 is why
+the two zones differ. The D-07
 prediction is checked for completeness and validity only; scoring it needs
 the next evaluation, which is M3's loop.
 
@@ -309,7 +312,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     solve = json.loads(SOLVE.read_text())
-    truth = solve["result"]["peak_vm_outside_support_zone"]["region"]["label"]
+    truth = solve["result"]["peak_vm_for_region_scoring"]["region"]["label"]
     images = [data_url(image_dir(c) / f"{c}.png", blank_title=args.neutral_names)[0]
               for c in cameras]
     names = ([f"view {i}" for i in range(1, len(cameras) + 1)] if args.neutral_names
