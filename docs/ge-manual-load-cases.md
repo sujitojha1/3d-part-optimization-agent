@@ -1,14 +1,17 @@
 # GE manual load cases — four independent static cases (M2A.5)
 
-> **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
+> **23 Sep:** refreshed for the current part, `GE_Challenge_Bracket`. Sections 2, 3 and 5 now come from the
+> current `out/ge_manual_loads/loads.json`. **No solve has been run on the current part**: section 4 keeps the
+> Iteration1 smoke test and says so. The L1 mesh these decks sit on is not yet accepted
+> ([#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60): one element fails the gamma threshold).
 
 | | |
 | --- | --- |
 | Task | M2A.5 ([#63](https://github.com/sujitojha1/3d-part-optimization-agent/issues/63)) · [M2A workflow](ge-manual-workflow.md) |
-| Date | 2026-09-19 |
-| Input | L1 mesh document `data/ge_manual/mesh/L1/Iteration1_mesh_L1.FCStd` ([M2A.2](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3](ge-manual-materials.md)); nut-seat supports and rigid pin ([M2A.4](ge-manual-boundary-conditions.md)) |
-| Script | `vendor/fem-env/bin/python scripts/ge_manual_loads.py --solve` (about 4 min). It builds the four setups as in section 2, checks each deck and writes `out/ge_manual_loads/loads.json` plus one view per case |
-| Status | **Done on L1.** All four decks reproduce the table vectors on the pin reference point, with no other loads or restraints. The decks are identical apart from their load cards. Every case solves, and the support reactions sum to the applied force within 0.006 N. LC4's torque goes through the pin. **The force and moment balance with tolerances is M2A.6** |
+| Date | 2026-09-19; refreshed 2026-09-23 |
+| Input | L1 mesh document `data/ge_manual/mesh/L1/GE_Challenge_Bracket_mesh_L1.FCStd`, SHA-256 `eeffe941…cdc910` ([M2A.2](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3](ge-manual-materials.md)); nut-seat supports and rigid pin ([M2A.4](ge-manual-boundary-conditions.md)) |
+| Script | `$FEM_PYTHON scripts/ge_manual_loads.py [--solve]`. It builds the four setups as in section 2, checks each deck and writes `out/ge_manual_loads/loads.json` plus one view per case |
+| Status | **Four decks done and checked on the current part (L1).** All four reproduce the table vectors on the pin reference point, with no other loads or restraints, and are identical apart from their load cards (`all_checks_pass: true`). **Not yet on the current part:** a solve (section 4), and the L1 mesh's acceptance (#60). **The force and moment balance with tolerances is M2A.6** |
 
 ## 1. Load cases
 
@@ -24,7 +27,7 @@ cards. Each case is applied **on its own**, and all are static.
 
 **Frame.** The working copy is already in the SimJEB deck frame ([M2A.1 §3](ge-manual-geometry.md)): +z up, "out"
 is −x, and z = 0 is the base bottom. So the vectors go in **unchanged**, and no transform is applied. The pin
-axis is (0.0303, −0.9995, 0), 1.73° from y. As M2A.1 recommended, LC2 and LC3 keep SimJEB's pure −x "out" so the
+axis is (0.0303, −0.9995, 0), 1.73° from y (measured on Iteration1 in M2A.1). As M2A.1 recommended, LC2 and LC3 keep SimJEB's pure −x "out" so the
 results stay comparable with SimJEB. Their horizontal component is therefore 1.73° off perpendicular to the pin.
 
 **Load point.** Every case loads the rigid body `Pin` from M2A.4 at the pin reference point
@@ -37,8 +40,8 @@ the LC4 moment on the rotation node. Both nodes sit at that point. SimJEB's own 
 Make **four separate documents**, one per case, each from a fresh copy of the L1 mesh document. Don't edit one
 case into the next. That way no load can carry over.
 
-1. Open `data/ge_manual/mesh/L1/Iteration1_mesh_L1.FCStd` and immediately **Save As**
-   `Iteration1_<case>_L1.FCStd`, so the mesh document itself stays unchanged.
+1. Open `data/ge_manual/mesh/L1/GE_Challenge_Bracket_mesh_L1.FCStd` and immediately **Save As**
+   `GE_Challenge_Bracket_<case>_L1.FCStd`, so the mesh document itself stays unchanged.
 2. Add the solver, the Ti-6Al-4V material, `Fixed_B1`–`B4` and the rigid body `Pin` exactly as in
    [M2A.4 §3 B](ge-manual-boundary-conditions.md).
 3. In `Pin`, keep every translational and rotational mode on **Load**. Enter only this case's row from section 1:
@@ -56,27 +59,31 @@ Each exported deck is read back (`loads.json`). Every check passes for every cas
 
 | Check | LC1 | LC2 | LC3 | LC4 |
 | --- | --- | --- | --- | --- |
-| `*CLOAD` on reference node 155218 (DOF 1, 2, 3) | 0, 0, 35585.77 | −37809.9, 0, 0 | −28276.2, 0, 31403.9 | 0, 0, 0 |
-| `*CLOAD` on rotation node 155219 (DOF 1, 2, 3) | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 | 0, 0, 564924.2 |
+| `*CLOAD` on reference node 93674 (DOF 1, 2, 3) | 0, 0, 35585.77 | −37809.9, 0, 0 | −28276.2, 0, 31403.9 | 0, 0, 0 |
+| `*CLOAD` on rotation node 93675 (DOF 1, 2, 3) | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 | 0, 0, 564924.2 |
 | Equal to the section 1 vector | yes | yes | yes | yes |
 | Loads on any other node | none | none | none | none |
 | Both nodes at the pin reference point (to 1e-6 mm) | yes | yes | yes | yes |
 | Constraints in the Analysis | 4 Fixed + 1 Rigid body | same | same | same |
 | Extra `*BOUNDARY` lines | none | none | none | none |
-| Support and pin node sets as in [M2A.4 §4](ge-manual-boundary-conditions.md) | yes | yes | yes | yes |
+| Support and pin node sets as in [M2A.4 §4](ge-manual-boundary-conditions.md) (525 fixed, 1,155 pin) | yes | yes | yes | yes |
 
 - **Units.** The FreeCAD writer uses mm, N and tonne. The `*CLOAD` values are in N on the reference node and in
   N·mm on the rotation node, the same numbers as the table.
 - **Decks match apart from their loads.** With the `*CLOAD` cards and `**` comment lines removed, all four decks
   are byte-identical. They have the same nodes, elements, material, supports, rigid body, step and outputs. Only
   the load differs.
-- **The mesh document is untouched.** Its SHA-256 is the same before and after the run (`a857ec6e…`).
+- **The mesh document is untouched.** Its SHA-256 is the same before and after the run (`eeffe941…`).
 
-Decks: `data/ge_manual/loads/L1/<case>/<case>.inp`. SHA-256 prefixes: LC1 `ebeaf161`, LC2 `ef1942e6`,
-LC3 `eb73832d`, LC4 `406b73c5`. The full values are in `loads.json`. The decks are gitignored because they are
+Decks: `data/ge_manual/loads/L1/<case>/<case>.inp`. SHA-256 prefixes: LC1 `d4e5aa1c`, LC2 `794ae1dd`,
+LC3 `660996c8`, LC4 `c2fd1622`. The full values are in `loads.json`. The decks are gitignored because they are
 derived from licensed CAD.
 
-## 4. Smoke-test solve (L1, Ti-6Al-4V)
+## 4. Smoke-test solve (L1, Ti-6Al-4V) — Iteration1 only
+
+**Not yet run on `GE_Challenge_Bracket`.** Everything in this section is from the Iteration1 part (19 Sep) and is
+kept as evidence that the four setups solve and transfer load, not as a result for the current part. Re-run with
+`--solve` once #60 accepts the L1 mesh.
 
 CalculiX 2.23 with SPOOLES; ccx exit 0 for every case, about 49 s each.
 
@@ -122,7 +129,7 @@ from +z. The front views show LC2 and LC3 pointing toward −x, which is the lug
 | Each case independent, with no load accumulation | Done. Each is built from a fresh mesh document, and each deck carries only its own vector (section 3) |
 | Signs, units, load point and coupling cards checked against the table | Done (section 3) |
 | Arrow and axis screenshots | Done (section 5) |
-| LC4 torque transferred through the pin | Done (section 4) |
+| LC4 torque transferred through the pin | Deck done on the current part (section 3). Transfer shown on Iteration1 only (section 4) |
 | Setup reproducible by hand | **One GUI walk-through is still needed** to confirm section 2 as written; the numbers come from the script |
 
 Only L1 is used; L2 and L3 were dropped ([mesh record](ge-manual-mesh.md)).
