@@ -119,10 +119,11 @@ answer-preserving alternative, not on the part.
 
 Rigid pin, four fixed bolt holes. Unchanged, and now run end to end.
 
-### `REQ-OPT-001`, the render settings — proposed, pending the owner's eye
+### `REQ-OPT-001`, the render settings — accepted
 
 `requirements.md` section 8 makes the ordering normative: the camera set, image size, colormap
-and legend scheme are fixed in M2 *by eye*, before any renderer is written. M2.6 proposes
+and legend scheme are fixed in M2 *by eye*, before any renderer is written. M2.6 proposed, and
+the owner accepted on 22 Sep,
 `turbo`, 800 × 600, a linear legend locked at 0 → allowable/2, three cameras (`iso`, `front`,
 `arm_root`), parallel projection. Two findings ride with it: a log legend scores best on
 separation and misreads the part, and the frozen bar **saturates on 22 % of SimJEB 148's surface**
@@ -168,4 +169,4 @@ Unchanged and still owner-facing: the **D-11 `metal_am` profile** (min-wall only
 2. ~~**Answer D-24's 1.5 → 2.0.**~~ Done 22 Sep: 2.0 applied, leaving about 11 of D-13's 20 min for the CAM jobs.
 3. **Re-measure the timings under D-17**, then re-read the cut trigger against them.
 4. **Resolve the 2.56× hand-versus-FE disagreement**, or record why it is accepted.
-5. **Accept or amend M2.6's render freeze**, which M2.7 can proceed without but M3 cannot.
+5. ~~**Accept or amend M2.6's render freeze.**~~ Accepted as proposed on 22 Sep.

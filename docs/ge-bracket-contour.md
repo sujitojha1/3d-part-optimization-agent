@@ -7,7 +7,7 @@
 | Field | M2.5's solved LC1 result ([record](ge-bracket-lc1-solve.md)), read from `out/lc1_solve/lc1_solve.FCStd` |
 | Labels | M2.4's D-06 surface groups ([record](ge-bracket-labels.md)), which partition the surface exactly |
 | Script | `scripts/ge_bracket_contour.py` — `extract`, `study`, `render`, `simjeb` |
-| Status | **Settings proposed, not accepted.** The freeze in section 3 is the recommendation; `REQ-OPT-001` is fixed by the owner's eye, not by this script. Two findings go with it: the physically obvious legend **fails**, and the frozen legend **does not transfer** to SimJEB 148 as a constant — sections 4 and 7 |
+| Status | **Accepted by the owner, 2026-09-22.** Section 3 is `REQ-OPT-001`'s frozen render setting for `ge_bracket`, as proposed: `turbo`, 800 × 600, linear legend locked at 0 → allowable/2, cameras `iso` / `front` / `arm_root`, parallel projection. Two findings go with it: the physically obvious legend **fails**, and the frozen legend **does not transfer** to SimJEB 148 as a constant — sections 4 and 7 |
 
 **Measured outside D-17,** on the same Windows-AMD64 / FreeCAD 1.1.3 machine as
 [M2.5](ge-bracket-lc1-solve.md). Nothing here is timing-sensitive, so the D-17 divergence
@@ -48,7 +48,7 @@ headline numbers exactly — 630.6 MPa and 0.4516 mm — and `extract` fails if 
 **The three judged regions all live in the bottom fifth of the allowable.** That one line is
 why this task exists: medians of 110, 47 and 30 MPa against a 602.1 MPa allowable.
 
-## 3. The proposed freeze
+## 3. The freeze (accepted 2026-09-22)
 
 | Setting | Value | Why |
 | --- | --- | --- |
@@ -153,12 +153,12 @@ Settled by measurement, and recorded:
 - Parallel projection, on the comparability argument.
 - A log legend maximises separation and misreads the part; it is rejected on the image, not the number.
 
-**An owner decision, not settled here:**
+**Owner decisions, accepted 2026-09-22:**
 
-- [ ] **The legend rule, 0 → allowable/2 linear.** `REQ-OPT-001`'s render settings are fixed by
+- [x] **The legend rule, 0 → allowable/2 linear.** `REQ-OPT-001`'s render settings are fixed by
       eye in M2 (`requirements.md` section 8). The study says `allowable_half` is marginal at
       `iso` on one quiet pair and `p99` is better by 3.6 ΔE at the cost of depending on the field.
       That trade is the owner's.
-- [ ] **Three cameras or four.** Dropping `top` is a cost argument as much as a coverage one.
+- [x] **Three cameras or four.** Dropping `top` is a cost argument as much as a coverage one. Three: `iso`, `front`, `arm_root`.
 
 Neither blocks M2.7, which needs *an* image and a locked range, not the final one.

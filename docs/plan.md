@@ -345,7 +345,7 @@ M2A expands the manual engineering study; the existing agent task remains LC1 un
    - Then compare nodal displacement magnitude against `148.csv`.
    - Compare displacement only.
    - SimJEB used RBE3 at the pin. If our pin model differs, a disagreement near the bore is expected, so record it rather than tuning it away.
-7. **Renderer** (M3.7): contour PNG with a fixed camera set and a legend range locked across a run (`REQ-OPT-001`).
+7. **Renderer** (M3.7): contour PNG with a fixed camera set and a legend range locked across a run (`REQ-OPT-001`), to M2.6's accepted freeze: `turbo`, 800 × 600, linear 0 → allowable/2, cameras `iso` / `front` / `arm_root`, parallel ([record](ge-bracket-contour.md)).
 8. **Budget check** (M3.8): measure per-iteration wall time, CAM jobs and simulation included, and confirm or revise D-13. Levers, in order: half model, min element size, and only then a coarser base mesh.
 9. *Should:* **V2** (M3.6), a stepped bar against a published `Kt`.
 
