@@ -9,7 +9,7 @@
 | Input | Partitioned working copy `data/ge_manual/Iteration1_partitioned.FCStd`, SHA-256 `b025011c…790af6`: the [M2A.1](ge-manual-geometry.md) working copy with the four nut seats split at Ø 14.173 by [M2A.4](ge-manual-boundary-conditions.md) |
 | Tools | FreeCAD 1.1.3 FEM Workbench → `FemMeshGmsh` → Gmsh 4.15.2 (`vendor/fem-env/bin/gmsh`); quality from the Gmsh 4.15.2 Python API |
 | Script | `vendor/fem-env/bin/python scripts/ge_manual_mesh.py` (about 1 min). It builds the same objects as the manual steps in section 1 and writes `out/ge_manual_mesh/mesh-quality.json` |
-| Status | **Mesh and quality: done.** L1 passes the acceptance thresholds and is the only mesh level used. **L2 and L3 were dropped** on 2026-09-19 because the L2 solve ran out of memory (section 2), so there is no mesh-convergence study (section 6) |
+| Status | **Mesh and quality: done for Iteration1; on `GE_Challenge_Bracket` L1 is rejected** (one element, gamma 0.015) while L2, L3r and L3 pass. **Convergence: partial** (23 Sep): Ti LC1 on L1 / L2 / L3r converges at the arm root to within 1.7 % (section 6); LC2–LC4 remain |
 
 ## 1. Manual steps (FreeCAD 1.1.3 GUI)
 
@@ -172,13 +172,48 @@ graded refinement at the bore, the arm-root blends and the seats. At L1 the z = 
 across the internal ribs. The through-thickness element count at the 4.66 mm end walls was not measured; check it
 in the GUI walk-through.
 
-## 6. Convergence study (not done)
+## 6. Convergence study (partial: Ti LC1 only, 23 Sep)
 
-The planned study compared L1, L2 and L3 for each of LC1–LC4 and would have frozen the level whose results stopped
-changing. It is **not run**: L2 and L3 were dropped (section 2), so there is no finer mesh to compare against. L1 is
-the mesh for M2A.5 and M2A.6. Their results carry this caveat: **mesh convergence of L1 is not verified**, and peak
-stresses in particular may be under-resolved. Reaction balance against the applied load (≤ 0.5 %) is still
-checked on L1; the M2A.4 smoke test meets it for LC1 and LC4.
+Run on `GE_Challenge_Bracket` on the Windows host (FreeCAD 1.1.3, Gmsh 4.15.0, ccx 2.22 with SPOOLES only;
+not D-17). Tolerances are the ones fixed before comparison: max displacement changes ≤ 2 %; stress outside the
+singularity zones changes ≤ 5 %; a raw peak that moves more than 20 % is flagged, never hidden.
+
+**Levels.** L2 and L3 are back in `ge_manual_mesh.py` (not meshed by default). A global L3 (415,584 nodes, about
+1.25M DOF) passes quality but would need about 13 GB for SPOOLES, which this 16 GB host doesn't have. So the third
+level is **L3r**: L2's global sizes, with only the `arm_root` region refined to L3's 1.0 mm and the global minimum
+at 0.75 mm.
+
+| Level | max / min / region / curvature | Nodes | Quality | Ti LC1 SPOOLES peak | Solve |
+| --- | --- | --- | --- | --- | --- |
+| L1 | 5 / 1.0 / 2.0 / 4 | 93,659 | rejected (gamma 0.015) | 2.1 GB | 117 s |
+| L2 | 4 / 1.0 / 1.5 / 6 | 172,710 | accepted | 4.5 GB | 380 s |
+| L3r | 4 / 0.75 / 1.5 (arm_root 1.0) / 6 | 230,557 | accepted | 6.3 GB | 642 s |
+| L3 (not solved) | 3 / 0.75 / 1.0 / 9 | 415,584 | accepted | ≈ 13 GB (fitted) | — |
+
+`ITERATIVE CHOLESKY` fits in memory but its fixed stopping tolerance leaves displacement 2.2 % and nodal stress up
+to 25 MPa off SPOOLES on L1, so it is not used here. PaStiX and PARDISO are not linked in this ccx.
+
+**Ti-6Al-4V, LC1** (von Mises in MPa; the matrix's nodal-averaged stress):
+
+| Quantity | L1 | L2 | L3r | L2 → L3r | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Max displacement (mm) | 0.2278 | 0.2287 | 0.2287 | 0.0 % | **converged** |
+| +y lug arm-root fillet (Face35): the peak once the bolt zone is ≥ 11 mm | 244.0 | 262.9 | **258.5** | −1.7 % | **converged** |
+| −y lug arm-root fillet (Face34) | 242.7 | 253.8 | 254.5 | +0.3 % | **converged** |
+| Node spacing at the arm root (mm) | 0.99 | 0.65 | 0.32 | | refined each step |
+| Boss fillet ring, r ≈ 10 mm: the peak with the 10 mm bolt zone | 336.5 | 417.9 | 421.2 | (+0.8 %) | **not tested**: L3r did not refine it |
+| Raw peak, fixed-patch edge | 1,521.8 | 1,216.4 | — | | singular; flagged, never used |
+
+**What this settles and what it doesn't**
+- **The arm-root fillets are converged at L3r to within 1.7 %.** The real governing stress for Ti LC1 is about
+  **259 MPa**, at the +y lug arm root. L1 reads it 6 % low.
+- **The boss ring just outside the 10 mm bolt zone is not a converged stress.** It rose 24 % from L1 to L2 and
+  moved toward the zone edge (r 10.34 → 10.06), which is how the tail of the fixed-patch-edge singularity behaves.
+  L3r left that area at L2 size, so its +0.8 % says nothing either way. A level refining `nut_seat` would test it
+  directly.
+- **Only Ti LC1 has been run.** LC2–LC4 and the other cards still need L2 and L3r solves.
+- **No level is frozen yet.** L1 fails quality (#60) and under-reads the arm root by 6 %. L2 or L3r are the
+  candidates once LC2–LC4 are in.
 
 ## 7. Status against the M2A.2 checklist
 
@@ -189,4 +224,4 @@ checked on L1; the M2A.4 smoke test meets it for LC1 and LC4.
 | 3. Generate; inspect sections; mesher version; counts by type; time; files and checksums | Done (sections 2, 3 and 5). **The GUI walk-through still needs one manual run** to confirm the steps as written; the numbers above come from the script |
 | 4. Named metrics, distributions, worst IDs and locations, histograms, worst-element views; unavailable metrics stated | Done (section 3) |
 | 5. Zero inverted; thresholds fixed before acceptance; failures corrected by sizing | Done (sections 3 and 4). The curved-midside trial was not needed |
-| 6. Three levels × LC1–LC4 convergence; freeze | **Not done**: L2 and L3 dropped, L1 used without a convergence check (section 6) |
+| 6. Three levels × LC1–LC4 convergence; freeze | **Partial**: Ti LC1 on L1 / L2 / L3r; the arm root converges within 1.7 % (section 6). LC2–LC4 and the other cards remain; nothing frozen |

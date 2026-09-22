@@ -63,6 +63,11 @@ LEVELS = {
     "L1": {"max": 5.0, "min": 1.0, "region": 2.0, "curvature": 4},
     "L2": {"max": 4.0, "min": 1.0, "region": 1.5, "curvature": 6},
     "L3": {"max": 3.0, "min": 0.75, "region": 1.0, "curvature": 9},
+    # L3 refined locally: L3 needs ~13 GB with SPOOLES, so the third point of the
+    # convergence study refines only the arm-root fillets (the governing site
+    # outside the support zones) to L3's region size, and keeps L2 elsewhere.
+    # The global minimum drops to 0.75 so the 1.0 region is not clamped.
+    "L3r": {"max": 4.0, "min": 0.75, "region": 1.5, "curvature": 6, "region_sizes": {"arm_root": 1.0}},
 }
 
 # Acceptance thresholds, fixed before meshing (Gmsh 4.15.2 definitions, see doc).
@@ -142,7 +147,8 @@ def build(level, sizes, regions):
     # thresholds on slivers at the file's tiny B-spline faces (see the doc).
     mesh.OptimizeNetgen = True
     for name, faces in regions.items():
-        mr = ObjectsFem.makeMeshRegion(doc, mesh, sizes["region"], f"Region_{name}")
+        size = sizes.get("region_sizes", {}).get(name, sizes["region"])
+        mr = ObjectsFem.makeMeshRegion(doc, mesh, size, f"Region_{name}")
         mr.References = [(part, tuple(faces))]
     doc.recompute()
     return doc, mesh
