@@ -474,7 +474,7 @@ Nothing binary is committed. The FEM environment — FreeCAD with its FEM and CA
 
 Ranked. The first two are settled by M1 and M2; the rest are live.
 
-1. **Images through the gateway are proven.** Real-contour region/prediction quality is still open in M2.7.
+1. **Images through the gateway are proven.** M2.7 (22 Sep, [record](m2-exchange.md)) returns a closed-set region and a complete D-07 prediction every time. Whether the region is *right* waits on the support-zone decision in its §4.
 2. **The pin-load model has no FreeCAD tool that matches SimJEB.** → M2.2.
 3. **Material data provenance.** MatWeb's data is not freely redistributable, so use published handbook or public datasheet values, cited per record.
 4. **Single process only.** The harness's JSON stores are unsafe across processes, so candidates cannot be evaluated in parallel. That is a real throughput ceiling.
