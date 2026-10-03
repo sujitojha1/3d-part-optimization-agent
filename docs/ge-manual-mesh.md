@@ -9,7 +9,7 @@
 | Input | Partitioned working copy `data/ge_manual/Iteration1_partitioned.FCStd`, SHA-256 `b025011c…790af6`: the [M2A.1](ge-manual-geometry.md) working copy with the four nut seats split at Ø 14.173 by [M2A.4](ge-manual-boundary-conditions.md) |
 | Tools | FreeCAD 1.1.3 FEM Workbench → `FemMeshGmsh` → Gmsh 4.15.2 (`vendor/fem-env/bin/gmsh`); quality from the Gmsh 4.15.2 Python API |
 | Script | `vendor/fem-env/bin/python scripts/ge_manual_mesh.py` (about 1 min). It builds the same objects as the manual steps in section 1 and writes `out/ge_manual_mesh/mesh-quality.json` |
-| Status | **Mesh and quality: done for Iteration1; on `GE_Challenge_Bracket` L1 is rejected** (one element, gamma 0.015) while L2, L3r and L3 pass. **Convergence: done for Ti LC1–LC4** (3 Oct) on L1 / L2 / L3r: displacement and arm-root stress converge within 3.0 % (section 6); the boss-ring peak at the 10 mm zone edge does not. **No level frozen yet**; L2 is proposed |
+| Status | **Mesh and quality: done for Iteration1; on `GE_Challenge_Bracket` L1 is rejected** (one element, gamma 0.015) while L2, L3r and L3 pass. **Convergence: done for Ti LC1–LC4** (3 Oct) on L1 / L2 / L3r: displacement and arm-root stress converge within 3.0 % (section 6); the boss-ring peak at the 10 mm zone edge does not. **L2 is the frozen mesh** (3 Oct), recorded in `scripts/ge_part.py` |
 
 ## 1. Manual steps (FreeCAD 1.1.3 GUI)
 
@@ -266,14 +266,20 @@ applied load (tolerance 0.5 %).
 - **The boss ring just outside the 10 mm bolt zone is not a converged stress in LC1 or LC2.** It rises 22–24 % from
   L1 to L2 and sits on the zone edge (r 10.06), which is how the tail of the fixed-patch-edge singularity behaves.
   L3r left that area at L2 size, so its +0.6–0.8 % says nothing either way. With an 11 mm zone the LC1 peak is the
-  arm root; in LC2 it is still a zone-edge node (143.2 MPa at r 11.06), and only at 12 mm is it the arm root. The
+  arm root; in LC2 it is still a zone-edge node (141.9 MPa at r 11.09), and only at 12 mm is it the arm root. The
   radius is the [#64](https://github.com/sujitojha1/3d-part-optimization-agent/issues/64) question; a level
   refining `nut_seat` would test the ring directly.
 - **The raw fixed-patch-edge peaks do not converge** (LC3 moves +29 % between the two finest levels), as expected
   of a singularity. They stay flagged.
-- **No level is frozen yet.** L1 is out. **L2 is the proposed frozen mesh**: it passes quality, is within 3.0 % of
-  L3r at every arm root and within 0.1 % on displacement in all four cases, and solves in about 6 min and 5.1 GB,
-  so the 20-run matrix fits on the 16 GB host. Freezing it means re-running M2A.6 on L2.
+- **L2 is the frozen mesh (owner decision, 3 Oct).** L1 is out. L2 passes quality, is within 3.0 % of L3r at every
+  arm root and within 0.1 % on displacement in all four cases, and solves in about 6 min and 5.1 GB, so the 20-run
+  matrix fits on the 16 GB host.
+  - **Record:** `scripts/ge_part.py` holds the level and its connectivity SHA-256, `ad92e201…2916922`.
+  - **Guards:** `ge_manual_matrix.py` runs on L2 by default and stops if the mesh document or its quality record
+    is not the frozen one; `ge_manual_mesh.py` will not re-mesh L2 without `--refreeze`.
+  - **M2A.4, M2A.5 and M2A.6 are re-run on L2** ([boundary conditions](ge-manual-boundary-conditions.md),
+    [load cases](ge-manual-load-cases.md), [analysis report](ge-manual-analysis-report.md)); their scripts
+    default to the frozen level.
 
 ## 7. Status against the M2A.2 checklist
 
@@ -284,4 +290,4 @@ applied load (tolerance 0.5 %).
 | 3. Generate; inspect sections; mesher version; counts by type; time; files and checksums | Done (sections 2, 3 and 5). **The GUI walk-through still needs one manual run** to confirm the steps as written; the numbers above come from the script |
 | 4. Named metrics, distributions, worst IDs and locations, histograms, worst-element views; unavailable metrics stated | Done (section 3) |
 | 5. Zero inverted; thresholds fixed before acceptance; failures corrected by sizing | Done (sections 3 and 4). The curved-midside trial was not needed |
-| 6. Three levels × LC1–LC4 convergence; freeze | **Convergence done for Ti LC1–LC4** on L1 / L2 / L3r (section 6): displacement and arm-root stress meet the tolerances; the boss-ring peak at the 10 mm zone edge and the raw peaks do not converge and are flagged. **Not frozen**: L2 is proposed |
+| 6. Three levels × LC1–LC4 convergence; freeze | **Convergence done for Ti LC1–LC4** on L1 / L2 / L3r (section 6): displacement and arm-root stress meet the tolerances; the boss-ring peak at the 10 mm zone edge and the raw peaks do not converge and are flagged. **Frozen on L2** (3 Oct) |

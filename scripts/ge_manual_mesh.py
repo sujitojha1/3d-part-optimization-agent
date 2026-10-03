@@ -34,7 +34,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from ge_part import PART  # noqa: E402  the part M2A is locked to
+from ge_part import MESH_LEVEL, PART  # noqa: E402  the part and mesh M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -59,6 +59,7 @@ OUT = ROOT / "out" / "ge_manual_mesh"
 # (322k nodes) ran out of memory with SPOOLES on a 16 GB host; they are back for
 # the convergence study on the smaller GE_Challenge_Bracket, and the default run
 # still meshes L1 only. A region size below the global minimum would be clamped.
+# The frozen level (ge_part.MESH_LEVEL) is not re-meshed without --refreeze.
 LEVELS = {
     "L1": {"max": 5.0, "min": 1.0, "region": 2.0, "curvature": 4},
     "L2": {"max": 4.0, "min": 1.0, "region": 1.5, "curvature": 6},
@@ -328,7 +329,11 @@ def plots(level, out, conn, xyz, q, summary, part_shape):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--levels", nargs="+", choices=list(LEVELS), default=["L1"])
+    parser.add_argument("--refreeze", action="store_true", help="allow re-meshing the frozen level")
     args = parser.parse_args()
+    if MESH_LEVEL in args.levels and (DATA / MESH_LEVEL).exists() and not args.refreeze:
+        raise SystemExit(f"{MESH_LEVEL} is the frozen mesh for {PART}: re-meshing replaces its files, and a new "
+                         f"connectivity must be re-recorded in ge_part.MESHES. Pass --refreeze to do that.")
     OUT.mkdir(parents=True, exist_ok=True)
     geom = json.loads(GEOMETRY_CHECK.read_text())
     report_path = OUT / "mesh-quality.json"

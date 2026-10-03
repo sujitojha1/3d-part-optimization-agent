@@ -37,3 +37,12 @@ if PART not in SOURCES:
     raise SystemExit(f"GE_PART={PART!r} is not a frozen source; choose from {sorted(SOURCES)}")
 SOURCE_SHA256 = SOURCES[PART]
 SOURCE_DIR = SOURCE_DIRS.get(PART, "simjeb")
+
+# stem -> (frozen mesh level, its connectivity SHA-256 in out/ge_manual_mesh/mesh-quality.json).
+# Frozen 2026-10-03 on the M2A.2 convergence study (docs/ge-manual-mesh.md s6): L2 passes
+# every quality rule and is within 3.0 % of L3r at the arm roots in LC1-LC4. L1 is rejected.
+# M2A.6 publishes on this level only. A part without an entry has no frozen mesh.
+MESHES = {
+    "GE_Challenge_Bracket": ("L2", "ad92e20132de9a9ba767d6c8cb65a7bdc565f7699906e5d50e77e9b222916922"),
+}
+MESH_LEVEL, MESH_SHA256 = MESHES.get(PART, (None, None))

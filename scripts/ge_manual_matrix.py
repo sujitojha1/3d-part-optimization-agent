@@ -1,8 +1,8 @@
-"""M2A.6: the manual 5 material x 4 load-case matrix on the L1 mesh, with stress, mass and displacement.
+"""M2A.6: the manual 5 material x 4 load-case matrix on the frozen mesh, with stress, mass and displacement.
 
 Each run is the M2A.5 setup (supports and rigid pin from M2A.4, one load case) with one
-M2A.3 material card, built as its own FreeCAD document from a fresh copy of the L1 mesh
-document (ge_manual_bcs.build). The deck FreeCAD writes gets one edit: `*NODE FILE`
+M2A.3 material card, built as its own FreeCAD document from a fresh copy of the frozen
+level's mesh document (ge_manual_bcs.build). The deck FreeCAD writes gets one edit: `*NODE FILE`
 asks for RF as well as U, so the nodal reactions are in the .frd and the force AND
 moment balance can be checked. ccx is run on that deck in the run's folder.
 
@@ -24,17 +24,18 @@ Exclusion zones (fixed before any M2A.6 result, see docs/ge-manual-analysis-repo
 
 Outputs: out/ge_manual_matrix/ (matrix.csv, matrix.json, maps/), with matrix.csv also
 copied to docs/ge-manual-analysis-matrix.csv; per run
-data/ge_manual/matrix/L1/<card>/<case>/ (FCStd, deck, ccx log, .dat, .frd, fields.npz;
+data/ge_manual/matrix/<part>/<level>/<card>/<case>/ (FCStd, deck, ccx log, .dat, .frd, fields.npz;
 gitignored, derived from licensed CAD). Finished runs are skipped unless --force.
 
 Run with the FEM environment's Python (scripts/fem_env.py finds it):
     $FEM_PYTHON scripts/ge_manual_matrix.py [--cards ti6al4v ...] [--cases LC1 ...] [--force]
     $FEM_PYTHON scripts/ge_manual_matrix.py --report-only
-    $FEM_PYTHON scripts/ge_manual_matrix.py --level L2 --cards ti6al4v   (convergence study)
+    $FEM_PYTHON scripts/ge_manual_matrix.py --level L3r --cards ti6al4v   (convergence study)
 
-A level other than L1 is the M2A.2 convergence study: its runs and outputs go to
-data/ge_manual/matrix/<part>/<level>/ and out/ge_manual_matrix_<level>/, and the
-docs CSV is left alone, so the published L1 matrix is never overwritten.
+The frozen level is ge_part.MESH_LEVEL (L2 for GE_Challenge_Bracket). Its mesh document
+and quality record are checked against the frozen checksums before anything runs. Any
+other level is the M2A.2 convergence study: its outputs go to out/ge_manual_matrix_<level>/
+and the docs CSV is left alone, so the published matrix is never overwritten.
 """
 
 import argparse
@@ -49,7 +50,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from ge_part import PART  # noqa: E402  the part M2A is locked to
+from ge_part import MESH_LEVEL, MESH_SHA256, PART  # noqa: E402  the part and mesh M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -63,7 +64,7 @@ from ge_manual_bcs import MESH_DIR, OUT as BCS_OUT, build, check, parse_deck, sh
 from ge_manual_loads import CASES, load_checks  # noqa: E402
 from ge_manual_materials import CARDS  # noqa: E402
 
-LEVEL = "L1"
+LEVEL = MESH_LEVEL or "L1"              # no frozen mesh: --level is required
 CCX = fem_env.ccx()
 # Keyed by part as well as level. Without the part in the path, re-running the
 # matrix for a different geometry silently reused the previous part's solved
@@ -82,6 +83,20 @@ BALANCE_TOL = 0.005                # residual <= 0.5 % of the applied load
 L_REF = 100.0                      # mm, converts between force and moment scales
 SAFETY_FACTOR = 1.5                # project choice (docs/ge-manual-materials.md s5)
 DISP_LIMIT = 1.1                   # x the Ti baseline, project choice
+
+
+def frozen_mesh_problems():
+    """Why the mesh on disk is not the frozen one; empty when it is."""
+    rec = json.loads(MESH_QUALITY.read_text())["levels"].get(LEVEL, {})
+    doc = MESH_DIR / LEVEL / f"{PART}_mesh_{LEVEL}.FCStd"
+    problems = []
+    if rec.get("connectivity_sha256") != MESH_SHA256:
+        problems.append(f"mesh-quality.json connectivity is {rec.get('connectivity_sha256')}, frozen is {MESH_SHA256}")
+    if not rec.get("quality", {}).get("accepted"):
+        problems.append("mesh-quality.json does not record this level as accepted")
+    if not doc.exists() or sha256(doc) != rec.get("files", {}).get(doc.name):
+        problems.append(f"{doc.relative_to(ROOT)} is not the document mesh-quality.json recorded")
+    return problems
 
 
 def read_mesh(text):
@@ -405,7 +420,7 @@ def write_report(runs, ranges):
               "displacement_limit_x_ti": DISP_LIMIT, "legend_ranges": ranges, "governing": governing,
               "valid_runs": sum(r["status"] == "valid" for r in runs), "runs": runs}
     (OUT / "matrix.json").write_text(json.dumps(report, indent=2, default=float))
-    if LEVEL == "L1":  # the published matrix; convergence levels stay in out/
+    if LEVEL == MESH_LEVEL:  # the published matrix; convergence levels stay in out/
         shutil.copyfile(OUT / "matrix.csv", ROOT / "docs" / "ge-manual-analysis-matrix.csv")
     return report
 
@@ -416,13 +431,16 @@ def main():
     parser.add_argument("--cases", nargs="+", choices=list(CASES), default=list(CASES))
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--report-only", action="store_true")
-    parser.add_argument("--level", default="L1", help="mesh level; not L1 = convergence study, kept apart")
+    parser.add_argument("--level", default=MESH_LEVEL, required=MESH_LEVEL is None,
+                        help="mesh level; other than the frozen one = convergence study, kept apart")
     args = parser.parse_args()
     global LEVEL, DATA, OUT
-    if args.level != LEVEL:
+    if args.level != MESH_LEVEL:
         LEVEL = args.level
         DATA = DATA.parent / LEVEL
         OUT = OUT.with_name(f"{OUT.name}_{LEVEL}")
+    elif problems := frozen_mesh_problems():
+        raise SystemExit(f"{LEVEL} is frozen for {PART}, but:\n  " + "\n  ".join(problems))
     part_rec = json.loads((BCS_OUT / "partition.json").read_text())
     if not args.report_only:
         for card in args.cards:
