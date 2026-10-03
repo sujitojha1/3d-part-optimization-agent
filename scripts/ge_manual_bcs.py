@@ -23,7 +23,9 @@ Outputs: out/ge_manual_bcs/bcs.json and views; data/ge_manual/bcs/<level>/
 
 Run with the FEM environment's Python (scripts/fem_env.py finds it):
     $FEM_PYTHON scripts/ge_manual_bcs.py partition
-    $FEM_PYTHON scripts/ge_manual_bcs.py setup [--level L1] [--solve]
+    $FEM_PYTHON scripts/ge_manual_bcs.py setup [--level L3r] [--solve]
+
+The default level is the frozen mesh, ge_part.MESH_LEVEL (L2 for GE_Challenge_Bracket).
 """
 
 import argparse
@@ -36,7 +38,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from ge_part import PART  # noqa: E402  the part M2A is locked to
+from ge_part import MESH_LEVEL, PART  # noqa: E402  the part and mesh M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -361,7 +363,7 @@ def setup(level, run_solve):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("step", choices=["partition", "setup"])
-    parser.add_argument("--level", default="L1")
+    parser.add_argument("--level", default=MESH_LEVEL or "L1")
     parser.add_argument("--solve", action="store_true")
     args = parser.parse_args()
     if args.step == "partition":

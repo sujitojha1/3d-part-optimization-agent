@@ -1,6 +1,6 @@
 """M2A.5: the four independent GE static load cases on the M2A.4 supports and rigid pin.
 
-For each of LC1-LC4, opens a fresh copy of the L1 mesh document from M2A.2 and adds
+For each of LC1-LC4, opens a fresh copy of the frozen mesh document from M2A.2 and adds
 what a person adds by hand: CalculiX solver, the Ti-6Al-4V card, Fixed_B1..B4 on the
 nut-contact patches and the rigid-body constraint `Pin` on both lug bores, with the
 case's force and moment on its reference point (ge_manual_bcs.build). Each case is
@@ -20,8 +20,8 @@ copy, so they are applied unchanged. Sources: docs/ge-jet-engine-bracket.md s3 a
 docs/simjeb-dataset.md s2.
 
 Outputs: out/ge_manual_loads/loads.json and one view per case; data/ge_manual/loads/
-L1/<case>/ (gitignored, derived from licensed CAD). Only L1 is used: the L2 solve ran
-out of memory (docs/ge-manual-mesh.md).
+<level>/<case>/ (gitignored, derived from licensed CAD). The level is the frozen mesh,
+ge_part.MESH_LEVEL (L2 for GE_Challenge_Bracket; docs/ge-manual-mesh.md s6).
 
 Run with the FEM environment's Python (scripts/fem_env.py finds it):
     $FEM_PYTHON scripts/ge_manual_loads.py [--solve]
@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from ge_part import PART  # noqa: E402  the part M2A is locked to
+from ge_part import MESH_LEVEL, PART  # noqa: E402  the part and mesh M2A is locked to
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -46,7 +46,7 @@ from femtools import ccxtools  # noqa: E402
 
 from ge_manual_bcs import MESH_DIR, OUT as BCS_OUT, build, check, sha256, solve  # noqa: E402
 
-LEVEL = "L1"
+LEVEL = MESH_LEVEL or "L1"
 DATA = ROOT / "data" / "ge_manual" / "loads" / LEVEL
 OUT = ROOT / "out" / "ge_manual_loads"
 

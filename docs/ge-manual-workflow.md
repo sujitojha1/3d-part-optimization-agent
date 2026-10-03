@@ -1,6 +1,7 @@
 # M2A — Manual GE challenge analysis and CAM readiness
 
 > **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
+> **3 Oct status:** the convergence study is done and **L2 is the frozen mesh**; L1 stays rejected. M2A.4–M2A.6 are re-run on L2 ([mesh record §6](ge-manual-mesh.md), [analysis report](ge-manual-analysis-report.md)). The bolt exclusion radius is the open acceptance question.
 > Recovery target: 21–23 Sep, before M3; [plan](plan.md). Added **M2A.8 [#66](https://github.com/sujitojha1/3d-part-optimization-agent/issues/66)**: qualify the generated FVZ outer-shell solid, reconcile interfaces/provenance, and pass all seven L1 quality rules before re-freezing M2A.1–M2A.7. Older “unscheduled” text below describes the original scope addition.
 
 [GitHub milestone](https://github.com/sujitojha1/3d-part-optimization-agent/milestone/7) · [Project board](https://github.com/users/sujitojha1/projects/10)

@@ -1,18 +1,18 @@
 # GE manual boundary conditions — nut-seat supports and rigid-pin load transfer (M2A.4)
 
-> **23 Sep:** refreshed for the current part, `GE_Challenge_Bracket`. Sections 2–4 and 7 now come from the
-> current `out/ge_manual_bcs/partition.json` and `bcs.json`. **No solve has been run on the current part**:
-> section 5 keeps the Iteration1 smoke test and says so. The L1 mesh these decks sit on is not yet accepted
-> ([#60](https://github.com/sujitojha1/3d-part-optimization-agent/issues/60): one element fails the gamma threshold).
+> **3 Oct:** refreshed on **L2**, the mesh frozen by the [M2A.2 convergence study](ge-manual-mesh.md), for the
+> current part, `GE_Challenge_Bracket`. Sections 4, 5 and 7 come from the current `out/ge_manual_bcs/bcs.json`;
+> the partition (section 2) is unchanged. The smoke test in section 5 is now solved on the current part. The L1
+> decks and the Iteration1 smoke test this page held before are in git history.
 
 | | |
 | --- | --- |
 | Task | M2A.4 ([#62](https://github.com/sujitojha1/3d-part-optimization-agent/issues/62)) · [M2A workflow](ge-manual-workflow.md) |
-| Date | 2026-09-19; refreshed 2026-09-23 |
-| Input | Working copy `data/ge_manual/GE_Challenge_Bracket_manual.FCStd`, SHA-256 `517c9bd7f0f68862b59a1558de05768afb707c10f8a05f3a615ec73cb0fd3b2a`; L1 mesh ([M2A.2 record](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3 record](ge-manual-materials.md)) |
+| Date | 2026-09-19; refreshed 2026-09-23; on L2 2026-10-03 |
+| Input | Working copy `data/ge_manual/GE_Challenge_Bracket_manual.FCStd`, SHA-256 `517c9bd7f0f68862b59a1558de05768afb707c10f8a05f3a615ec73cb0fd3b2a`; frozen L2 mesh ([M2A.2 record](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3 record](ge-manual-materials.md)) |
 | Output geometry | `data/ge_manual/GE_Challenge_Bracket_partitioned.FCStd`, SHA-256 `10e5c43fa30958f088b04507b95d658e9d3049588b91fd71fead68ae4de3b758`. M2A.2 meshes this copy, and every later step uses it |
-| Script | `$FEM_PYTHON scripts/ge_manual_bcs.py partition`, then `… setup --level L1 [--solve]`. It builds the same objects as the manual steps in section 3 and writes `out/ge_manual_bcs/partition.json`, `bcs.json` and three views |
-| Status | **Deck setup done and checked on the current part (L1).** All four supports and both lug bores are in the deck, with no extra restraints, for LC1 and LC4. **Not yet on the current part:** a solve (section 5), and the L1 mesh's acceptance (#60). **The full force and moment balance is M2A.6**, and **one GUI walk-through is still needed** |
+| Script | `$FEM_PYTHON scripts/ge_manual_bcs.py partition`, then `… setup [--solve]` (the frozen level, L2, by default). It builds the same objects as the manual steps in section 3 and writes `out/ge_manual_bcs/partition.json`, `bcs.json` and three views |
+| Status | **Deck setup done, checked and smoke-solved on the current part, on the frozen L2 mesh.** All four supports and both lug bores are in the deck, with no extra restraints, for LC1 and LC4, and both solve and balance the applied force (section 5). **The full force and moment balance is [M2A.6](ge-manual-analysis-report.md)**, and **one GUI walk-through is still needed** |
 
 ## 1. Idealisation
 
@@ -74,9 +74,9 @@ chamfer cones are not included.
 5. Check the solid with Part → **Check geometry**. Its volume should be 463,257.58 mm³ and it should have 62
    faces. Save as `GE_Challenge_Bracket_partitioned.FCStd`.
 
-**B. Supports and pin (per load case, on the L1 mesh document from M2A.2).**
+**B. Supports and pin (per load case, on the frozen L2 mesh document from M2A.2).**
 
-1. Open `data/ge_manual/mesh/L1/GE_Challenge_Bracket_mesh_L1.FCStd` and switch to the **FEM** workbench.
+1. Open `data/ge_manual/mesh/L2/GE_Challenge_Bracket_mesh_L2.FCStd` and switch to the **FEM** workbench.
 2. **Solver.** Select `Analysis`, then Solve → **Solver CalculiX Standard**, with Analysis type **static**.
 3. **Material.** Model → Materials → Material for solid, Ti-6Al-4V from the [M2A.3 card](ge-manual-materials.md),
    applied to `Solid1`.
@@ -89,7 +89,7 @@ chamfer cones are not included.
    - Translational mode X/Y/Z = **Load**, and rotational mode X/Y/Z = **Load**.
    - LC1: Force Z = **35585.77 N**, and every other force and moment 0.
    - LC4: Moment Z = **564924.2 N·mm**, and every force 0.
-6. Save as `GE_Challenge_Bracket_bcs_L1_<case>.FCStd`, then write the `.inp` from the solver task panel.
+6. Save as `GE_Challenge_Bracket_bcs_L2_<case>.FCStd`, then write the `.inp` from the solver task panel.
 
 Setting a mode to **Load** with value 0 leaves that DOF of the rigid body free. The rigid body is supported only
 through the part and the four fixed patches. It must not be set to **Constraint**, which would add a restraint.
@@ -102,50 +102,48 @@ sets. Only the `*CLOAD` values differ.
 
 | Check | Result |
 | --- | --- |
-| `Fixed_B1`–`B4` node sets equal the mesh nodes on each patch face | **Yes**: 124, 153, 124 and 124 nodes (525 in total) |
-| Ring nodes fixed, apart from the 46 nodes on the shared Ø 14.173 edge | **0** at every seat |
+| `Fixed_B1`–`B4` node sets equal the mesh nodes on each patch face | **Yes**: 244, 261, 244 and 244 nodes (993 in total) |
+| Ring nodes fixed, apart from the 60 nodes on the shared Ø 14.173 edge | **0** at every seat |
 | Restrained DOFs | `*BOUNDARY` `Fixed_Bn,1`, `,2` and `,3` for each seat: **translations only** |
 | Extra `*BOUNDARY` lines | **None**: the deck has exactly the four `Fixed_*` blocks |
-| `Pin` node set equals the mesh nodes on both bores | **Yes**: 1,155 nodes, **566 and 589** per lug |
+| `Pin` node set equals the mesh nodes on both bores | **Yes**: 2,159 nodes, **1,070 and 1,089** per lug |
 | Overlap between fixed and pin nodes | 0 |
-| Rigid body card | `*RIGID BODY, NSET=Pin, REF NODE=93674, ROT NODE=93675` |
+| Rigid body card | `*RIGID BODY, NSET=Pin, REF NODE=172725, ROT NODE=172726` |
 | Reference and rotation nodes | Both at (−20.97366, −74.76046, 44.72459), the pin reference point |
-| LC1 loads | `*CLOAD` 93674,3,35585.77; every other component 0; no load on any other node |
-| LC4 loads | `*CLOAD` 93675,3,564924.2, a moment about +z on the rotation node; every other component 0 |
+| LC1 loads | `*CLOAD` 172725,3,35585.77; every other component 0; no load on any other node |
+| LC4 loads | `*CLOAD` 172726,3,564924.2, a moment about +z on the rotation node; every other component 0 |
 
-Decks: `data/ge_manual/bcs/L1/LC1/LC1.inp` (SHA-256 `acd59477…aa56f2`) and `…/LC4/LC4.inp` (`73796aa6…ea853cb`).
+Decks: `data/ge_manual/bcs/L2/LC1/LC1.inp` (SHA-256 `91ea964f…8f33e5`) and `…/LC4/LC4.inp` (`46d847ef…ce709c`).
 Full checksums are in `bcs.json`. The decks are gitignored because they are derived from licensed CAD.
 
-## 5. Smoke-test solve (L1, Ti-6Al-4V) — Iteration1 only
+## 5. Smoke-test solve (L2, Ti-6Al-4V)
 
-**Not yet run on `GE_Challenge_Bracket`.** Everything in this section is from the Iteration1 part (628 fixed
-nodes, 19 Sep) and is kept as evidence that the setup method solves and transfers load, not as a result for
-the current part. Re-run with `setup --level L1 --solve` once #60 accepts the L1 mesh.
+Run on `GE_Challenge_Bracket` on 3 Oct with `setup --solve`: CalculiX 2.23 with SPOOLES, on the D-17 Mac.
 
 This only confirms that the setup solves and transfers the load. The formal force **and moment** balance, with
 tolerances, is M2A.6.
 
 | Case | ccx | Time | Σ support reactions (N) | Applied |
 | --- | --- | --- | --- | --- |
-| LC1 | exit 0 | 48.7 s | (0.000, −0.006, **−35,585.773**) | Fz +35,585.77 N |
-| LC4 | exit 0 | 50.6 s | (0.000, 0.000, 0.000) | Mz +564,924.2 N·mm |
+| LC1 | exit 0 | 182.7 s | (0.000, −0.005, **−35,585.769**) | Fz +35,585.77 N |
+| LC4 | exit 0 | 173.7 s | (−0.001, 0.000, 0.000) | Mz +564,924.2 N·mm |
 
 Reactions per seat (N):
 
 | Seat | LC1 (Fx, Fy, Fz) | LC4 (Fx, Fy, Fz) |
 | --- | --- | --- |
-| B1 | (−890, −1,124, **+7,785**) | (+1,636, −500, −859) |
-| B2 | (−38, +23,267, −25,380) | (+1,955, +474, +848) |
-| B3 | (+858, −19,984, −24,284) | (−1,856, +237, −1,128) |
-| B4 | (+70, −2,159, **+6,293**) | (−1,735, −210, +1,139) |
+| B1 | (+7, +2,650, **+8,188**) | (+1,693, −512, −605) |
+| B2 | (−339, +12,111, −25,803) | (+1,925, +395, +607) |
+| B3 | (−11, −9,906, −23,626) | (−1,797, +256, −802) |
+| B4 | (+344, −4,855, **+5,655**) | (−1,821, −139, +800) |
 
 **LC4 moment transfer.** The rigid body carries the moment. The seats react it mostly as an in-plane couple, with
 net force zero. A rough check takes each seat's resultant at its bolt axis and ignores the moment each patch
-carries itself. That gives Mz = −566,605 N·mm about the pin reference point. It opposes the applied +564,924 N·mm and matches
-it within 0.3 %. The same rough check leaves about 1×10⁵ N·mm of Mx and My in LC1, which is the moment carried
-within each patch. That's why the exact check in M2A.6 needs nodal reactions, not resultants.
+carries itself. That gives Mz = −568,405 N·mm about the pin reference point. It opposes the applied +564,924 N·mm
+and matches it within 0.6 %. The same rough check leaves about 1×10⁵ N·mm of My in LC1, which is the moment
+carried within each patch. That's why the exact check in M2A.6 needs nodal reactions, not resultants.
 
-**Displacement at the pin (LC1).** The reference node moves (0.080, −0.002, 0.312) mm.
+**Displacement at the pin (LC1).** The reference node moves (0.079, −0.001, 0.164) mm.
 
 ## 6. Singularity risks and idealisation limits
 
@@ -158,14 +156,15 @@ These zones must be defined as exclusions for "stress away from singularities" i
 3. **Bonded pin, no contact.** The rigid body carries tension and compression all round the bore. A real pin
    bears only on one side, with 0.0635 mm diametral clearance. Bearing stress in the lugs is spread out, not
    concentrated.
-4. **Patches carry uplift.** In the Iteration1 LC1 smoke test, B1 and B4 react **+z** (up); expect the same on the current part until it is solved. A nut can only push down on its seat. In the
+4. **Patches carry uplift.** In the LC1 smoke test, B1 and B4 react **+z** (up). A nut can only push down on its seat. In the
    real joint, that load goes through the base bottom bearing on the engine, which is not modelled. Stress near
    B1 and B4 under LC1 is therefore not physical.
 5. **No bolt preload, no shank bearing.** LC4's in-plane seat forces would really go through friction and the bolt
    shanks. Here they go through the fixed patch.
-6. **Mesh convergence.** Only L1 is used (see the [mesh record](ge-manual-mesh.md), section 6), so peaks near
-   items 1–2 cannot be shown to converge. Use a plan exclusion radius about each bolt axis and the bores. M2's
-   LC1 used 10 mm.
+6. **Mesh convergence.** The [mesh record](ge-manual-mesh.md), section 6, shows the peaks at items 1–2 do not
+   converge (the raw LC3 peak moves 29 % between L2 and L3r), and that the stress just outside a 10 mm bolt zone
+   is still the tail of the patch-edge singularity. Use a plan exclusion radius about each bolt axis and the
+   bores. M2's LC1 used 10 mm; [M2A.6 §5](ge-manual-analysis-report.md) shows 12 mm is needed on this part.
 
 ## 7. Files and views
 
@@ -173,9 +172,9 @@ These zones must be defined as exclusions for "stress away from singularities" i
 - `out/ge_manual_bcs/bcs.json`: per level and case, the deck checksum, node-set checks, cards, loads and solve summary.
 - `out/ge_manual_bcs/bcs_iso.png`, `bcs_top.png`, `bcs_front.png`: fixed patches in red, free rings in orange,
   rigid-pin bores in blue, and the pin reference point with the LC1 arrow. In the top view, B3's label covers B4's.
-- `data/ge_manual/bcs/L1/<case>/`: `GE_Challenge_Bracket_bcs_L1_<case>.FCStd` and `<case>.inp`. No `solve/` yet on the current part.
+- `data/ge_manual/bcs/L2/<case>/`: `GE_Challenge_Bracket_bcs_L2_<case>.FCStd`, `<case>.inp` and `solve/` (deck, `.dat`, `.frd`).
 
-L2 and L3 are not set up ([mesh record](ge-manual-mesh.md)). The L2 LC1 smoke test ran out of memory.
+`bcs.json` also keeps the superseded L1 deck record. Only the frozen level, L2, is current.
 
 ## 8. Status against the M2A.4 checklist
 
@@ -183,6 +182,6 @@ L2 and L3 are not set up ([mesh record](ge-manual-mesh.md)). The L2 LC1 smoke te
 | --- | --- |
 | 1. Interfaces 2–5 annotated; nut patches from the GE annulus, intersected with the real holes; partition; base top not fixed | Done (sections 1 and 2; views in section 7) |
 | 2. Fixed translation at the four patches; restrained DOFs recorded; bore-coupled support not reused | Done (sections 1 and 4) |
-| 3. Rigid pin across both bores, reference at centreline × midplane, load through the reference point; LC4 moment transfer | Deck done on the current part (sections 3–4). Moment transfer shown on Iteration1 only (section 5); the exact balance is M2A.6 |
+| 3. Rigid pin across both bores, reference at centreline × midplane, load through the reference point; LC4 moment transfer | Done on the current part (sections 3–5). The rough moment check is in section 5; the exact balance is M2A.6 |
 | 4. Faces, node sets, reference coordinates, coupling, screenshots, deck cards; all supports and both bores present; no extra restraints | Done (sections 2, 4 and 7). **One GUI walk-through is still needed** to confirm section 3 as written; the numbers come from the script |
 | Singularity risks at idealised supports and the rigid pin | Done (section 6) |
