@@ -9,7 +9,7 @@
 | Input | Partitioned working copy `data/ge_manual/Iteration1_partitioned.FCStd`, SHA-256 `b025011c…790af6`: the [M2A.1](ge-manual-geometry.md) working copy with the four nut seats split at Ø 14.173 by [M2A.4](ge-manual-boundary-conditions.md) |
 | Tools | FreeCAD 1.1.3 FEM Workbench → `FemMeshGmsh` → Gmsh 4.15.2 (`vendor/fem-env/bin/gmsh`); quality from the Gmsh 4.15.2 Python API |
 | Script | `vendor/fem-env/bin/python scripts/ge_manual_mesh.py` (about 1 min). It builds the same objects as the manual steps in section 1 and writes `out/ge_manual_mesh/mesh-quality.json` |
-| Status | **Mesh and quality: done for Iteration1; on `GE_Challenge_Bracket` L1 is rejected** (one element, gamma 0.015) while L2, L3r and L3 pass. **Convergence: partial** (23 Sep): Ti LC1 on L1 / L2 / L3r converges at the arm root to within 1.7 % (section 6); LC2–LC4 remain |
+| Status | **Mesh and quality: done for Iteration1; on `GE_Challenge_Bracket` L1 is rejected** (one element, gamma 0.015) while L2, L3r and L3 pass. **Convergence: done for Ti LC1–LC4** (3 Oct) on L1 / L2 / L3r: displacement and arm-root stress converge within 3.0 % (section 6); the boss-ring peak at the 10 mm zone edge does not. **No level frozen yet**; L2 is proposed |
 
 ## 1. Manual steps (FreeCAD 1.1.3 GUI)
 
@@ -172,48 +172,108 @@ graded refinement at the bore, the arm-root blends and the seats. At L1 the z = 
 across the internal ribs. The through-thickness element count at the 4.66 mm end walls was not measured; check it
 in the GUI walk-through.
 
-## 6. Convergence study (partial: Ti LC1 only, 23 Sep)
+## 6. Convergence study (Ti-6Al-4V, LC1–LC4, on `GE_Challenge_Bracket`)
 
-Run on `GE_Challenge_Bracket` on the Windows host (FreeCAD 1.1.3, Gmsh 4.15.0, ccx 2.22 with SPOOLES only;
-not D-17). Tolerances are the ones fixed before comparison: max displacement changes ≤ 2 %; stress outside the
-singularity zones changes ≤ 5 %; a raw peak that moves more than 20 % is flagged, never hidden.
+Tolerances are the ones fixed before comparison: max displacement changes ≤ 2 %; stress outside the singularity
+zones changes ≤ 5 %; reactions balance the applied load within 0.5 %; a raw peak that moves more than 20 % is
+flagged, never hidden. The comparison that is judged is the two finest levels, L2 → L3r.
 
 **Levels.** L2 and L3 are back in `ge_manual_mesh.py` (not meshed by default). A global L3 (415,584 nodes, about
-1.25M DOF) passes quality but would need about 13 GB for SPOOLES, which this 16 GB host doesn't have. So the third
+1.25M DOF) passes quality but would need about 13 GB for SPOOLES, which a 16 GB host doesn't have. So the third
 level is **L3r**: L2's global sizes, with only the `arm_root` region refined to L3's 1.0 mm and the global minimum
 at 0.75 mm.
 
-| Level | max / min / region / curvature | Nodes | Quality | Ti LC1 SPOOLES peak | Solve |
-| --- | --- | --- | --- | --- | --- |
-| L1 | 5 / 1.0 / 2.0 / 4 | 93,659 | rejected (gamma 0.015) | 2.1 GB | 117 s |
-| L2 | 4 / 1.0 / 1.5 / 6 | 172,710 | accepted | 4.5 GB | 380 s |
-| L3r | 4 / 0.75 / 1.5 (arm_root 1.0) / 6 | 230,557 | accepted | 6.3 GB | 642 s |
-| L3 (not solved) | 3 / 0.75 / 1.0 / 9 | 415,584 | accepted | ≈ 13 GB (fitted) | — |
+| Level | max / min / region / curvature | Nodes | C3D10 | `minSJ` min | gamma min | Aspect max | Quality | Connectivity SHA-256 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| L1 | 5 / 1.0 / 2.0 / 4 | 93,659 | 57,835 | 0.158 | **0.015** | 8.58 | **rejected** (element 72558) | `5e6a3c41…ee71cf6` |
+| L2 | 4 / 1.0 / 1.5 / 6 | 172,710 | 109,287 | 0.217 | 0.202 | 6.73 | accepted | `ad92e201…2916922` |
+| L3r | 4 / 0.75 / 1.5 (arm_root 1.0) / 6 | 230,557 | 148,446 | 0.220 | 0.182 | 6.73 | accepted | `cf1f3fd4…7947374e` |
+| L3 (not solved) | 3 / 0.75 / 1.0 / 9 | 415,584 | 271,698 | 0.489 | 0.202 | 3.73 | accepted | `a755cd96…15285fa9` |
 
+Every level has zero inverted and zero zero-volume elements. Full distributions, worst-element IDs and file
+checksums are in `out/ge_manual_mesh/mesh-quality.json`; histograms and sections are in `out/ge_manual_mesh/<level>/`.
+
+**Where the runs were made.** The meshes are the same files throughout (L1 by Gmsh 4.15.2 on the D-17 Mac; L2, L3r
+and L3 by Gmsh 4.15.0 on the Windows host). The solves are split across two hosts, both SPOOLES:
+
+| Runs | Host | ccx | SPOOLES peak memory | Wall per solve |
+| --- | --- | --- | --- | --- |
+| L1, LC1–LC4 | Mac (D-17) | 2.23 | 2.1 GB (measured on Windows) | about 40 s |
+| L2 and L3r, LC1 | Windows | 2.22 | 4.5 GB / 6.3 GB | 380 s / 642 s |
+| L2, LC2–LC4 (3 Oct) | Mac (D-17) | 2.23 | 5.1 GB | 324–365 s |
+| L3r, LC2–LC4 (3 Oct) | Mac (D-17) | 2.23 | 6.9 GB | 696–912 s |
+
+So each L2 → L3r pair is solved on one host with one ccx version; only the LC1 pair differs from the LC2–LC4 pairs.
 `ITERATIVE CHOLESKY` fits in memory but its fixed stopping tolerance leaves displacement 2.2 % and nodal stress up
-to 25 MPa off SPOOLES on L1, so it is not used here. PaStiX and PARDISO are not linked in this ccx.
+to 25 MPa off SPOOLES on L1, so it is not used here. PaStiX and PARDISO are not linked in either ccx.
 
-**Ti-6Al-4V, LC1** (von Mises in MPa; the matrix's nodal-averaged stress):
+**How each quantity is read.** Von Mises is the matrix's nodal-averaged stress. The arm-root values are the
+maximum over the mesh nodes lying on that fillet face (Face35 is the +y lug's arm-root fillet, Face34 the −y
+lug's). "Outside the 10 mm zone" is the M2A.6 screening peak: outside the pin exclusion and 10 mm from every bolt
+axis.
 
-| Quantity | L1 | L2 | L3r | L2 → L3r | Verdict |
+**Maximum displacement (mm)**
+
+| Case | L1 | L2 | L3r | L2 → L3r | ≤ 2 % |
 | --- | --- | --- | --- | --- | --- |
-| Max displacement (mm) | 0.2278 | 0.2287 | 0.2287 | 0.0 % | **converged** |
-| +y lug arm-root fillet (Face35): the peak once the bolt zone is ≥ 11 mm | 244.0 | 262.9 | **258.5** | −1.7 % | **converged** |
-| −y lug arm-root fillet (Face34) | 242.7 | 253.8 | 254.5 | +0.3 % | **converged** |
-| Node spacing at the arm root (mm) | 0.99 | 0.65 | 0.32 | | refined each step |
-| Boss fillet ring, r ≈ 10 mm: the peak with the 10 mm bolt zone | 336.5 | 417.9 | 421.2 | (+0.8 %) | **not tested**: L3r did not refine it |
-| Raw peak, fixed-patch edge | 1,521.8 | 1,216.4 | — | | singular; flagged, never used |
+| LC1 | 0.2278 | 0.2287 | 0.2287 | 0.0 % | ✅ |
+| LC2 | 0.1731 | 0.1738 | 0.1737 | −0.1 % | ✅ |
+| LC3 | 0.0918 | 0.0921 | 0.0921 | 0.0 % | ✅ |
+| LC4 | 0.0387 | 0.0388 | 0.0388 | 0.0 % | ✅ |
+
+**Arm-root fillets, away from every constraint singularity (MPa)**
+
+| Case | Face | L1 | L2 | L3r | L1 → L2 | L2 → L3r | ≤ 5 % |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LC1 | +y (Face35) | 244.0 | 262.9 | **258.5** | +7.7 % | −1.7 % | ✅ |
+| LC1 | −y (Face34) | 242.7 | 253.8 | 255.4 | +4.6 % | +0.6 % | ✅ |
+| LC2 | +y | 122.4 | 124.8 | 128.2 | +2.0 % | +2.7 % | ✅ |
+| LC2 | −y | 127.0 | 133.8 | **135.4** | +5.4 % | +1.2 % | ✅ |
+| LC3 | +y | 197.5 | 208.9 | 215.2 | +5.8 % | +3.0 % | ✅ |
+| LC3 | −y | 217.6 | 238.1 | **235.5** | +9.4 % | −1.1 % | ✅ |
+| LC4 | +y | 145.4 | 153.2 | **153.3** | +5.4 % | +0.1 % | ✅ |
+| LC4 | −y | 151.2 | 153.9 | 153.0 | +1.8 % | −0.6 % | ✅ |
+
+Node spacing at the arm root is 0.99 / 0.65 / 0.32 mm at L1 / L2 / L3r. (The LC1 −y value at L3r was first
+recorded as 254.5; re-extracted on 3 Oct it is 255.4.)
+
+**Peak outside the 10 mm bolt zone (MPa)**
+
+| Case | L1 | L2 | L3r | L1 → L2 | L2 → L3r | Where | Verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| LC1 | 336.5 | 417.9 | 421.2 | **+24 %** | (+0.8 %) | boss ring at B2, r 10.34 → 10.06 → 10.06 | **not converged, not tested by L3r** |
+| LC2 | 209.8 | 256.0 | 257.6 | **+22 %** | (+0.6 %) | boss ring; moves from B1 (r 10.34) to B2 (r 10.06) | **not converged, not tested by L3r** |
+| LC3 | 217.6 | 238.1 | 235.5 | +9.4 % | −1.1 % | −y arm root | converged |
+| LC4 | 151.2 | 153.9 | 153.3 | +1.8 % | −0.4 % | arm root | converged |
+
+**Raw peaks (MPa), reported and never used**
+
+| Case | L1 | L2 | L3r | L2 → L3r | Where |
+| --- | --- | --- | --- | --- | --- |
+| LC1 | 1,521.8 | 1,216.4 | 1,269.4 | +4.4 % | fixed-patch edge |
+| LC2 | 1,030.9 | 971.4 | 943.5 | −2.9 % | fixed-patch edge |
+| LC3 | 922.4 | 638.9 | 827.3 | **+29 %, flagged** | fixed-patch edge; jumps from B4 (L2) to B2 (L3r) |
+| LC4 | 373.1 | 389.9 | 396.3 | +1.6 % | pin exclusion (rigid-bore boundary) |
+
+**Reactions.** All 12 runs are solver-valid, and every support force and moment residual rounds to 0.00 % of the
+applied load (tolerance 0.5 %).
 
 **What this settles and what it doesn't**
-- **The arm-root fillets are converged at L3r to within 1.7 %.** The real governing stress for Ti LC1 is about
-  **259 MPa**, at the +y lug arm root. L1 reads it 6 % low.
-- **The boss ring just outside the 10 mm bolt zone is not a converged stress.** It rose 24 % from L1 to L2 and
-  moved toward the zone edge (r 10.34 → 10.06), which is how the tail of the fixed-patch-edge singularity behaves.
-  L3r left that area at L2 size, so its +0.8 % says nothing either way. A level refining `nut_seat` would test it
-  directly.
-- **Only Ti LC1 has been run.** LC2–LC4 and the other cards still need L2 and L3r solves.
-- **No level is frozen yet.** L1 fails quality (#60) and under-reads the arm root by 6 %. L2 or L3r are the
-  candidates once LC2–LC4 are in.
+- **Displacement is converged in all four cases**, to 0.1 % or better between L2 and L3r.
+- **The arm-root fillets are converged in all four cases**: the largest L2 → L3r change is 3.0 % (LC3, +y). The
+  real governing stress is about **259 MPa in LC1**, then 236 (LC3), 153 (LC4) and 135 MPa (LC2).
+- **L1 is not converged**, as well as failing quality: it reads the arm root up to 9.4 % low (LC3, −y).
+- **The boss ring just outside the 10 mm bolt zone is not a converged stress in LC1 or LC2.** It rises 22–24 % from
+  L1 to L2 and sits on the zone edge (r 10.06), which is how the tail of the fixed-patch-edge singularity behaves.
+  L3r left that area at L2 size, so its +0.6–0.8 % says nothing either way. With an 11 mm zone the LC1 peak is the
+  arm root; in LC2 it is still a zone-edge node (143.2 MPa at r 11.06), and only at 12 mm is it the arm root. The
+  radius is the [#64](https://github.com/sujitojha1/3d-part-optimization-agent/issues/64) question; a level
+  refining `nut_seat` would test the ring directly.
+- **The raw fixed-patch-edge peaks do not converge** (LC3 moves +29 % between the two finest levels), as expected
+  of a singularity. They stay flagged.
+- **No level is frozen yet.** L1 is out. **L2 is the proposed frozen mesh**: it passes quality, is within 3.0 % of
+  L3r at every arm root and within 0.1 % on displacement in all four cases, and solves in about 6 min and 5.1 GB,
+  so the 20-run matrix fits on the 16 GB host. Freezing it means re-running M2A.6 on L2.
 
 ## 7. Status against the M2A.2 checklist
 
@@ -224,4 +284,4 @@ to 25 MPa off SPOOLES on L1, so it is not used here. PaStiX and PARDISO are not 
 | 3. Generate; inspect sections; mesher version; counts by type; time; files and checksums | Done (sections 2, 3 and 5). **The GUI walk-through still needs one manual run** to confirm the steps as written; the numbers above come from the script |
 | 4. Named metrics, distributions, worst IDs and locations, histograms, worst-element views; unavailable metrics stated | Done (section 3) |
 | 5. Zero inverted; thresholds fixed before acceptance; failures corrected by sizing | Done (sections 3 and 4). The curved-midside trial was not needed |
-| 6. Three levels × LC1–LC4 convergence; freeze | **Partial**: Ti LC1 on L1 / L2 / L3r; the arm root converges within 1.7 % (section 6). LC2–LC4 and the other cards remain; nothing frozen |
+| 6. Three levels × LC1–LC4 convergence; freeze | **Convergence done for Ti LC1–LC4** on L1 / L2 / L3r (section 6): displacement and arm-root stress meet the tolerances; the boss-ring peak at the 10 mm zone edge and the raw peaks do not converge and are flagged. **Not frozen**: L2 is proposed |

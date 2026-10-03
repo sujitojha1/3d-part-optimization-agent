@@ -157,12 +157,17 @@ def field_metrics(vm, disp, xyz, part_rec):
     return stress, {"max_mm": round(float(umag[i_u]), 4), "at": where(i_u, xyz, bolt, pin)}
 
 
+def repo_path(rel):
+    """A path recorded in result.json; runs solved on Windows recorded backslashes."""
+    return ROOT / rel.replace("\\", "/")
+
+
 def rezone(runs, part_rec):
     """Recompute the field metrics from each run's saved fields with the current exclusion zones."""
     valid = [r for r in runs if r["status"] == "valid"]
     if not valid:
         return
-    _, xyz, _ = read_mesh((ROOT / valid[0]["deck"]["inp"]).read_text())
+    _, xyz, _ = read_mesh(repo_path(valid[0]["deck"]["inp"]).read_text())
     for r in valid:
         f = np.load(DATA / r["card"] / r["case"] / "fields.npz")
         stress, disp = field_metrics(f["vm"].astype(float), f["disp"].astype(float), xyz, part_rec)
@@ -290,7 +295,7 @@ def render_maps(runs, part_rec):
     import pyvista as pv
 
     first = next(r for r in runs if r["status"] == "valid")
-    ids, xyz, conn = read_mesh((ROOT / first["deck"]["inp"]).read_text())
+    ids, xyz, conn = read_mesh(repo_path(first["deck"]["inp"]).read_text())
     index = np.full(ids.max() + 1, -1)
     index[ids] = np.arange(len(ids))
     cells = np.c_[np.full(len(conn), 10), index[conn]].ravel()
