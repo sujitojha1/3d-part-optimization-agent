@@ -2,8 +2,8 @@
 
 | Attribute | Value |
 | --- | --- |
-| Version | 0.3 |
-| Date | 2026-09-17 |
+| Version | 0.4 |
+| Date | 2026-10-02 |
 | Owner | Sujit Ojha |
 | Status | Design target; CAD/FEM/CAM prototypes exist, integrated capability seam and judge remain unbuilt. See [21 Sep audit](progress-review-2026-09-21.md) |
 | Companions | [Intent](intent.md) — why · [Requirements](requirements.md) — what · [Plan](plan.md) — when · this — how |
@@ -138,6 +138,8 @@ baseline ─▶ render ─▶ READ CONTOUR ─▶ region claim
                                     SCORE prediction ─▶ next iteration
 ```
 
+**One agent (owner decision, 2 Oct).** The loop is a single agent. Reading the contour, checking the setup, choosing the one edit and stating the prediction are successive turns of that agent, not separate agents: prediction accuracy scores one reasoner's chain, and splitting it would leave a wrong prediction with no owner. Everything else is code: evaluation is L1 capabilities over the L2 pipeline, material lookup is a capability over the D-10 library, and scoring, mutation and singularity predicates are the L3 judge. No critic, scorer or orchestrator agent is added.
+
 **Prediction before execution is the whole novelty**, and it is worthless if written afterwards. The ordering is enforced by record sequence, not by convention (`REQ-OPT-004`).
 
 **Every attempt is a new node.** The graph is a straight line — nothing points backwards — so a failed iteration stays in the journal as evidence rather than being overwritten. This is inherited from the harness and it is also what makes the explored frontier real rather than reconstructed.
@@ -246,3 +248,4 @@ The agenda for the next pass. None block M1. Questions 1, 2 and 6 are answered b
 | 0.1 | 2026-09-09 | First pass: layers, pipeline purity, the rerunnable/cached distinction, trust boundaries, open questions |
 | 0.2 | 2026-09-12 | Open questions 1, 2 and 6 assigned to M0.5's hand pass, which supplies the evidence they need |
 | 0.3 | 2026-09-17 | Follows requirements v0.5: FreeCAD pipeline in a separate FEM process, predicate face selection, CAM Workbench manufacturing check, macOS packaging; milestone references renamed M1–M6 |
+| 0.4 | 2026-10-02 | Section 4: one agent; every other role is a capability or the judge |
