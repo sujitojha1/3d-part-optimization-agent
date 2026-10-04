@@ -9,11 +9,28 @@ Steps (run with the FEM environment's Python, one per process):
            seat-recess groove that limit tool size, and cavity depths that set reach.
            Writes out/ge_manual_cam/survey.json.
 
+  cam      One CAM Job per setup (SETUPS), built as a person builds it in the CAM
+           Workbench: stock, the four ToolBits, 3D Surface / Profile / Helix operations.
+           Posts G-code, then simulates and checks the stock left (stock_check).
+           Writes data/ge_manual/cam/<setup>.FCStd and out/ge_manual_cam/<setup>.{json,ngc}.
+
+  check    Redoes the simulation and stock check on the saved CAM documents.
+
+  assess   Classifies every face group ready, unverified or blocked from line of sight,
+           finished area, gouge and tool reach. Writes assessment.json.
+
+  render   Setup views and the readiness map.
+
 Line of sight ignores the tool's radius and holder; radius and reach are checked
 separately. A face is reachable from a direction when a point 0.3 mm off the surface,
 along its outward normal, has no material above it along that direction.
 
+Record: docs/ge-manual-cam-readiness.md.
+
     $FEM_PYTHON scripts/ge_manual_cam.py survey
+    $FEM_PYTHON scripts/ge_manual_cam.py cam [--setups op10 ...]     (about 35 min for all four)
+    $FEM_PYTHON scripts/ge_manual_cam.py assess
+    $FEM_PYTHON scripts/ge_manual_cam.py render
 """
 
 import argparse
@@ -243,14 +260,18 @@ SETUPS = {
              "workholding": "vise on a 10 mm grip band of stock left beyond the lug tips",
              "stock_ext": {"xy": 3.0, "zpos": 2.0, "zneg": 10.0}},
     "op20": {"title": "Setup 2: top", "direction": "+z", "rot_x_deg": 0,
-             "workholding": "soft jaws machined to the base outline, gripping z 3-18 mm; base bottom on parallels",
-             "stock_ext": {"xy": 3.0, "zpos": 2.0, "zneg": 0.0}},
+             "workholding": "soft jaws on the two flat base end faces (+y and -y), gripping z 3-18 mm; "
+                            "base bottom on parallels",
+             # zpos is setup 1's grip band, still on the part when it is turned over
+             "stock_ext": {"xy": 3.0, "zpos": 10.0, "zneg": 0.0}},
+    # The pin-side setups start from the in-process stock, not a block: setups 1 and 2 have
+    # finished every other face, so the stock is the part with the two lug bores still solid.
     "op30": {"title": "Setup 3: pin side +y", "direction": "+y", "rot_x_deg": 90,
              "workholding": "angle plate on the base bottom, bolted through the four finished counterbores",
-             "stock_ext": {"xy": 1.0, "zpos": 1.0, "zneg": 1.0}},
+             "stock": "in-process", "stock_ext": {"xy": 0.0, "zpos": 0.0, "zneg": 0.0}},
     "op40": {"title": "Setup 4: pin side -y", "direction": "-y", "rot_x_deg": -90,
              "workholding": "angle plate on the base bottom, bolted through the four finished counterbores",
-             "stock_ext": {"xy": 1.0, "zpos": 1.0, "zneg": 1.0}},
+             "stock": "in-process", "stock_ext": {"xy": 0.0, "zpos": 0.0, "zneg": 0.0}},
 }
 
 
@@ -260,9 +281,9 @@ def fixtures(setup_id, bb):
         z0 = bb.ZMin - 10.0
         return {"vise jaw -x": (bb.XMin - 23, bb.XMin - 3, bb.YMin - 3, bb.YMax + 3, z0 - 30, z0 + 8),
                 "vise jaw +x": (bb.XMax + 3, bb.XMax + 23, bb.YMin - 3, bb.YMax + 3, z0 - 30, z0 + 8)}
-    if setup_id == "op20":   # soft jaws on the base outline
-        return {"soft jaw -x": (-21.6 - 15, -21.6, -162.1, 12.6, -20, 18.0),
-                "soft jaw +x": (67.7, 67.7 + 15, -162.1, 12.6, -20, 18.0)}
+    if setup_id == "op20":   # soft jaws on the flat base end faces; the -x side overhangs above z 11.6
+        return {"soft jaw -y": (bb.XMin, bb.XMax, bb.YMin - 15, bb.YMin, -20, 18.0),
+                "soft jaw +y": (bb.XMin, bb.XMax, bb.YMax, bb.YMax + 15, -20, 18.0)}
     # angle plate behind the base bottom: part z < 0 maps to setup y > 0 (op30) or y < 0 (op40)
     sign = 1 if setup_id == "op30" else -1
     return {"angle plate": (-80, 120, 0, 40, -250, 100) if sign > 0 else (-80, 120, -40, 0, -100, 250)}
@@ -308,6 +329,30 @@ def one_per_hole(shape, faces):
     return keep
 
 
+def in_process_stock(shape, bored):
+    """The part before the pin-side setups: finished everywhere, lug bores still solid.
+
+    Each lug's bore and its two chamfers are plugged with a cylinder of the chamfer's
+    largest radius. `bored` (setup 4, after setup 3 has bored through) is the finished part:
+    its one operation cuts a 0.64 mm chamfer, which is below what the 0.2 mm stock check resolves.
+    """
+    import Part
+
+    if bored:
+        return shape.copy()
+    faces = [f for f in shape.Faces if classify(f).startswith("cylinder z r9.557") or classify(f) == "cone"]
+    r = max(max(v.Point.distanceToLine(f.Surface.Center, f.Surface.Axis) for v in f.Vertexes) for f in faces) + 0.01
+    spans = []
+    for lo, hi in sorted((f.BoundBox.ZMin, f.BoundBox.ZMax) for f in faces):
+        if spans and lo <= spans[-1][1] + 0.01:
+            spans[-1][1] = max(spans[-1][1], hi)
+        else:
+            spans.append([lo, hi])
+    c = faces[0].Surface.Center
+    plugs = [Part.makeCylinder(r, hi - lo, Vector(c.x, c.y, lo), Vector(0, 0, 1)) for lo, hi in spans]
+    return shape.fuse(plugs).removeSplitter()
+
+
 class _HeadlessInput:
     @staticmethod
     def selectedToolController():
@@ -321,6 +366,7 @@ class _HeadlessInput:
 def build_job(setup_id, part, visibility):
     import Path.Main.Job as PathJob
     import Path.Op.Helix as PathHelix
+    import Path.Op.Profile as PathProfile
     import Path.Op.Surface as PathSurface
     import Path.Tool.Controller as PathToolController
     from Path.Tool.toolbit import ToolBit
@@ -340,6 +386,16 @@ def build_job(setup_id, part, visibility):
     for ext in ("ExtXneg", "ExtXpos", "ExtYneg", "ExtYpos"):
         setattr(job.Stock, ext, e["xy"])
     job.Stock.ExtZpos, job.Stock.ExtZneg = e["zpos"], e["zneg"]
+    if st.get("stock") == "in-process":   # as the GUI's Stock > Use Existing Solid
+        import Path.Main.Stock as PathStock
+
+        solid = doc.addObject("Part::Feature", "InProcess")
+        solid.Shape = in_process_stock(shape, bored=setup_id == "op40")
+        old = job.Stock
+        stock = PathJob.createResourceClone(job, solid, "Stock", "Stock")
+        PathStock.SetupStockObject(stock, PathStock.StockType.Unknown)
+        job.Stock = stock
+        doc.removeObject(old.Name)
     for tc in list(job.Tools.Group):
         doc.removeObject(tc.Tool.Name)
         doc.removeObject(tc.Name)
@@ -359,7 +415,7 @@ def build_job(setup_id, part, visibility):
     top = bs.BoundBox.ZMax
 
     def surface(name, tc, faces=None, stepover=10.0, sample=0.2, multipass=False, stepdown=2.0,
-                offset=0.0, final=None, pattern="ZigZag", angle=0.0, boundbox="BaseBoundBox"):
+                offset=0.0, final=None, start=None, pattern="ZigZag", angle=0.0, boundbox="BaseBoundBox"):
         """A Surface op. Ops with no Base faces must pass boundbox="Stock".
 
         With BaseBoundBox and no Base faces, SurfaceSupport._preProcessEntireBase slices an
@@ -384,8 +440,18 @@ def build_job(setup_id, part, visibility):
         op.DepthOffset = f"{offset} mm"
         for pn in ("StepDown", "FinalDepth", "StartDepth"):
             op.setExpression(pn, None)
-        op.StepDown, op.StartDepth = f"{stepdown} mm", f"{top + e['zpos']} mm"
+        op.StepDown, op.StartDepth = f"{stepdown} mm", f"{start if start is not None else top + e['zpos']} mm"
         op.FinalDepth = f"{final if final is not None else bs.BoundBox.ZMin} mm"
+        return op
+
+    def profile(name, tc, start, final, stepdown):
+        """Contour round the model's outline: the walls a raster pass leaves up to a stepover proud."""
+        op = PathProfile.Create(name)
+        op.ToolController = tcs[tc]
+        op.Side, op.UseComp = "Outside", True
+        for pn in ("StepDown", "FinalDepth", "StartDepth"):
+            op.setExpression(pn, None)
+        op.StepDown, op.StartDepth, op.FinalDepth = f"{stepdown} mm", f"{start} mm", f"{final} mm"
         return op
 
     def helix(name, tc, faces, start, final):
@@ -399,12 +465,17 @@ def build_job(setup_id, part, visibility):
 
     vis = lambda d, i: visibility[d][i - 1] >= 0.5  # noqa: E731
     blends = lambda d: face_list(lambda i, f: concave_blend(f) and vis(d, i), bs)  # noqa: E731
-    if setup_id == "op10":      # base bottom at z = 0, part below; the cavity is at most 39.2 deep
-        floor = -40.5
+    if setup_id == "op10":      # base bottom at z = 0, part below
+        # Deepest face only this setup can see: the cavity floor on Iteration1 (39.2 mm), the
+        # slope under the lugs on GE_Challenge_Bracket (36.4 mm).
+        only = [bs.Faces[i - 1].BoundBox.ZMin for i in range(1, len(bs.Faces) + 1) if vis("-z", i) and not vis("+z", i)]
+        floor = min(only) - 0.5
         surface("Rough", 1, stepover=40, sample=0.5, multipass=True, stepdown=2.0, offset=0.5, final=floor,
                 boundbox="Stock")
         surface("Finish", 3, stepover=10, sample=0.2, final=floor, boundbox="Stock")
-        surface("Blends R2", 4, faces=blends("-z"), stepover=8, sample=0.15, final=floor)
+        profile("Outline", 1, start=0.0, final=floor, stepdown=6.0)
+        if blends("-z"):        # a Surface op with an empty face list would machine the whole model
+            surface("Blends R2", 4, faces=blends("-z"), stepover=8, sample=0.15, final=floor)
         holes = one_per_hole(bs, face_list(lambda i, f: classify(f) in ("cylinder z r5.156", "cylinder z r5.334"), bs))
         helix("Bolt holes", 2, holes, start=0.0, final=-8.1)
     elif setup_id == "op20":    # base bottom at z = 0; the soft jaws reach z = 18
@@ -412,27 +483,54 @@ def build_job(setup_id, part, visibility):
         surface("Rough", 1, stepover=40, sample=0.5, multipass=True, stepdown=2.0, offset=0.5, final=floor,
                 boundbox="Stock")
         surface("Finish", 3, stepover=10, sample=0.2, final=floor, boundbox="Stock")
-        surface("Blends R2", 4, faces=[f for f in blends("+z") if bs.Faces[int(f[4:]) - 1].BoundBox.ZMin >= floor - 0.01],
-                stepover=8, sample=0.15, final=floor)
+        # A raster pass leaves up to one stepover on walls parallel to its lines; the second
+        # pass at 90 degrees finishes the lug faces, which are normal to y.
+        surface("Finish cross", 3, stepover=10, sample=0.2, final=floor, angle=90.0, boundbox="Stock")
+        high = [f for f in blends("+z") if bs.Faces[int(f[4:]) - 1].BoundBox.ZMin >= floor - 0.01]
+        if high:
+            surface("Blends R2", 4, faces=high, stepover=8, sample=0.15, final=floor)
         cb = one_per_hole(bs, face_list(lambda i, f: classify(f) == "cylinder z r10.541", bs))
         helix("Counterbores", 1, cb, start=25.5, final=10.45)
         seat = face_list(lambda i, f: (classify(f).startswith("plane horizontal up") and abs(f.BoundBox.ZMax - 7.8486) < 0.01)
                          or (type(f.Surface).__name__ == "Toroid" and abs(f.Surface.MinorRadius - 2.54) < 0.01), bs)
+        # Start just above the helix floor: from the stock top this op air-cut 113 layers.
         surface("Counterbore floors", 4, faces=seat, stepover=8, sample=0.15, multipass=True, stepdown=0.5,
-                final=7.8486)
-    else:                       # pin side: bore through both lugs, then the side-only faces
+                start=10.95, final=7.8486)
+    else:                       # pin side: bore through both lugs, then the outer bore chamfer facing the tool
         d = SETUPS[setup_id]["direction"]
-        side_only = face_list(lambda i, f: visibility[d][i - 1] >= 0.5 and visibility["+z"][i - 1] < 0.5
-                              and visibility["-z"][i - 1] < 0.5, bs)
         if setup_id == "op30":
             bores = face_list(lambda i, f: classify(f).startswith("cylinder z r9.557"), bs)
             zr = [bs.Faces[int(b[4:]) - 1].BoundBox for b in bores]
             helix("Lug bores", 1, bores[:1], start=max(b.ZMax for b in zr) + 1.0, final=min(b.ZMin for b in zr) - 0.5)
-        if side_only:
-            surface("Side faces", 4, faces=side_only, stepover=8, sample=0.15,
-                    final=bs.BoundBox.ZMin)
+        chamfer = face_list(lambda i, f: classify(f) == "cone" and vis(d, i), bs)
+        if chamfer:
+            cz = [bs.Faces[int(c[4:]) - 1].BoundBox for c in chamfer]
+            surface("Bore chamfer", 4, faces=chamfer, stepover=8, sample=0.15, start=max(b.ZMax for b in cz) + 1.0,
+                    final=min(b.ZMin for b in cz))
     doc.recompute()
     return doc, job, base
+
+
+def _short_moves(pos, move, step):
+    """Split a cutting move that changes z into pieces no longer than step.
+
+    PathSimulator mis-cuts a long straight move that ramps in z: one 41 mm G1 along a sloped
+    face (z 62.4 to 50.6) took the stock under it down to z 29, 21 mm below the tool, and
+    setup 2 read as 24,000 mm2 of gouge. 3D Surface writes such moves wherever its path
+    crosses a plane. Fed in pieces, the simulator agrees with the z-map replay.
+    """
+    import Path
+
+    p = move.Parameters
+    a = pos.Base
+    b = Vector(p.get("X", a.x), p.get("Y", a.y), p.get("Z", a.z))
+    n = int(math.ceil((b - a).Length / step))
+    if move.Name not in ("G1", "G01") or abs(b.z - a.z) < 1e-9 or n < 2:
+        yield move
+        return
+    for k in range(1, n + 1):
+        q = a + (b - a) * (k / n)
+        yield Path.Command("G1", {"X": q.x, "Y": q.y, "Z": q.z})
 
 
 def simulate_ops(job, ops, resolution=SIM_RES):
@@ -451,8 +549,9 @@ def simulate_ops(job, ops, resolution=SIM_RES):
         retract = None
         for cmd in PathUtils.getPathWithPlacement(op).Commands:
             for move in _linear_moves(pos, cmd, resolution, retract):
-                pos = sim.ApplyCommand(pos, move)
-                moves += 1
+                for piece in _short_moves(pos, move, resolution):
+                    pos = sim.ApplyCommand(pos, piece)
+                    moves += 1
             if cmd.Name in ("G81", "G82", "G83", "G73"):
                 retract = cmd.r
             elif cmd.Name == "G80":
@@ -467,17 +566,25 @@ def zmap_replay(job, ops, res=SIM_RES):
     Flat endmills stamp a disc at the tip height; ball ends stamp tip + r - sqrt(r^2 - d^2).
     Moves are sampled every res / 2 (arcs split into chords by cam_check._linear_moves).
     Rapids (G0) that would remove stock are counted: a rapid through material is a crash.
-    Returns the stock-top grid, its grid origin and the rapid-into-stock counts per op.
+    Returns the stock-top grid after and before cutting, its grid origin and the
+    rapid-into-stock counts per op.
     """
     from cam_check import _linear_moves
     from PathScripts import PathUtils
 
     bb = job.Stock.Shape.BoundBox
-    pad = 12
+    pad = int(math.ceil(15.0 / res))   # room for a tool centre outside the stock (the outline contour)
     nx, ny = int(math.ceil(bb.XLength / res)) + 2 * pad, int(math.ceil(bb.YLength / res)) + 2 * pad
     x0, y0 = bb.XMin - pad * res, bb.YMin - pad * res
     H = np.full((nx, ny), -1e9)
-    H[pad:nx - pad, pad:ny - pad] = bb.ZMax
+    v, tr = job.Stock.Shape.tessellate(0.05)     # the stock's top surface: a block, or the in-process solid
+    buf, lo = zbuffer(np.array([[q.x, q.y, q.z] for q in v]), np.array(tr), np.eye(3), pixel=res)
+    ci = np.floor((x0 + np.arange(nx) * res - lo[0]) / res).astype(int)
+    cj = np.floor((y0 + np.arange(ny) * res - lo[1]) / res).astype(int)
+    ok = np.ix_((ci >= 0) & (ci < buf.shape[0]), (cj >= 0) & (cj < buf.shape[1]))
+    H[ok] = buf[np.ix_(ci.clip(0, buf.shape[0] - 1), cj.clip(0, buf.shape[1] - 1))][ok]
+    H[~np.isfinite(H)] = -1e9
+    before = H.copy()
     rapids = {}
     for op in ops:
         tool = op.ToolController.Tool
@@ -513,7 +620,7 @@ def zmap_replay(job, ops, res=SIM_RES):
                 pos = FreeCAD.Placement(bpt, FreeCAD.Rotation())
         if rapid_hits:
             rapids[op.Label] = rapid_hits
-    return H, (x0, y0), rapids
+    return H, before, (x0, y0), rapids
 
 
 def check_samples(setup_id, H, origin, sam, res=SIM_RES):
@@ -545,8 +652,11 @@ def evaluate(setup_id, job, meshes, sam):
     H = np.full((nx, ny), bb.ZMin)
     for mesh in meshes:
         if mesh.CountFacets:
-            p = np.array([tuple(v) for v in mesh.Topology[0]])
-            H = np.maximum(H, rasterize(p, mesh.Topology[1], x, y, "top"))
+            # rasterize starts every column at 0 (Gate 4 stock sits on z = 0), so heights are
+            # taken above the stock bottom. Without the shift, setups whose stock lies below
+            # z = 0 (1, 3 and 4) read as uncut: nothing below 0 could register.
+            p = np.array([tuple(v) for v in mesh.Topology[0]]) - [0, 0, bb.ZMin]
+            H = np.maximum(H, rasterize(p, mesh.Topology[1], x, y, "top") + bb.ZMin)
 
     def lookup(q):
         i = np.clip(np.floor((q[:, 0] - bb.XMin) / SIM_RES).astype(int), 0, nx - 1)
@@ -585,10 +695,56 @@ def collisions(setup_id, job, bb):
     return {"boxes": {k: [round(v, 2) for v in b] for k, b in boxes.items()}, "hits": hits}
 
 
+def stock_check(sid, job, base, rec, sam):
+    """Simulate the job's operations and check the stock they leave against the part."""
+    import time
+
+    rec.setdefault("timings_s", {})
+    t = time.perf_counter()
+    top, inner, moves = simulate_ops(job, job.Operations.Group)
+    rec["timings_s"]["simulate"] = round(time.perf_counter() - t, 1)
+    rec["simulated_moves"] = moves
+    t = time.perf_counter()
+    cleared, gouged = evaluate(sid, job, (top, inner), sam)
+    rec["timings_s"]["stock_check"] = round(time.perf_counter() - t, 1)
+    # Independent replay. PathSimulator's result meshes are the reference for cleared stock;
+    # the z-map also counts rapids that would pass through stock.
+    t = time.perf_counter()
+    H, before, origin, rapids = zmap_replay(job, job.Operations.Group)
+    zcleared, zgouged = check_samples(sid, H, origin, sam)
+    zclear_before, _ = check_samples(sid, before, origin, sam)
+    rec["timings_s"]["zmap_replay"] = round(time.perf_counter() - t, 1)
+    np.savez_compressed(OUT / f"{sid}_check.npz", cleared=cleared, gouged=gouged, zmap_cleared=zcleared,
+                        zmap_gouged=zgouged, zmap_clear_before=zclear_before)
+    rec["collisions"] = collisions(sid, job, base.Shape.BoundBox)
+    vis = sam[f"seen{SETUPS[sid]['direction']}"]
+    a = sam["areas"]
+    rec["visible_area_mm2"] = round(float(a[vis].sum()), 1)
+    rec["cleared_fraction_of_visible"] = round(float(a[vis & cleared].sum() / a[vis].sum()), 4)
+    rec["gouged_area_mm2"] = round(float(a[gouged].sum()), 2)
+    rec["zmap"] = {"cleared_fraction_of_visible": round(float(a[vis & zcleared].sum() / a[vis].sum()), 4),
+                   "gouged_area_mm2": round(float(a[zgouged].sum()), 2), "rapids_into_stock": rapids}
+    rec["ok"] = True
+
+
+def recheck(setups):
+    """Redo the simulation and stock check on the saved CAM documents, without rebuilding the paths."""
+    sam = dict(np.load(OUT / "samples.npz"))
+    for sid in setups:
+        rec = json.loads((OUT / f"{sid}.json").read_text())
+        doc = FreeCAD.openDocument(str(DATA / f"{sid}.FCStd"))
+        job = [o for o in doc.Objects if o.Name == "Job"][0]
+        stock_check(sid, job, job.Model.Group[0], rec, sam)
+        (OUT / f"{sid}.json").write_text(json.dumps(rec, indent=2, default=str))
+        FreeCAD.closeDocument(doc.Name)
+        print(sid, json.dumps({k: rec[k] for k in ("simulated_moves", "cleared_fraction_of_visible", "gouged_area_mm2",
+                                                   "zmap", "collisions")}, default=str), flush=True)
+
+
 def cam(setups):
     import time
 
-    from cam_check import post_process, simulate
+    from cam_check import post_process
     from Path.Main.Sanity import Sanity
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -625,25 +781,11 @@ def cam(setups):
         t = time.perf_counter()
         rec["gcode_lines"] = post_process(job, OUT / f"{sid}.ngc")
         rec["timings_s"]["post"] = round(time.perf_counter() - t, 1)
-        t = time.perf_counter()
-        top, inner, moves = simulate(job, SIM_RES)
-        rec["timings_s"]["simulate"] = round(time.perf_counter() - t, 1)
-        rec["simulated_moves"] = moves
-        t = time.perf_counter()
-        cleared, gouged = evaluate(sid, job, (top, inner), sam)
-        rec["timings_s"]["stock_check"] = round(time.perf_counter() - t, 1)
-        np.savez_compressed(OUT / f"{sid}_check.npz", cleared=cleared, gouged=gouged)
-        rec["collisions"] = collisions(sid, job, base.Shape.BoundBox)
-        vis = sam[f"seen{SETUPS[sid]['direction']}"]
-        a = sam["areas"]
-        rec["visible_area_mm2"] = round(float(a[vis].sum()), 1)
-        rec["cleared_fraction_of_visible"] = round(float(a[vis & cleared].sum() / a[vis].sum()), 4)
-        rec["gouged_area_mm2"] = round(float(a[gouged].sum()), 2)
-        rec["ok"] = True
+        stock_check(sid, job, base, rec, sam)
         (OUT / f"{sid}.json").write_text(json.dumps(rec, indent=2, default=str))
         FreeCAD.closeDocument(doc.Name)
         print(sid, json.dumps({k: rec[k] for k in ("timings_s", "operations", "gcode_lines", "simulated_moves",
-                                                   "cleared_fraction_of_visible", "gouged_area_mm2", "collisions")},
+                                                   "cleared_fraction_of_visible", "gouged_area_mm2", "zmap", "collisions")},
                               default=str), flush=True)
 
 
@@ -651,6 +793,8 @@ def cam(setups):
 
 LD_LIMIT = 6.0   # reach / diameter above which a cut is unverified without vendor data or a trial
 HOLDER_R = 15.0  # mm, holder nose radius assumed for the stick-out check
+# Operations that exist for one feature: the feature is not ready if the tool cannot reach.
+OP_FEATURE = {"Lug_bores": "Lug bores (Ø19.11)", "Bore_chamfer": "Outer bore chamfers"}
 
 
 def feature_groups(shape, survey_rec):
@@ -674,7 +818,7 @@ def feature_groups(shape, survey_rec):
         ("Lug bores (Ø19.11)", lambda i, f, k: k == "cylinder y r9.557"),
         ("Outer bore chamfers", lambda i, f, k: k == "cone"),
         ("Cavity vertical R2 corners", lambda i, f, k: k == "cylinder z r2.000" and concave_blend(f) and vis(i, "-z") >= 0.5),
-        ("Underside cavity walls and floors", lambda i, f, k: vis(i, "-z") >= 0.5 and f.BoundBox.ZMin > 0.5
+        ("Underside-only faces above the base bottom", lambda i, f, k: vis(i, "-z") >= 0.5 and f.BoundBox.ZMin > 0.5
          and not concave_blend(f)),
         ("Concave R2 blends and corners", lambda i, f, k: concave_blend(f)),
         ("Convex R2 edge rounds", lambda i, f, k: type(f.Surface).__name__ in ("Cylinder", "Sphere", "Toroid")
@@ -756,10 +900,16 @@ def assess():
         rec = json.loads((OUT / f"{sid}.json").read_text())
         chk = np.load(OUT / f"{sid}_check.npz")
         vis = sam[f"seen{st['direction']}"]
-        done = vis & chk["cleared"]
+        if st.get("stock") == "in-process":
+            # PathSimulator takes the stock's bounding box, so it cannot start from the in-process
+            # solid. Use the z-map replay, and credit the setup only with what it cut itself.
+            done = vis & chk["zmap_cleared"] & ~chk["zmap_clear_before"]
+            gouged |= chk["zmap_gouged"]
+        else:
+            done = vis & chk["cleared"]
+            gouged |= chk["gouged"]
         by_setup[sid] = done
         finished |= done
-        gouged |= chk["gouged"]
         setups[sid] = rec
 
     reach = [r for sid in SETUPS for r in stick_out(sid, shape)]
@@ -785,6 +935,13 @@ def assess():
         if gou > 0.5:
             status = "blocked"
             reasons.append(f"simulated gouge {gou:.1f} mm2")
+        for r in reach:   # an operation cut for one feature, with a tool that cannot reach it
+            if OP_FEATURE.get(r["op"]) == name and not r["within_modelled_reach"]:
+                if status == "ready (simulation)":
+                    status = "unverified"
+                reasons.append(f"{r['setup']} {r['op']}: needs {r['stick_out_needed_mm']} mm stick-out for a "
+                               f"Ø{2 * HOLDER_R:.0f} holder to clear the part, {r['reach_over_diameter']} x the "
+                               f"Ø{r['diameter_mm']:.0f} tool; the modelled tool reaches {r['fluted_reach_mm']:.0f} mm")
         features.append({"feature": name, "faces": len(ids), "area_mm2": round(area, 1),
                          "finished_fraction": round(fin, 3), "gouged_area_mm2": round(gou, 2),
                          "finished_in": where, "status": status, "reasons": reasons, "face_ids": ids})
@@ -800,8 +957,8 @@ def assess():
            "cutting_assumptions": CUTTING, "feeds_by_material": material_feeds, "tool_reach": reach,
            "setups": {sid: {k: r.get(k) for k in ("title", "direction", "workholding", "operations", "gcode_lines",
                                                    "simulated_moves", "timings_s", "sanity", "collisions",
-                                                   "cleared_fraction_of_visible", "gouged_area_mm2",
-                                                   "failed_operations")}
+                                                   "cleared_fraction_of_visible", "gouged_area_mm2", "zmap",
+                                                   "stock", "failed_operations")}
                       for sid, r in setups.items()},
            "features": features}
     (OUT / "assessment.json").write_text(json.dumps(rec, indent=2, default=str))
@@ -896,13 +1053,15 @@ def _compound(faces):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("step", choices=["survey", "cam", "assess", "render"])
+    parser.add_argument("step", choices=["survey", "cam", "check", "assess", "render"])
     parser.add_argument("--setups", nargs="+", choices=list(SETUPS), default=list(SETUPS))
     args = parser.parse_args()
     if args.step == "survey":
         survey()
     elif args.step == "cam":
         cam(args.setups)
+    elif args.step == "check":
+        recheck(args.setups)
     elif args.step == "assess":
         assess()
     elif args.step == "render":
