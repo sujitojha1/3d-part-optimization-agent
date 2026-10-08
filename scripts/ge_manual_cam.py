@@ -332,8 +332,8 @@ def one_per_hole(shape, faces):
 def in_process_stock(shape, bored):
     """The part before the pin-side setups: finished everywhere, lug bores still solid.
 
-    Each lug's bore and its two chamfers are plugged with a cylinder of the chamfer's
-    largest radius. `bored` (setup 4, after setup 3 has bored through) is the finished part:
+    Each lug's bore and its two chamfers are plugged with a cylinder 0.5 mm larger than
+    the chamfer's largest radius. `bored` (setup 4, after setup 3 has bored through) is the finished part:
     its one operation cuts a 0.64 mm chamfer, which is below what the 0.2 mm stock check resolves.
     """
     import Part
@@ -341,7 +341,9 @@ def in_process_stock(shape, bored):
     if bored:
         return shape.copy()
     faces = [f for f in shape.Faces if classify(f).startswith("cylinder z r9.557") or classify(f) == "cone"]
-    r = max(max(v.Point.distanceToLine(f.Surface.Center, f.Surface.Axis) for v in f.Vertexes) for f in faces) + 0.01
+    # 0.5 mm into the lug, not flush with the chamfer: a plug within the part's 0.01 mm
+    # tolerance of the chamfer circle fused into an invalid solid with one lug left open.
+    r = max(max(v.Point.distanceToLine(f.Surface.Center, f.Surface.Axis) for v in f.Vertexes) for f in faces) + 0.5
     spans = []
     for lo, hi in sorted((f.BoundBox.ZMin, f.BoundBox.ZMax) for f in faces):
         if spans and lo <= spans[-1][1] + 0.01:
@@ -350,7 +352,10 @@ def in_process_stock(shape, bored):
             spans.append([lo, hi])
     c = faces[0].Surface.Center
     plugs = [Part.makeCylinder(r, hi - lo, Vector(c.x, c.y, lo), Vector(0, 0, 1)) for lo, hi in spans]
-    return shape.fuse(plugs).removeSplitter()
+    stock = shape.fuse(plugs).removeSplitter()
+    if not stock.isValid() or len(stock.Solids) != 1:
+        raise RuntimeError("in-process stock is not one valid solid")
+    return stock
 
 
 class _HeadlessInput:
@@ -505,8 +510,10 @@ def build_job(setup_id, part, visibility):
         chamfer = face_list(lambda i, f: classify(f) == "cone" and vis(d, i), bs)
         if chamfer:
             cz = [bs.Faces[int(c[4:]) - 1].BoundBox for c in chamfer]
+            # boundbox="Stock": with BaseBoundBox, SurfaceSupport._makeSafeSTL cuts the stock by the
+            # model's envelope, and OCC segfaults when the stock is the finished part (setup 4).
             surface("Bore chamfer", 4, faces=chamfer, stepover=8, sample=0.15, start=max(b.ZMax for b in cz) + 1.0,
-                    final=min(b.ZMin for b in cz))
+                    final=min(b.ZMin for b in cz), boundbox="Stock")
     doc.recompute()
     return doc, job, base
 

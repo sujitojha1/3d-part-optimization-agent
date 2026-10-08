@@ -1,26 +1,28 @@
 # GE manual CAM readiness — four 3-axis setups on `GE_Challenge_Bracket` (M2A.7)
 
-> **3 Oct:** first issue of this page, for the current part. Everything here comes from
-> `out/ge_manual_cam/` (`survey.json`, `op10`–`op40.json`, `assessment.json`). The Iteration1 CAM outputs that
-> existed before are kept in `out/ge_manual_cam_Iteration1/` and are not described here.
+> **7 Oct:** re-run on the repaired source (M2A.8, [#66](https://github.com/sujitojha1/3d-part-optimization-agent/issues/66):
+> the B2 bolt hole rebuilt). Everything here comes from the current `out/ge_manual_cam/` (`survey.json`,
+> `op10`–`op40.json`, `assessment.json`). The readiness result is unchanged from the first issue of this page
+> (3 Oct); the repair renumbered the faces, and two faults in the study's own setup were fixed (section 4). The
+> Iteration1 CAM outputs are kept in `out/ge_manual_cam_Iteration1/` and are not described here.
 > **CNC readiness is a project extension** to GE's additive-manufacturing brief. This page is a simulated
 > readiness assessment, **not** a certification that the part is safe to machine.
 
 | | |
 | --- | --- |
 | Task | M2A.7 ([#65](https://github.com/sujitojha1/3d-part-optimization-agent/issues/65)) · [M2A workflow](ge-manual-workflow.md) |
-| Date | 2026-10-03 |
-| Geometry | `data/ge_manual/GE_Challenge_Bracket_partitioned.FCStd`, SHA-256 `10e5c43f…e4de3b758`, the same solid M2A.2–M2A.6 use. 62 faces, 463,257.6 mm³, 53,992 mm² |
+| Date | 2026-10-03; re-run on the repaired source 2026-10-07 |
+| Geometry | `data/ge_manual/GE_Challenge_Bracket_partitioned.FCStd`, SHA-256 `435c6724…8308897d`, the same solid M2A.2–M2A.6 use. 62 faces, 463,257.6 mm³, 53,992 mm² |
 | Tools | FreeCAD 1.1.3 CAM Workbench: 3D Surface (experimental, needs OpenCamLib), Profile and Helix operations; `refactored_linuxcnc` post processor; `PathSimulator` |
 | Tool library | `tooling/Bit/ge_manual/`: four ToolBits (section 3) |
-| Script | `$FEM_PYTHON scripts/ge_manual_cam.py survey`, then `cam`, `assess`, `render` (about 35 min; setup 2 alone takes 15). `check` redoes the simulation on the saved CAM documents without rebuilding paths |
+| Script | `$FEM_PYTHON scripts/ge_manual_cam.py survey`, then `cam`, `assess`, `render` (35 min to over an hour, depending on the host; setup 2 alone takes 15–30 min). `check` redoes the simulation on the saved CAM documents without rebuilding paths |
 | Data | `out/ge_manual_cam/`: `survey.json`, per setup `opNN.json`, `opNN.ngc`, `opNN_setup.png`; `assessment.json`; `readiness_map.png`. CAM documents in `data/ge_manual/cam/opNN.FCStd`. All gitignored (derived from licensed CAD) |
 | Status | **Conditionally ready.** In simulation the four setups finish **99.3 %** of the surface with **no gouge**, no rapid through stock and no hit on the coarse workholding boxes. **Blocked:** the two inner bore chamfers. **Unverified:** the lug bores and outer chamfers (tool reach), the lower quadrant of the lug tips, and everything a simulator cannot establish (section 8). **One GUI walk-through is still needed**; the numbers come from the script |
 
 ## Summary
 
 - **The part is a good 3-axis candidate.** It is one solid with a flat underside, no cavity and no thin wall.
-  Top, bottom and the two pin sides have line of sight to 99.8 % of the surface.
+  Top, bottom and the two pin sides have line of sight to 99.85 % of the surface.
 - **Seven of eleven feature groups are ready in simulation,** covering 51,086 mm² of 53,992 mm² (94.6 %).
 - **One group is blocked:** the two bore chamfers that face into the clevis gap. No axis-aligned tool can see them.
 - **Three groups are unverified:**
@@ -47,10 +49,10 @@ sections 3 and 5.
 | --- | --- |
 | Top only (+z) | 68.0 % |
 | Top and bottom (+z, −z) | 98.2 % |
-| Top, bottom and both pin sides (+z, −z, +y, −y) | **99.8 %** |
-| All six axis directions | 99.8 % |
+| Top, bottom and both pin sides (+z, −z, +y, −y) | **99.85 %** |
+| All six axis directions | 99.85 % |
 
-Adding ±x gains nothing, so four setups are enough. The 0.2 % left is Face41 and Face42, the bore chamfers on
+Adding ±x gains nothing, so four setups are enough. The 0.15 % left is Face58 and Face59, the bore chamfers on
 the clevis-gap side.
 
 **What limits the tools**
@@ -60,7 +62,7 @@ the clevis-gap side.
 | Smallest concave radius | **R2.54**, the blend at each counterbore floor: needs a ball of Ø5 or less (Ø4 used). Next is R3.175 at the four arm-root fillets (Ø6 ball fits) |
 | Deep pockets | The four counterbores, Ø21.08 × 17.4 deep (0.8 × diameter). No other pocket |
 | Narrowest slot | The clevis gap, 20.96 mm wide and about 40 mm deep: a Ø12 tool passes with 4.5 mm a side |
-| Undercuts | The slope under the lugs (Face33) cannot be seen from the top; it is cut from below in setup 1. The inner bore chamfers cannot be seen from any axis direction |
+| Undercuts | The slope under the lugs (Face20) cannot be seen from the top; it is cut from below in setup 1. The inner bore chamfers cannot be seen from any axis direction |
 | Minimum wall | Each lug is 7.6 mm thick. Nothing thinner; no enclosed void |
 | Lug-bore access | Along ±y only. The bore mouths sit 37–72 mm below part surfaces a holder must clear (section 5) |
 
@@ -154,13 +156,19 @@ Repeat A–E for each setup, with the rows of section 2 and the operations below
 | 3 | **Lug bores**: Helix on one bore face | T1 | Start 1 mm above the +y lug face; final 0.5 mm past the far lug |
 | 3, 4 | **Bore chamfer**: 3D Surface on the outer chamfer facing the tool | T4 | Step over 8 %; sample interval 0.15 mm |
 
-Three settings matter, and each was a fault before it was fixed:
+Five settings matter, and each was a fault before it was fixed:
 
 - **A whole-model 3D Surface must use bound box *Stock*.** With *BaseBoundBox* the operation fails with
   `BRep_API: command not done` and leaves an empty path, while the job still looks clean.
 - **Do not create a 3D Surface with an empty face list by mistake.** It machines the whole model.
 - **One raster pass leaves up to a step-over of stock on walls parallel to its lines.** That is why setup 1
   has the Outline contour and setup 2 the second finishing pass at 90°.
+- **The Bore chamfer operations use bound box *Stock*.** With *BaseBoundBox*, 3D Surface cuts the stock by the
+  model's envelope, and FreeCAD crashed (segmentation fault) on setup 4, where the stock is the finished part.
+- **The in-process solid must overlap the lugs.** A bore plug flush with the chamfer circle, within the working
+  copy's 0.01 mm tolerance, fused into an invalid solid with one bore left open; the stock check then read
+  449 mm² of gouge before any cutting. The plugs are 0.5 mm larger than the chamfer, and the script stops if the
+  stock is not one valid solid.
 
 **C. Recompute and inspect.** Select the Job and recompute. Every operation must show a path; an operation with
 no path is a failure, not a pass. Check the paths against the stock and the workholding by eye.
@@ -173,8 +181,8 @@ no path is a failure, not a pass. Check the paths against the stock and the work
 
 | Setup | Operations | G-code lines | Finished of the area it can see | Gouge (mm²) | Rapids through stock | Workholding hits |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 `op10` | Rough, Finish, Outline, Bolt holes | 23,401 | 96.9 % | 0 | 0 | 0 |
-| 2 `op20` | Rough, Finish, Finish cross, Counterbores, Counterbore floors | 83,521 | 71.4 % | 0 | 0 | 0 |
+| 1 `op10` | Rough, Finish, Outline, Bolt holes | 23,400 | 96.9 % | 0 | 0 | 0 |
+| 2 `op20` | Rough, Finish, Finish cross, Counterbores, Counterbore floors | 83,534 | 71.4 % | 0 | 0 | 0 |
 | 3 `op30` | Lug bores, Bore chamfer | 426 | (in-process stock) | 0 | 0 | 0 |
 | 4 `op40` | Bore chamfer | 393 | (in-process stock) | 0 | 0 | 0 |
 
@@ -185,8 +193,8 @@ no path is a failure, not a pass. Check the paths against the stock and the work
   z-map replay written for this study (96.7 % and 71.9 %). Setups 3 and 4 use the z-map only (section 6).
 - **Sanity Check** reports only unused tool controllers, "the Job has not been post-processed" (it runs before
   the post) and "consider specifying the stock material".
-- **G-code:** `out/ge_manual_cam/op10.ngc` (SHA-256 `9f84188d…`), `op20.ngc` (`c9f826a0…`), `op30.ngc`
-  (`82586962…`), `op40.ngc` (`230264e4…`). LinuxCNC dialect. **Not run on a controller or a machine.**
+- **G-code:** `out/ge_manual_cam/op10.ngc` (SHA-256 `555017f7…`), `op20.ngc` (`dd7d1e5f…`), `op30.ngc`
+  (`9fd9752b…`), `op40.ngc` (`800f0164…`). LinuxCNC dialect. **Not run on a controller or a machine.**
 - **Views:** `opNN_setup.png` shows the part, stock, coarse workholding boxes and every toolpath per setup;
   `readiness_map.png` colours each face by its status. These are script renders, not GUI screenshots.
 
@@ -241,7 +249,7 @@ feature's tool within its modelled reach. It does not mean ready to cut (section
 | Lug tips (R17.78) and arm-root fillets (R3.175) | 6 | 1,921 | 86.8 % | 2 | **unverified** |
 | Lug bores (Ø19.11) | 2 | 763 | 100 % | 3 | **unverified** |
 | Outer bore chamfers | 2 | 111 | 61 % | 2, 3 | **unverified** |
-| Inner bore chamfers (clevis-gap side) | 2 | 111 | 24 % | — | **blocked** |
+| Inner bore chamfers (clevis-gap side) | 2 | 111 | 25 % | — | **blocked** |
 
 **Corrective actions**
 
