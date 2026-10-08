@@ -1,16 +1,16 @@
 # GE manual boundary conditions — nut-seat supports and rigid-pin load transfer (M2A.4)
 
-> **3 Oct:** refreshed on **L2**, the mesh frozen by the [M2A.2 convergence study](ge-manual-mesh.md), for the
-> current part, `GE_Challenge_Bracket`. Sections 4, 5 and 7 come from the current `out/ge_manual_bcs/bcs.json`;
-> the partition (section 2) is unchanged. The smoke test in section 5 is now solved on the current part. The L1
-> decks and the Iteration1 smoke test this page held before are in git history.
+> **4 Oct:** refreshed on the repaired source (M2A.8, [#66](https://github.com/sujitojha1/3d-part-optimization-agent/issues/66))
+> and its re-frozen **L2** mesh. Sections 2, 4, 5 and 7 come from the current `out/ge_manual_bcs/partition.json`
+> and `bcs.json`. The repair renumbered the faces, so every Face number here differs from the 3 Oct page. Earlier
+> versions are in git history.
 
 | | |
 | --- | --- |
 | Task | M2A.4 ([#62](https://github.com/sujitojha1/3d-part-optimization-agent/issues/62)) · [M2A workflow](ge-manual-workflow.md) |
-| Date | 2026-09-19; refreshed 2026-09-23; on L2 2026-10-03 |
-| Input | Working copy `data/ge_manual/GE_Challenge_Bracket_manual.FCStd`, SHA-256 `517c9bd7f0f68862b59a1558de05768afb707c10f8a05f3a615ec73cb0fd3b2a`; frozen L2 mesh ([M2A.2 record](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3 record](ge-manual-materials.md)) |
-| Output geometry | `data/ge_manual/GE_Challenge_Bracket_partitioned.FCStd`, SHA-256 `10e5c43fa30958f088b04507b95d658e9d3049588b91fd71fead68ae4de3b758`. M2A.2 meshes this copy, and every later step uses it |
+| Date | 2026-09-19; refreshed 2026-09-23; on L2 2026-10-03; on the repaired source 2026-10-04 |
+| Input | Working copy `data/ge_manual/GE_Challenge_Bracket_manual.FCStd`, SHA-256 `e892ab9c912e7eee2bf8b6d44bffa8c8b0b865b3752906588fc236a9fad9e785`; frozen L2 mesh ([M2A.2 record](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3 record](ge-manual-materials.md)) |
+| Output geometry | `data/ge_manual/GE_Challenge_Bracket_partitioned.FCStd`, SHA-256 `435c6724cf8e1c87296bde2b95d696621a0b45fd19d7fc116a35b2bc8308897d`. M2A.2 meshes this copy, and every later step uses it |
 | Script | `$FEM_PYTHON scripts/ge_manual_bcs.py partition`, then `… setup [--solve]` (the frozen level, L2, by default). It builds the same objects as the manual steps in section 3 and writes `out/ge_manual_bcs/partition.json`, `bcs.json` and three views |
 | Status | **Deck setup done, checked and smoke-solved on the current part, on the frozen L2 mesh.** All four supports and both lug bores are in the deck, with no extra restraints, for LC1 and LC4, and both solve and balance the applied force (section 5). **The full force and moment balance is [M2A.6](ge-manual-analysis-report.md)**, and **one GUI walk-through is still needed** |
 
@@ -45,20 +45,20 @@ hole edge out to Ø 14.173, and the seat must be split at Ø 14.173.
 
 `partition` imprints four coplanar discs, Ø 14.173, one centred on each bolt axis at the seat height, using
 `Shape.generalFuse` with a 1e-4 mm tolerance. The result is checked and must be a single valid solid with an
-unchanged volume (463,257.599 → 463,257.576 mm³). The face count goes from 58 to 62. Each seat must split into
+unchanged volume (463,257.630 → 463,257.605 mm³). The face count goes from 58 to 62. Each seat must split into
 exactly one patch and one ring. Because the partition renumbers faces, the Face numbers below apply **only** to
 the partitioned copy with the checksum above.
 
 | Bolt (interface) | Axis (x, y) deck | Hole Ø | **Fixed patch** | Area | Free ring (Ø 14.173–16.00) |
 | --- | --- | --- | --- | --- | --- |
-| B1 (2) | (52.003, 1.512) | 10.3124 | **Face57** | 74.242 mm² | Face56, 43.346 mm² |
-| B2 (3) | (−0.044, −0.064) | 10.668 | **Face3** | 68.383 mm² | Face2, 43.346 mm² |
-| B3 (4) | (−0.056, −148.189) | 10.3124 | **Face52** | 74.242 mm² | Face51, 43.346 mm² |
-| B4 (5) | (38.028, −147.035) | 10.3124 | **Face47** | 74.242 mm² | Face46, 43.346 mm² |
+| B1 (2) | (52.003, 1.512) | 10.3124 | **Face34** | 74.242 mm² | Face33, 43.346 mm² |
+| B2 (3) | (−0.044, −0.064) | 10.668 | **Face36** | 68.383 mm² | Face35, 43.346 mm² |
+| B3 (4) | (−0.056, −148.189) | 10.3124 | **Face32** | 74.242 mm² | Face31, 43.346 mm² |
+| B4 (5) | (38.028, −147.035) | 10.3124 | **Face4** | 74.242 mm² | Face3, 43.346 mm² |
 
 The patch areas match the M2A.1 prediction (74.2 and 68.4 mm²). B2's patch is 8 % smaller because its hole is larger.
 
-**Pin bores.** **Face38** and **Face39**, one bore face per lug (Iteration1 had four, two per lug). The lug-end
+**Pin bores.** **Face61** and **Face62**, one bore face per lug (Iteration1 had four, two per lug). The lug-end
 chamfer cones are not included.
 
 ## 3. Manual steps (FreeCAD 1.1.3 GUI)
@@ -81,10 +81,10 @@ chamfer cones are not included.
 3. **Material.** Model → Materials → Material for solid, Ti-6Al-4V from the [M2A.3 card](ge-manual-materials.md),
    applied to `Solid1`.
 4. **Supports.** Model → Mechanical boundary conditions → **Fixed boundary condition**, four times:
-   `Fixed_B1` on Face57, `Fixed_B2` on Face3, `Fixed_B3` on Face52 and `Fixed_B4` on Face47. Pick **only** the
+   `Fixed_B1` on Face34, `Fixed_B2` on Face36, `Fixed_B3` on Face32 and `Fixed_B4` on Face4. Pick **only** the
    inner patch; the outer ring must stay free.
 5. **Pin.** Model → Mechanical boundary conditions → **Rigid body constraint**, named `Pin`:
-   - References: Face38 and Face39.
+   - References: Face61 and Face62.
    - Reference node: **(−20.97366, −74.76046, 44.72459)** mm, which is `PinReference`.
    - Translational mode X/Y/Z = **Load**, and rotational mode X/Y/Z = **Load**.
    - LC1: Force Z = **35585.77 N**, and every other force and moment 0.
@@ -102,44 +102,44 @@ sets. Only the `*CLOAD` values differ.
 
 | Check | Result |
 | --- | --- |
-| `Fixed_B1`–`B4` node sets equal the mesh nodes on each patch face | **Yes**: 244, 261, 244 and 244 nodes (993 in total) |
+| `Fixed_B1`–`B4` node sets equal the mesh nodes on each patch face | **Yes**: 244, 251, 244 and 244 nodes (983 in total) |
 | Ring nodes fixed, apart from the 60 nodes on the shared Ø 14.173 edge | **0** at every seat |
 | Restrained DOFs | `*BOUNDARY` `Fixed_Bn,1`, `,2` and `,3` for each seat: **translations only** |
 | Extra `*BOUNDARY` lines | **None**: the deck has exactly the four `Fixed_*` blocks |
 | `Pin` node set equals the mesh nodes on both bores | **Yes**: 2,159 nodes, **1,070 and 1,089** per lug |
 | Overlap between fixed and pin nodes | 0 |
-| Rigid body card | `*RIGID BODY, NSET=Pin, REF NODE=172725, ROT NODE=172726` |
+| Rigid body card | `*RIGID BODY, NSET=Pin, REF NODE=170952, ROT NODE=170953` |
 | Reference and rotation nodes | Both at (−20.97366, −74.76046, 44.72459), the pin reference point |
-| LC1 loads | `*CLOAD` 172725,3,35585.77; every other component 0; no load on any other node |
-| LC4 loads | `*CLOAD` 172726,3,564924.2, a moment about +z on the rotation node; every other component 0 |
+| LC1 loads | `*CLOAD` 170952,3,35585.77; every other component 0; no load on any other node |
+| LC4 loads | `*CLOAD` 170953,3,564924.2, a moment about +z on the rotation node; every other component 0 |
 
-Decks: `data/ge_manual/bcs/L2/LC1/LC1.inp` (SHA-256 `91ea964f…8f33e5`) and `…/LC4/LC4.inp` (`46d847ef…ce709c`).
+Decks: `data/ge_manual/bcs/L2/LC1/LC1.inp` (SHA-256 `eb4cc7aa…f5d0bd`) and `…/LC4/LC4.inp` (`68cae24d…f0dc24`).
 Full checksums are in `bcs.json`. The decks are gitignored because they are derived from licensed CAD.
 
 ## 5. Smoke-test solve (L2, Ti-6Al-4V)
 
-Run on `GE_Challenge_Bracket` on 3 Oct with `setup --solve`: CalculiX 2.23 with SPOOLES, on the D-17 Mac.
+Run on `GE_Challenge_Bracket` on 4 Oct with `setup --solve`: CalculiX 2.23 with SPOOLES, on the D-17 Mac.
 
 This only confirms that the setup solves and transfers the load. The formal force **and moment** balance, with
 tolerances, is M2A.6.
 
 | Case | ccx | Time | Σ support reactions (N) | Applied |
 | --- | --- | --- | --- | --- |
-| LC1 | exit 0 | 182.7 s | (0.000, −0.005, **−35,585.769**) | Fz +35,585.77 N |
-| LC4 | exit 0 | 173.7 s | (−0.001, 0.000, 0.000) | Mz +564,924.2 N·mm |
+| LC1 | exit 0 | 162.2 s | (0.000, −0.001, **−35,585.776**) | Fz +35,585.77 N |
+| LC4 | exit 0 | 176.7 s | (−0.001, 0.000, 0.000) | Mz +564,924.2 N·mm |
 
 Reactions per seat (N):
 
 | Seat | LC1 (Fx, Fy, Fz) | LC4 (Fx, Fy, Fz) |
 | --- | --- | --- |
-| B1 | (+7, +2,650, **+8,188**) | (+1,693, −512, −605) |
-| B2 | (−339, +12,111, −25,803) | (+1,925, +395, +607) |
-| B3 | (−11, −9,906, −23,626) | (−1,797, +256, −802) |
-| B4 | (+344, −4,855, **+5,655**) | (−1,821, −139, +800) |
+| B1 | (+13, +2,653, **+8,184**) | (+1,692, −511, −605) |
+| B2 | (−342, +12,104, −25,795) | (+1,926, +394, +607) |
+| B3 | (−29, −9,904, −23,623) | (−1,799, +256, −802) |
+| B4 | (+358, −4,854, **+5,649**) | (−1,819, −138, +800) |
 
 **LC4 moment transfer.** The rigid body carries the moment. The seats react it mostly as an in-plane couple, with
 net force zero. A rough check takes each seat's resultant at its bolt axis and ignores the moment each patch
-carries itself. That gives Mz = −568,405 N·mm about the pin reference point. It opposes the applied +564,924 N·mm
+carries itself. That gives Mz = −568,381 N·mm about the pin reference point. It opposes the applied +564,924 N·mm
 and matches it within 0.6 %. The same rough check leaves about 1×10⁵ N·mm of My in LC1, which is the moment
 carried within each patch. That's why the exact check in M2A.6 needs nodal reactions, not resultants.
 
@@ -162,7 +162,7 @@ These zones must be defined as exclusions for "stress away from singularities" i
 5. **No bolt preload, no shank bearing.** LC4's in-plane seat forces would really go through friction and the bolt
    shanks. Here they go through the fixed patch.
 6. **Mesh convergence.** The [mesh record](ge-manual-mesh.md), section 6, shows the peaks at items 1–2 do not
-   converge (the raw LC3 peak moves 29 % between L2 and L3r), and that the stress just outside a 10 mm bolt zone
+   converge (they rise 3–11 % from L1 to L2), and that the stress just outside a 10 mm bolt zone
    is still the tail of the patch-edge singularity. Use a plan exclusion radius about each bolt axis and the
    bores. M2's LC1 used 10 mm; [M2A.6 §5](ge-manual-analysis-report.md) shows 12 mm is needed on this part.
 

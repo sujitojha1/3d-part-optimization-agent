@@ -1,12 +1,12 @@
 # GE manual materials — five cards, assignment and deck check (M2A.3)
 
-> **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
+> **4 Oct:** sections 3, 4 and 6 are refreshed for the current part, `GE_Challenge_Bracket`, on the frozen L2 mesh, from the current `out/ge_manual_materials/materials.json`. The five cards and their sources (sections 1 and 2) do not depend on the geometry and are unchanged. The Iteration1 masses this page held before are in git history.
 
 | | |
 | --- | --- |
 | Task | M2A.3 ([#61](https://github.com/sujitojha1/3d-part-optimization-agent/issues/61)) · [M2A workflow](ge-manual-workflow.md) |
-| Date | 2026-09-19 |
-| Geometry / mesh | Working copy from [M2A.1](ge-manual-geometry.md), volume **283,729.68 mm³**. L1 mesh from [M2A.2](ge-manual-mesh.md), meshed on the [M2A.4 partitioned copy](ge-manual-boundary-conditions.md): connectivity SHA-256 `342e0de4…280b83`, 90,353 C3D10 elements. First recorded on L2, then re-run on L1 after L2 was dropped |
+| Date | 2026-09-19; refreshed for the current part 2026-10-04 |
+| Geometry / mesh | [M2A.4 partitioned copy](ge-manual-boundary-conditions.md) of the [M2A.1 working copy](ge-manual-geometry.md), volume **463,257.605 mm³**. Frozen L2 mesh from [M2A.2](ge-manual-mesh.md): connectivity SHA-256 `e836f7dc…e73b6c8ae`, 108,293 C3D10 elements |
 | Script | `vendor/fem-env/bin/python scripts/ge_manual_materials.py` (about 1 min). It builds the same objects as section 3's manual steps and writes `out/ge_manual_materials/materials.json` |
 | Decision | [D-09](requirements.md) names these five alloys and conditions: Ti-6Al-4V annealed, 7075-T6, 6061-T6, 17-4PH H1025, and 4140 quenched and tempered. This page fixes the product form, the governing specification and each value |
 
@@ -84,7 +84,7 @@ allowable.
 Repeat these steps for each card. Geometry, mesh, supports and loads stay fixed. Only the material changes.
 
 1. **Open the mesh document.** Open the mesh document
-   `data/ge_manual/mesh/L1/Iteration1_mesh_L1.FCStd` from M2A.2. Switch to the FEM workbench.
+   `data/ge_manual/mesh/L2/GE_Challenge_Bracket_mesh_L2.FCStd` from M2A.2. Switch to the FEM workbench.
 2. **Add the solver.** Select `Analysis`, then Solve → **Solver CalculiX Standard**.
 3. **Add the material.** Model → Materials → **Material for solid**.
    - In the task panel, choose any metal as a template, then click **Edit** or open the property editor.
@@ -94,7 +94,7 @@ Repeat these steps for each card. Geometry, mesh, supports and loads stay fixed.
 4. **Assign it to the whole solid.** In the reference list, click **Add** and pick the solid (`Solid1` of
    `Bracket`). With one solid, leaving the list empty also means "all", but the explicit reference is what the
    script uses.
-5. **Save** as `Iteration1_<card>_L1.FCStd`.
+5. **Save** as `GE_Challenge_Bracket_<card>_L2.FCStd`.
 6. **Check the exported deck.** Select the solver, choose **Write .inp file**, then open the deck:
    - `*MATERIAL, NAME=…` is followed by `*ELASTIC` with `E,ν` in MPa.
    - `*SOLID SECTION, ELSET=MaterialSolid, MATERIAL=…` appears exactly once.
@@ -118,19 +118,19 @@ The script's check found every card **verified** in both decks. Decks are in `da
 
 | Card | `*ELASTIC` line in the static deck | Elements in the material section | `*DENSITY` in the frequency deck | **Mass (g)** |
 | --- | --- | --- | --- | --- |
-| Ti-6Al-4V | `113800,0.342` | 90,353 of 90,353 | `4.43E-09` | **1,256.9** |
-| Al 7075-T651 | `71705,0.33` | 90,353 of 90,353 | `2.81E-09` | **797.3** |
-| Al 6061-T651 | `68948,0.33` | 90,353 of 90,353 | `2.7E-09` | **766.1** |
-| 17-4PH H1025 | `199948,0.272` | 90,353 of 90,353 | `7.806E-09` | **2,214.8** |
-| AISI 4140 Q&T | `199948,0.29` | 90,353 of 90,353 | `7.806E-09` | **2,214.8** |
+| Ti-6Al-4V | `113800,0.342` | 108,293 of 108,293 | `4.43E-09` | **2,052.2** |
+| Al 7075-T651 | `71705,0.33` | 108,293 of 108,293 | `2.81E-09` | **1,301.8** |
+| Al 6061-T651 | `68948,0.33` | 108,293 of 108,293 | `2.7E-09` | **1,250.8** |
+| 17-4PH H1025 | `199948,0.272` | 108,293 of 108,293 | `7.806E-09` | **3,616.2** |
+| AISI 4140 Q&T | `199948,0.29` | 108,293 of 108,293 | `7.806E-09` | **3,616.2** |
 
-- **Volume.** Mass uses the working-copy B-rep volume, 283,729.68 mm³. It is the same geometry for every card
-  and every load case, so M2A.6 repeats one mass per material across LC1–LC4. The M2A.4 partition changes it
-  by −0.002 mm³ (283,729.678), which does not show in the masses.
+- **Volume.** Mass uses the B-rep volume of the partitioned working copy, 463,257.605 mm³. It is the same
+  geometry for every card and every load case, so M2A.6 repeats one mass per material across LC1–LC4. The M2A.4
+  partition changes the volume by −0.025 mm³, which does not show in the masses.
 - **Steel masses match.** 17-4PH and 4140 come out identical because both datasheets give 0.282 lb/in³. The
   4140 fact sheet above gives 0.284 lb/in³ (7,850 kg/m³), which would be +0.6 %.
-- **Scale check.** GE's original part was reported unverified at about 2.05 kg. This entrant design is 1,257 g
-  in Ti.
+- **Scale check.** GE's original part was reported unverified at about 2.05 kg. This fully solid part is
+  2,052 g in Ti.
 
 ## 5. Project criteria, kept separate from the challenge
 
@@ -151,5 +151,5 @@ The script's check found every card **verified** in both decks. Decks are in `da
 | GE 903.2 MPa for Ti; one consistent density | Done (the deck's 4,430 kg/m³, not the metadata's 4,470) |
 | Assign to the complete solid in a manual Analysis and verify in the exported deck | Done (sections 3 and 4). **A person still needs to do one GUI pass**; the numbers come from the script |
 | Record volume and mass in grams | Done (section 4) |
-| Geometry, mesh, supports and loads fixed across cards | Geometry and mesh fixed. Supports and loads come in M2A.4/M2A.5 and must be added identically to each card's document. Re-run on L1 after L2 was dropped; every card verified again, and mass is unchanged |
+| Geometry, mesh, supports and loads fixed across cards | Geometry and mesh fixed. Supports and loads come in M2A.4/M2A.5 and must be added identically to each card's document. Re-run on 4 Oct on the current part and the frozen L2 mesh; every card verified again |
 | Ti baseline versus project comparisons; project safety factor and displacement criteria labelled | Done (scope note and section 5) |

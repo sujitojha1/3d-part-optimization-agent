@@ -1,15 +1,14 @@
 # GE manual load cases — four independent static cases (M2A.5)
 
-> **3 Oct:** refreshed on **L2**, the mesh frozen by the [M2A.2 convergence study](ge-manual-mesh.md), for the
-> current part, `GE_Challenge_Bracket`. Sections 3 and 4 come from the current `out/ge_manual_loads/loads.json`,
-> and the smoke test in section 4 is now solved on the current part. The L1 decks and the Iteration1 smoke test
-> this page held before are in git history.
+> **4 Oct:** refreshed on the repaired source (M2A.8, [#66](https://github.com/sujitojha1/3d-part-optimization-agent/issues/66))
+> and its re-frozen **L2** mesh. Sections 3 and 4 come from the current `out/ge_manual_loads/loads.json`. Earlier
+> versions are in git history.
 
 | | |
 | --- | --- |
 | Task | M2A.5 ([#63](https://github.com/sujitojha1/3d-part-optimization-agent/issues/63)) · [M2A workflow](ge-manual-workflow.md) |
-| Date | 2026-09-19; refreshed 2026-09-23; on L2 2026-10-03 |
-| Input | Frozen L2 mesh document `data/ge_manual/mesh/L2/GE_Challenge_Bracket_mesh_L2.FCStd`, SHA-256 `f5afe95a…cc81de` ([M2A.2](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3](ge-manual-materials.md)); nut-seat supports and rigid pin ([M2A.4](ge-manual-boundary-conditions.md)) |
+| Date | 2026-09-19; refreshed 2026-09-23; on L2 2026-10-03; on the repaired source 2026-10-04 |
+| Input | Frozen L2 mesh document `data/ge_manual/mesh/L2/GE_Challenge_Bracket_mesh_L2.FCStd`, SHA-256 `eebb77eb…e7a3f62d` ([M2A.2](ge-manual-mesh.md)); Ti-6Al-4V card ([M2A.3](ge-manual-materials.md)); nut-seat supports and rigid pin ([M2A.4](ge-manual-boundary-conditions.md)) |
 | Script | `$FEM_PYTHON scripts/ge_manual_loads.py [--solve]`. It builds the four setups as in section 2, checks each deck and writes `out/ge_manual_loads/loads.json` plus one view per case |
 | Status | **Four decks done, checked and smoke-solved on the current part, on the frozen L2 mesh.** All four reproduce the table vectors on the pin reference point, with no other loads or restraints, and are identical apart from their load cards (`all_checks_pass: true`). All four solve and balance the applied force (section 4). **The force and moment balance with tolerances is [M2A.6](ge-manual-analysis-report.md)** |
 
@@ -59,48 +58,48 @@ Each exported deck is read back (`loads.json`). Every check passes for every cas
 
 | Check | LC1 | LC2 | LC3 | LC4 |
 | --- | --- | --- | --- | --- |
-| `*CLOAD` on reference node 172725 (DOF 1, 2, 3) | 0, 0, 35585.77 | −37809.9, 0, 0 | −28276.2, 0, 31403.9 | 0, 0, 0 |
-| `*CLOAD` on rotation node 172726 (DOF 1, 2, 3) | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 | 0, 0, 564924.2 |
+| `*CLOAD` on reference node 170952 (DOF 1, 2, 3) | 0, 0, 35585.77 | −37809.9, 0, 0 | −28276.2, 0, 31403.9 | 0, 0, 0 |
+| `*CLOAD` on rotation node 170953 (DOF 1, 2, 3) | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 | 0, 0, 564924.2 |
 | Equal to the section 1 vector | yes | yes | yes | yes |
 | Loads on any other node | none | none | none | none |
 | Both nodes at the pin reference point (to 1e-6 mm) | yes | yes | yes | yes |
 | Constraints in the Analysis | 4 Fixed + 1 Rigid body | same | same | same |
 | Extra `*BOUNDARY` lines | none | none | none | none |
-| Support and pin node sets as in [M2A.4 §4](ge-manual-boundary-conditions.md) (993 fixed, 2,159 pin) | yes | yes | yes | yes |
+| Support and pin node sets as in [M2A.4 §4](ge-manual-boundary-conditions.md) (983 fixed, 2,159 pin) | yes | yes | yes | yes |
 
 - **Units.** The FreeCAD writer uses mm, N and tonne. The `*CLOAD` values are in N on the reference node and in
   N·mm on the rotation node, the same numbers as the table.
 - **Decks match apart from their loads.** With the `*CLOAD` cards and `**` comment lines removed, all four decks
   are byte-identical. They have the same nodes, elements, material, supports, rigid body, step and outputs. Only
   the load differs.
-- **The mesh document is untouched.** Its SHA-256 is the same before and after the run (`f5afe95a…`).
+- **The mesh document is untouched.** Its SHA-256 is the same before and after the run (`eebb77eb…`).
 
-Decks: `data/ge_manual/loads/L2/<case>/<case>.inp`. SHA-256 prefixes: LC1 `fd4624ba`, LC2 `7201cf72`,
-LC3 `4f3462c0`, LC4 `72652d05`. The full values are in `loads.json`. The decks are gitignored because they are
+Decks: `data/ge_manual/loads/L2/<case>/<case>.inp`. SHA-256 prefixes: LC1 `29f0c3fd`, LC2 `ce6ef09d`,
+LC3 `6e165696`, LC4 `c4d4cbac`. The full values are in `loads.json`. The decks are gitignored because they are
 derived from licensed CAD.
 
 ## 4. Smoke-test solve (L2, Ti-6Al-4V)
 
-Run on `GE_Challenge_Bracket` on 3 Oct with `--solve`: CalculiX 2.23 with SPOOLES on the D-17 Mac; ccx exit 0 for
-every case, 170–177 s each.
+Run on `GE_Challenge_Bracket` on 4 Oct with `--solve`: CalculiX 2.23 with SPOOLES on the D-17 Mac; ccx exit 0 for
+every case, 162–201 s each.
 
 | Case | Σ support reactions (N) | Σ + applied (N) | Pin reference displacement (mm) | Pin rotation (rad) |
 | --- | --- | --- | --- | --- |
-| LC1 | (0.000, −0.005, −35,585.769) | (0.000, −0.005, 0.001) | (0.0790, −0.0013, **0.1636**) | (0.0000, 0.0027, 0.0000) |
-| LC2 | (37,809.902, 0.000, 0.000) | (0.002, 0.000, 0.000) | (**−0.1050**, 0.0034, −0.0839) | (0.0000, −0.0023, −0.0001) |
-| LC3 | (28,276.200, 0.001, −31,403.895) | (0.000, 0.001, 0.005) | (−0.0088, 0.0014, **0.0816**) | (0.0000, 0.0007, 0.0000) |
+| LC1 | (0.000, −0.001, −35,585.776) | (0.000, −0.001, −0.006) | (0.0790, −0.0013, **0.1637**) | (0.0000, 0.0027, 0.0000) |
+| LC2 | (37,809.901, 0.000, 0.010) | (0.001, 0.000, 0.010) | (**−0.1050**, 0.0034, −0.0839) | (0.0000, −0.0023, −0.0001) |
+| LC3 | (28,276.201, 0.000, −31,403.899) | (0.001, 0.000, 0.001) | (−0.0088, 0.0014, **0.0817**) | (0.0000, 0.0007, 0.0000) |
 | LC4 | (−0.001, 0.000, 0.000) | (−0.001, 0.000, 0.000) | (0.0008, −0.0045, 0.0003) | (−0.0004, 0.0000, **0.0013**) |
 
 Reactions per seat (N):
 
 | Seat | LC1 | LC2 | LC3 | LC4 |
 | --- | --- | --- | --- | --- |
-| B1 | (7, 2,650, +8,188) | (9,741, 9,473, −15,061) | (7,291, 9,423, −4,038) | (1,693, −512, −605) |
-| B2 | (−339, 12,111, −25,803) | (10,316, −8,386, +15,243) | (7,416, 4,416, −11,371) | (1,925, 395, +607) |
-| B3 | (−11, −9,906, −23,626) | (8,668, 5,909, +13,775) | (6,473, −4,323, −10,548) | (−1,797, 256, −802) |
-| B4 | (344, −4,855, +5,655) | (9,084, −6,996, −13,956) | (7,097, −9,516, −5,447) | (−1,821, −139, +800) |
+| B1 | (13, 2,653, +8,184) | (9,727, 9,455, −15,056) | (7,286, 9,412, −4,038) | (1,692, −511, −605) |
+| B2 | (−342, 12,104, −25,795) | (10,320, −8,381, +15,236) | (7,416, 4,414, −11,370) | (1,926, 394, +607) |
+| B3 | (−29, −9,904, −23,623) | (8,687, 5,919, +13,777) | (6,471, −4,313, −10,543) | (−1,799, 256, −802) |
+| B4 | (358, −4,854, +5,649) | (9,076, −6,992, −13,957) | (7,103, −9,513, −5,453) | (−1,819, −138, +800) |
 
-- **The load reaches the supports.** In every case the four seats balance the applied force to within 0.005 N.
+- **The load reaches the supports.** In every case the four seats balance the applied force to within 0.010 N.
   The moment balance needs nodal reactions and is done in M2A.6.
 - **LC4 torque goes through the pin.** The rotation node carries the full 564,924.2 N·mm. The pin twists
   1.32×10⁻³ rad about z, and the seats react with a zero-sum set of in-plane forces, i.e. a couple. The rough
