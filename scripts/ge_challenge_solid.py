@@ -11,7 +11,11 @@ that cavity shell, not in the external surface:
     inner (cavity)     258    603       8           10       0.0039 mm2
 
 So this keeps FVZ's external surface exactly as it is, drops the cavity, and closes the
-outer shell into a solid. The result is the external geometry of the GE challenge part
+outer shell into a solid. One thing in the outer shell is rebuilt: the B2 bolt hole's
+end circles are each closed by a 0.207 mm B-spline sliver. Gmsh honours that edge, and
+it produced the one element that failed gamma at L1 (0.015 against 0.05). The hole is
+plugged and re-drilled on the same axis and radius, which moves the surface by less
+than 1e-9 mm and leaves plain circles (rebuild_short_edge_holes). The result is the external geometry of the GE challenge part
 with a deliberate, fully dense interior: the honest subject for a machining study, and
 the base M2A.8 adds internal features to.
 
@@ -71,6 +75,38 @@ def stats(shape):
     }
 
 
+def rebuild_short_edge_holes(shape):
+    """Plug and re-drill every cylindrical hole whose face carries an edge under SHORT_EDGE_MM."""
+    repairs = []
+    while True:
+        bad = [f for f in shape.Faces if type(f.Surface).__name__ == "Cylinder"
+               and any(e.Length < SHORT_EDGE_MM for e in f.Edges)]
+        if not bad:
+            return shape, repairs
+        f = bad[0]
+        c, a, r = f.Surface.Center, f.Surface.Axis, f.Surface.Radius
+        along = [(v.Point - c).dot(a) for v in f.Vertexes]
+        lo, hi = min(along), max(along)
+        plug = Part.makeCylinder(r + 0.5, hi - lo, c + a * lo, a)
+        drill = Part.makeCylinder(r, hi - lo + 2.0, c + a * (lo - 1.0), a)   # open at both ends
+        before = len(repairs)
+        fixed = shape.fuse(plug).removeSplitter().cut(drill).removeSplitter()
+        fixed = fixed if fixed.ShapeType == "Solid" else fixed.Solids[0]
+        repairs.append({"radius_mm": round(r, 4), "length_mm": round(hi - lo, 4),
+                        "short_edges_mm": sorted(round(e.Length, 4) for e in f.Edges if e.Length < SHORT_EDGE_MM),
+                        "centre_native": [round(v, 3) for v in (c + a * ((lo + hi) / 2))],
+                        "volume_change_mm3": round(fixed.Volume - shape.Volume, 6)})
+        shape = fixed
+        if len(repairs) == before or len(repairs) > 8:
+            raise RuntimeError("hole rebuild did not converge")
+
+
+def surface_deviation(a, b, deflection=0.05, stride=5):
+    """Largest distance from a sample of points on a's surface to b (one direction)."""
+    points, _ = a.tessellate(deflection)
+    return max(b.distToShape(Part.Vertex(p))[0] for p in points[::stride])
+
+
 def bop_flags(shape):
     """BOP checker messages, counted by kind. check(True) prints and returns None."""
     import io
@@ -80,8 +116,8 @@ def bop_flags(shape):
     with contextlib.redirect_stdout(buf):
         try:
             shape.check(True)
-        except Exception as exc:  # a hard failure is itself the finding
-            return {"check_raised": str(exc)}
+        except Exception as exc:  # FreeCAD 1.1.3 raises with the messages instead of printing them
+            buf.write(str(exc))
     counts = {}
     for line in buf.getvalue().splitlines():
         line = line.strip()
@@ -120,6 +156,7 @@ def main():
         candidates["removeSplitter"] = candidates["outer_shell_solid"].removeSplitter()
     except Exception as exc:
         record.setdefault("notes", []).append(f"removeSplitter failed: {exc}")
+    candidates["holes_rebuilt"], record["hole_repairs"] = rebuild_short_edge_holes(candidates["outer_shell_solid"])
 
     scored = {}
     for tag, shape in candidates.items():
@@ -129,12 +166,13 @@ def main():
         scored[tag] = st
     record["candidates"] = scored
 
-    # Prefer the fewest BOP flags, then the fewest faces, among valid closed solids that
-    # keep the donor's outer volume. Volume must not move: the surface is the deliverable.
+    # Prefer no short edges, then the fewest BOP flags, then the fewest faces, among valid
+    # closed solids that keep the donor's outer volume. The surface is the deliverable:
+    # 0.1 mm3 in 463,258 allows a sliver B-spline to become a true arc and nothing more.
     ref = scored["outer_shell_solid"]["volume_mm3"]
     ok = [t for t, st in scored.items()
-          if st["valid"] and st["closed"] and st["solids"] == 1 and abs(st["volume_mm3"] - ref) < 1e-3]
-    chosen = min(ok, key=lambda t: (scored[t]["bop_flag_total"], scored[t]["faces"]))
+          if st["valid"] and st["closed"] and st["solids"] == 1 and abs(st["volume_mm3"] - ref) < 0.1]
+    chosen = min(ok, key=lambda t: (scored[t]["edges_below_0_3mm"], scored[t]["bop_flag_total"], scored[t]["faces"]))
     shape = candidates[chosen]
     record["chosen"] = chosen
 
@@ -156,14 +194,19 @@ def main():
     # The external surface is the deliverable: prove it did not move.
     dev = max(back.distToShape(Part.Vertex(v.Point))[0] for v in outer.Vertexes)
     record["max_vertex_deviation_from_donor_outer_mm"] = round(dev, 9)
+    donor_outer = Part.makeSolid(outer)
+    there, back_again = surface_deviation(donor_outer, back), surface_deviation(back, donor_outer)
+    record["surface_deviation_sampled_mm"] = {"donor_outer_to_written": there, "written_to_donor_outer": back_again,
+                                              "method": "0.05 mm tessellation, every 5th point, exact distance to the other solid"}
     record["acceptance"] = {
         "valid_closed_single_solid": back.isValid() and back.isClosed() and len(back.Solids) == 1,
         "no_face_below_1mm2": record["written"]["roundtrip"]["faces_below_1mm2"] == 0,
         "no_zero_length_edge": record["written"]["roundtrip"]["zero_length_edges"] == 0,
-        "surface_unchanged_within_1e-6mm": dev < 1e-6,
+        "no_edge_below_0_3mm": record["written"]["roundtrip"]["edges_below_0_3mm"] == 0,
+        "surface_unchanged_within_1e-6mm": max(dev, there, back_again) < 1e-6,
     }
     (OUT / "solid-check.json").write_text(json.dumps(record, indent=2))
-    print(json.dumps({k: record[k] for k in ("chosen", "acceptance", "written",
+    print(json.dumps({k: record[k] for k in ("chosen", "hole_repairs", "acceptance", "written", "surface_deviation_sampled_mm",
                                              "max_vertex_deviation_from_donor_outer_mm")},
                      indent=2, default=str))
 

@@ -1,6 +1,8 @@
 # GE geometry visual comparison — 19 September 2026
 
-> **21 Sep status:** This document contains historical Iteration1 study evidence. Current scripts select `GE_Challenge_Bracket`; current mesh quality is rejected (gamma minimum 0.014993 < 0.05), and replacement acceptance is open in #66/#60. See [the current audit](progress-review-2026-09-21.md) for geometry hashes, progress and remaining checks. Do not treat the older geometry/face IDs/numeric results below as verification of the replacement.
+> **Superseded (4 Oct).** The selection below, `Iteration1.stp`, is no longer the manual study's geometry. The study now uses `data/ge_manual/GE_Challenge_Bracket.stp`: the external surface of `Bracket_Modified_FVZ.stp`, the close second in the table, closed into a fully solid part (M2A.8, [#66](https://github.com/sujitojha1/3d-part-optimization-agent/issues/66)).
+>
+> **Why.** Iteration1 is lightweighted by open pockets cut up from the underside. FVZ has the continuous underside the study wants, but its weight is taken out by a sealed internal cavity that no tool can reach and whose shell cannot be meshed to the M2A.2 thresholds. Keeping FVZ's outer surface and making the interior solid removes both problems. The [frozen source record](ge-manual-geometry.md) has the build, the checks and the full supersession table. The comparison below is kept as written on 19 Sep.
 
 **Selected for the manual M2A study: `data/simjeb/Iteration1.stp`.** It is the closest visual match among the seven local files to the stored GE original-bracket image: broad sloped body, continuous four-corner base, twin narrow clevis arms with root gussets, and four recessed bolt locations. This is a qualitative visual selection, not proof of original-file identity or challenge compliance.
 

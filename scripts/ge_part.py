@@ -20,7 +20,7 @@ import os
 
 # stem -> SHA-256 of the frozen source STEP
 SOURCES = {
-    "GE_Challenge_Bracket": "d34fab379fd6293e862a5db22fe42421e3a32c9ee865706e6fc3ed2b9a5b0dc9",
+    "GE_Challenge_Bracket": "d0b2adcec4e7f14ad6a24078e9afae53a2d96f6f5e872caded15934892161117",
     "Bracket_Modified_FVZ": "aa9cf67d296938b0dfa2c3af542e40e643568277d09de52c17afd0e9e908e023",
     "Iteration1": "a0ba77206bce822bc607722f07734f6d989a6375992545921921c887e6ea0e0e",
 }
@@ -39,10 +39,11 @@ SOURCE_SHA256 = SOURCES[PART]
 SOURCE_DIR = SOURCE_DIRS.get(PART, "simjeb")
 
 # stem -> (frozen mesh level, its connectivity SHA-256 in out/ge_manual_mesh/mesh-quality.json).
-# Frozen 2026-10-03 on the M2A.2 convergence study (docs/ge-manual-mesh.md s6): L2 passes
-# every quality rule and is within 3.0 % of L3r at the arm roots in LC1-LC4. L1 is rejected.
-# M2A.6 publishes on this level only. A part without an entry has no frozen mesh.
+# L2 was frozen on 2026-10-03 on the M2A.2 convergence study (docs/ge-manual-mesh.md s6).
+# Re-frozen 2026-10-04 on the M2A.8 source (B2 hole rebuilt, #66): same level and sizes,
+# new connectivity. M2A.6 publishes on this level only. A part without an entry has no
+# frozen mesh.
 MESHES = {
-    "GE_Challenge_Bracket": ("L2", "ad92e20132de9a9ba767d6c8cb65a7bdc565f7699906e5d50e77e9b222916922"),
+    "GE_Challenge_Bracket": ("L2", "e836f7dca4614168b37b04a4c6c3a264e834a39895f7dec11f67254e73b6c8ae"),
 }
 MESH_LEVEL, MESH_SHA256 = MESHES.get(PART, (None, None))

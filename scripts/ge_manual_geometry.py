@@ -53,6 +53,7 @@ BOLT_D = 9.525
 NUT_ID = 10.287
 NUT_OD = 14.173
 MIN_WALL = 1.27
+WORKING_TOLERANCE = 0.01   # mm, B-rep tolerance of the working copy (see main)
 
 # SimJEB design 148 deck: RBE2 bolt spider centres and the RBE3 pin load node.
 BOLT_NODES = [129261, 129262, 129263, 129264]
@@ -395,6 +396,11 @@ def main():
     bad = [i for i, f in enumerate(located.Faces) if not f.isValid()]
     located.exportStep(str(DECK_STEP))
     working = Part.read(str(DECK_STEP))
+    # Twenty-four curve-on-surface pairs (blend cylinders and tori) sit 0.00001 mm outside
+    # the 0.00703 mm edge tolerance the STEP import assigns, and the BOP checker flags each
+    # one (28 edge and 28 face messages). The geometry is not moved: the tolerance is set to
+    # 0.01 mm, above the 0.00704 mm the curves actually differ by, and the check is clean.
+    working.fixTolerance(WORKING_TOLERANCE)
     record["deck_frame_step"] = {
         "path": str(DECK_STEP.relative_to(ROOT)), "sha256": sha256(DECK_STEP),
         "located_source_invalid_faces": [{"face": i, "surface": located.Faces[i].Surface.__class__.__name__,
