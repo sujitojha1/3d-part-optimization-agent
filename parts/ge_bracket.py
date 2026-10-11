@@ -453,9 +453,9 @@ def match(shape, p):
     return m
 
 
-def region_of_faces(shape, p):
+def region_of_faces(shape, p, m=None):
     """D-06 label for every face, and the faces with no label or with two."""
-    m = match(shape, p)
+    m = match(shape, p) if m is None else m
     labels = {}
     for region, names in REGIONS.items():
         for name in names:
@@ -464,3 +464,45 @@ def region_of_faces(shape, p):
     unlabelled = [i for i in range(1, len(shape.Faces) + 1) if i not in labels]
     overlap = {i: sorted(r) for i, r in labels.items() if len(r) > 1}
     return labels, unlabelled, overlap
+
+
+def select(shape, p):
+    """Predicate -> face indices and D-06 region -> FaceN names on `shape`, with
+    every reason the selection cannot be trusted. Any reason makes the candidate
+    `unverified` (REQ-OPT-008): nothing may be built from `matched` then."""
+    m = match(shape, p)
+    labels, unlabelled, overlap = region_of_faces(shape, p, m)
+    problems = [f"predicate {name} matches {m[name]}" for name in PREDICATES if len(m[name]) != 1]
+    problems += [f"set rule {name} matches nothing"
+                 for name in ("base_side", "pocket_wall") if not m[name]]  # fillet_corner may be empty
+    if unlabelled:
+        problems.append(f"faces with no D-06 region: {unlabelled}")
+    if overlap:
+        problems.append(f"faces in two D-06 regions: {overlap}")
+    regions = {region: tuple(f"Face{i}" for i, r in sorted(labels.items()) if region in r)
+               for region in REGIONS}
+    empty = [r for r, f in regions.items() if not f]
+    if empty:
+        problems.append(f"D-06 regions with no face: {empty}")
+    return m, regions, problems
+
+
+def candidate(doc, values):
+    """Parameters in, predicate-selected faces out (M3.1).
+
+    Sets the spreadsheet cells, recomputes and re-selects every face by geometry.
+    `status` is "ok", or "unverified" with the reasons in `problems`; an
+    unverified candidate carries no `matched` or `regions` to build on.
+    """
+    obj = set_params(doc, values)
+    shape = obj.Shape
+    out = {"status": "unverified", "params": params_of(obj), "shape": shape,
+           "matched": {}, "regions": {}, "problems": []}
+    if shape.isNull() or not shape.isValid() or len(shape.Solids) != 1:
+        out["problems"].append("shape is null" if shape.isNull() else
+                               f"shape valid={shape.isValid()} solids={len(shape.Solids)}")
+        return out
+    matched, regions, out["problems"] = select(shape, out["params"])
+    if not out["problems"]:
+        out.update(status="ok", matched=matched, regions=regions)
+    return out

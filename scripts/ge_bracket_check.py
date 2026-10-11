@@ -9,6 +9,9 @@ parameter alone at its min and at its max. At each point it checks that
 - every face carries exactly one D-06 region label;
 - the thin sections stay at or above the 1.27 mm floor (D-05).
 
+It then checks the M3.1 entry point, gb.candidate: the baseline is "ok", and a
+centre hole far outside its bounds is "unverified" with nothing selected.
+
 With --corners it also checks all 64 combinations of every parameter at its
 min or max (about 80 s).
 
@@ -36,6 +39,7 @@ from parts import ge_bracket as gb  # noqa: E402
 DOC = ROOT / "parts" / "ge_bracket.FCStd"
 OUT = ROOT / "out" / "ge_bracket"
 MIN_WALL = 1.27
+BROKEN_HOLE_D = 60.0  # mm; the frozen maximum is 20
 
 
 def faces(shape, m, names):
@@ -73,18 +77,8 @@ def check_point(doc, label, values):
     if not shape.isValid() or len(shape.Solids) != 1:
         problems.append(f"shape valid={shape.isValid()} solids={len(shape.Solids)}")
         return point
-    m = gb.match(shape, p)
-    for name in gb.PREDICATES:
-        if len(m[name]) != 1:
-            problems.append(f"predicate {name} matches {m[name]}")
-    for name in ("base_side", "pocket_wall"):  # fillet_corner may be empty
-        if not m[name]:
-            problems.append(f"set rule {name} matches nothing")
-    _, unlabelled, overlap = gb.region_of_faces(shape, p)
-    if unlabelled:
-        problems.append(f"faces with no region: {unlabelled}")
-    if overlap:
-        problems.append(f"faces in two regions: {overlap}")
+    m, _, selection = gb.select(shape, p)
+    problems += selection
     if not problems:
         point["walls_mm"] = walls(shape, m, p)
         thin = {k: v for k, v in point["walls_mm"].items() if v < MIN_WALL}
@@ -94,6 +88,17 @@ def check_point(doc, label, values):
                   "mass_g": round(shape.Volume * gb.DENSITY_G_MM3, 1)})
     point["ok"] = not problems
     return point
+
+
+def check_unverified(doc, baseline):
+    """M3.1: gb.candidate passes the baseline and marks an untrustworthy selection `unverified`."""
+    good = gb.candidate(doc, baseline)
+    # A centre hole far outside its bounds cuts into the arm roots and the base outline.
+    broken = gb.candidate(doc, {**baseline, "centre_hole_diameter": BROKEN_HOLE_D})
+    return {"baseline": good["status"], "baseline_problems": good["problems"],
+            "broken": broken["status"], "broken_problems": broken["problems"],
+            "ok": (good["status"] == "ok" and bool(good["matched"])
+                   and broken["status"] == "unverified" and not broken["matched"])}
 
 
 def main():
@@ -115,15 +120,18 @@ def main():
         for combo in itertools.product(("min", "max"), repeat=len(gb.PARAMS)):
             values = {n: gb.PARAMS[n][b] for n, b in zip(gb.PARAMS, combo)}
             points.append(check_point(doc, "corner " + " ".join(b[1] for b in combo), values))
+    unverified = check_unverified(doc, baseline)
     gb.set_params(doc, baseline)
     FreeCAD.closeDocument(doc.Name)
 
-    result = {"ok": all(p["ok"] for p in points), "document": str(DOC.relative_to(ROOT)),
-              "freecad": ".".join(FreeCAD.Version()[:3]), "points": points}
+    result = {"ok": all(p["ok"] for p in points) and unverified["ok"], "unverified": unverified,
+              "document": str(DOC.relative_to(ROOT)), "freecad": ".".join(FreeCAD.Version()[:3]), "points": points}
     (OUT / "check.json").write_text(json.dumps(result, indent=2) + "\n")
     for p in points:
         print(f"{p['point']:32} {'ok  ' if p['ok'] else 'FAIL'} {p.get('mass_g', '-'):>7} g "
               f"{p['rebuild_s']:.2f} s  {'; '.join(p['problems'])}")
+    print(f"{'candidate: baseline ' + unverified['baseline'] + ', broken ' + unverified['broken']:32} "
+          f"{'ok  ' if unverified['ok'] else 'FAIL'}")
     print("ok" if result["ok"] else "FAILED")
     sys.exit(0 if result["ok"] else 2)
 

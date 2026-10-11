@@ -81,21 +81,7 @@ def points(which):
 
 def cad_labels(shape, p):
     """Per-face D-06 label, with the REQ-OPT-008 and D-06 checks that guard it."""
-    m = gb.match(shape, p)
-    labels, unlabelled, overlap = gb.region_of_faces(shape, p)
-    problems = []
-    for name in gb.PREDICATES:
-        if len(m[name]) != 1:
-            problems.append(f"predicate {name} matches {m[name]}")
-    if unlabelled:
-        problems.append(f"faces with no D-06 region: {unlabelled}")
-    if overlap:
-        problems.append(f"faces in two D-06 regions: {overlap}")
-    faces = {region: tuple(f"Face{i}" for i, r in sorted(labels.items()) if region in r)
-             for region in gb.REGIONS}
-    empty = [r for r, f in faces.items() if not f]
-    if empty:
-        problems.append(f"D-06 regions with no face: {empty}")
+    _, faces, problems = gb.select(shape, p)
     return faces, problems
 
 
