@@ -11,7 +11,7 @@
 | Script | `vendor/fem-env/bin/python scripts/ge_bracket_mesh.py` (about 35 s for the seven cases). It builds the same objects as the manual steps in section 1 and writes `out/ge_bracket_mesh/mesh.json` |
 | Status | **Meshing: done.** All four D-24 cases pass every threshold in section 4 at both radii. **No case inverts**, so D-24's retry never fires on its own; section 6 records what the retry produces when forced, and why its quality numbers must not be read as an improvement |
 
-This is scratch code for the hand walk, not pipeline code. M3.2 ([#12](https://github.com/sujitojha1/3d-part-optimization-agent/issues/12)) writes the real thing.
+Sections 1–8 are the hand walk. The pipeline's mesher, written in M3.2 ([#12](https://github.com/sujitojha1/3d-part-optimization-agent/issues/12)), is in [section 9](#9-the-pipeline-entry-point-m32-11-oct).
 
 ## 1. Manual steps (FreeCAD 1.1.3 GUI)
 
@@ -204,3 +204,53 @@ Each case writes `out/ge_bracket_mesh/<case>/` — the FCStd with the Analysis a
 gitignored; the two section views in section 5 are copied into `docs/assets/ge-bracket-mesh/`. Reruns
 reproduce counts and connectivity exactly; node coordinates differ in the last digits, so the `.unv`
 checksums do not repeat and `connectivity_sha256` is recorded instead.
+
+## 9. The pipeline entry point (M3.2, 11 Oct)
+
+`mesh_candidate(params, work, sizes=None)` in `scripts/ge_bracket_mesh.py` is the pipeline's mesher
+([#12](https://github.com/sujitojha1/3d-part-optimization-agent/issues/12)). It takes one candidate's six
+parameters and the task's D-24 sizing, and returns a record with `status` `ok` or `unverified` and a
+`diagnostic`. For `ok` it also returns the open document, part and mesh, for M3.3 to add the analysis to.
+
+**The rule it applies**
+
+1. Faces are re-selected by `gb.select`. Any selection problem is `unverified`, and nothing is meshed.
+2. The first attempt runs with `SecondOrderLinear = false`.
+3. If it has inverted or zero-volume elements, or Gmsh reports a negative Jacobian, the candidate is
+   meshed once more with `SecondOrderLinear = true`. Both attempts are kept in the record, and
+   `d24_retry_ran` and `second_order_linear` say so on the candidate.
+4. Inverted elements after the retry, no volume mesh, or a failed section-4 threshold is `unverified`.
+5. **A retried mesh is never accepted on its Jacobian.** The two scaled-Jacobian rules are left out of its
+   acceptance (section 6); it must pass the gamma, aspect-ratio and inversion rules on their own.
+
+A quality failure without inversion is `unverified` and is not retried: the retry cannot improve gamma
+or aspect ratio, which read the corner nodes only.
+
+**Sizing is an argument.** `sizes` carries `max`, `min`, `region` and `curvature`; `SIZES` (4.0 / 1.0 /
+2.0 / 8) is the default. D-12's re-solve passes the same dict with `region` halved. A region size below
+`min` is refused with an error, because Gmsh would clamp it silently.
+
+**Check:** `$FEM_PYTHON scripts/ge_bracket_mesh.py --pipeline` writes `out/ge_bracket_mesh/pipeline.json`.
+Run on 11 Oct on the Windows machine (FreeCAD 1.1.3, not the D-17 Mac):
+
+| Check | Result |
+| --- | --- |
+| Baseline and all 12 parameter bounds | 13 of 13 `ok`, none retried. 36,273–48,976 C3D10; the baseline has 43,430 |
+| Lowest scaled Jacobian across the 13 | **0.1017** at `centre_hole_diameter = min`, against the 0.1 floor. Lowest gamma 0.1207 against 0.05 |
+| Retry fires on its own | A 20 mm sizing with `HighOrderOptimize` off inverts 70 elements (minSJ −1.60); the retry runs and clears them |
+| Retry not accepted on its Jacobian | That retried mesh scores minSJ 1.0000 and is still `unverified`, on `gamma_below_0_2_fraction` and `aspect_ratio_p99_9` |
+| Second failure | `unverified`, with the element count and centroids in the diagnostic. Checked on the verdict function with a constructed record: a straight-sided element cannot invert, so no real mesh reaches this branch |
+| Region knob | `region` 2.0 → 1.0 alone: 43,430 → 108,961 C3D10, still `ok` |
+| Region below `min` | Refused |
+
+**What this does not establish**
+
+- **The scaled-Jacobian margin is thin.** Five of the 13 points sit between 0.10 and 0.11. Only the bounds
+  were meshed, one parameter at a time; an interior point or a corner could fall under the floor and be
+  `unverified` on mesh quality alone.
+- **Counts differ between machines.** The baseline has 43,430 elements and 72,046 nodes here, against 43,671 and
+  72,355 on the Mac at the same sizing (M2.3's `--region 2.0` run). The node count here matches the Windows
+  LC1 record in the walkthrough §5. The accepted numbers should be re-run on the D-17 machine.
+- **`lc1_solve.py` does not call it yet.** That script still meshes without the retry or the quality gate;
+  M3.3 is where the analysis is assembled on `mesh_candidate`'s output.
+- **D-24's text is unchanged.** It still does not name `OptimizeNetgen` or the rule in step 5.

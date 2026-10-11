@@ -31,6 +31,11 @@ FCStd, .geo, .brep and .unv plus a section view through the arm root.
 
 Run with the FEM environment's Python (scripts/fem_env.py finds it):
     $FEM_PYTHON scripts/ge_bracket_mesh.py [--cases nominal_full ...]
+
+M3.2 adds the pipeline's own entry point, `mesh_candidate`: one candidate's
+parameters and the task's D-24 sizing in, an accepted mesh or `unverified` with
+a diagnostic out. `--pipeline` checks it at the baseline and every parameter
+bound, and exercises the retry, and writes out/ge_bracket_mesh/pipeline.json.
 """
 
 import argparse
@@ -138,12 +143,14 @@ def region_faces(shape, p, half):
 
 
 def build(radius, half, netgen=True, high_order_optimize="Optimization", region_size=None,
-          params=None):
+          params=None, sizes=None):
     """Document, part object and Gmsh mesh object for one case, unmeshed.
 
     `params` overrides the whole parameter dict; without it only arm_root_fillet
-    moves off the baseline, which is what M2.3's own cases need.
+    moves off the baseline, which is what M2.3's own cases need. `sizes` replaces
+    SIZES for this one mesh: D-24's sizing is task data.
     """
+    sizes = SIZES if sizes is None else sizes
     p = dict(params) if params else {k: r["baseline"] for k, r in gb.PARAMS.items()}
     if params is None:
         p["arm_root_fillet"] = radius
@@ -163,13 +170,13 @@ def build(radius, half, netgen=True, high_order_optimize="Optimization", region_
     mesh.ElementOrder = "2nd"
     mesh.SecondOrderLinear = False
     mesh.HighOrderOptimize = high_order_optimize
-    mesh.CharacteristicLengthMax = SIZES["max"]
-    mesh.CharacteristicLengthMin = SIZES["min"]
-    mesh.MeshSizeFromCurvature = SIZES["curvature"]
+    mesh.CharacteristicLengthMax = sizes["max"]
+    mesh.CharacteristicLengthMin = sizes["min"]
+    mesh.MeshSizeFromCurvature = sizes["curvature"]
     # Not a FreeCAD default and not named in D-24. Without it the bolt-boss
     # side walls carry minSJ 0.089 < 0.1 at both radii (cases *_no_netgen).
     mesh.OptimizeNetgen = netgen
-    region = ObjectsFem.makeMeshRegion(doc, mesh, region_size or SIZES["region"],
+    region = ObjectsFem.makeMeshRegion(doc, mesh, region_size or sizes["region"],
                                        "Region_arm_root_pin_bore")
     region.References = [(part, faces)]
     doc.recompute()
@@ -247,7 +254,7 @@ def quality(unv):
     return tags, conn, xyz, q, counts, version
 
 
-def summarise(tags, conn, xyz, q, radius):
+def summarise(tags, conn, xyz, q, radius, params=None):
     def dist(a):
         return {"min": float(a.min()), "p0_1": float(np.percentile(a, 0.1)),
                 "p1": float(np.percentile(a, 1)), "p5": float(np.percentile(a, 5)),
@@ -291,7 +298,7 @@ def summarise(tags, conn, xyz, q, radius):
     # Elements whose centroid sits within one radius of the arm-root fillet
     # band: the concentration the MeshRegion exists for, and where second-order
     # inversion is expected. z = base_top +- radius, in the two arm bands.
-    p = {k: r["baseline"] for k, r in gb.PARAMS.items()}
+    p = dict(params) if params else {k: r["baseline"] for k, r in gb.PARAMS.items()}
     p["arm_root_fillet"] = radius
     g = gb.layout(p)
     near = np.abs(centroid[:, 2] - g["base_top"]) < radius
@@ -343,36 +350,192 @@ def attempt(case, spec, radius, work, second_order_linear):
     work.mkdir(parents=True)
     doc, part, mesh, shape, geom = build(radius, spec["half"], spec["netgen"],
                                          spec["high_order_optimize"], spec.get("region_size"))
+    rec, art = mesh_once(doc, mesh, work, second_order_linear, radius)
+    rec["geometry"] = geom
+    doc.saveAs(str(work / f"{case}.FCStd"))
+    FreeCAD.closeDocument(doc.Name)
+    rec["files"] = {f.name: sha256(f) for f in sorted(work.iterdir())
+                    if f.is_file() and f.suffix != ".FCBak"}
+    return rec, (*art, shape)
+
+
+def mesh_once(doc, mesh, work, second_order_linear, radius, params=None):
+    """Run Gmsh on an open document at one SecondOrderLinear setting and measure the result.
+
+    `quality` is None when Gmsh produced no volume elements.
+    """
     mesh.SecondOrderLinear = second_order_linear
     doc.recompute()
     tools, err, elapsed = run_gmsh(mesh, work)
     fem = mesh.FemMesh
-    rec = {"second_order_linear": second_order_linear, "geometry": geom,
+    rec = {"second_order_linear": second_order_linear,
            "settings": settings(mesh), "gmsh_binary": tools.gmsh_bin,
            "gmsh_stderr_tail": err.strip().splitlines()[-20:],
            "gmsh_reports_negative_jacobian": any(
                s in err.lower() for s in ("negative jacobian", "invalid element", "inverted")),
            "mesh_seconds": round(elapsed, 2),
            "femmesh": {"nodes": fem.NodeCount, "volumes": fem.VolumeCount, "faces": fem.FaceCount,
-                       "edges": fem.EdgeCount, "tetra": fem.TetraCount}}
-    unv = Path(tools.temp_file_mesh)
-    doc.saveAs(str(work / f"{case}.FCStd"))
-    FreeCAD.closeDocument(doc.Name)
-    rec["files"] = {f.name: sha256(f) for f in sorted(work.iterdir())
-                    if f.is_file() and f.suffix != ".FCBak"}
-    tags, conn, xyz, q, counts, version = quality(unv)
+                       "edges": fem.EdgeCount, "tetra": fem.TetraCount},
+           "quality": None}
+    if fem.VolumeCount == 0:
+        return rec, (None, None, None)
+    tags, conn, xyz, q, counts, version = quality(Path(tools.temp_file_mesh))
     rec["gmsh_api_version"] = version
     rec["unv_element_counts_by_type"] = counts
     rec["counts_match_femmesh"] = len(tags) == fem.VolumeCount
     rec["connectivity_sha256"] = hashlib.sha256(
         np.ascontiguousarray(conn, dtype=np.int64).tobytes()).hexdigest()
-    summary, _ = summarise(tags, conn, xyz, q, radius)
-    rec["quality"] = summary
-    return rec, (conn, xyz, q, shape)
+    rec["quality"], _ = summarise(tags, conn, xyz, q, radius, params)
+    return rec, (conn, xyz, q)
+
+
+# The rules that read the midside nodes. SecondOrderLinear puts every one on its
+# straight edge, so a retried mesh scores 1.0 on them by construction and they
+# are not evidence for it (docs/ge-bracket-mesh.md section 6).
+JACOBIAN_RULES = ("min_scaled_jacobian_min", "min_scaled_jacobian_p0_1")
+
+
+def d24_outcome(attempts):
+    """D-24's verdict on a candidate's mesh attempts so far: (status, diagnostic).
+
+    "retry" after a first attempt with inverted elements, "unverified" when the
+    retry still has them, when Gmsh makes no volume mesh, or when a THRESHOLDS
+    rule fails; otherwise "ok".
+    """
+    last = attempts[-1]
+    q = last["quality"]
+    if q is None:
+        return "unverified", "gmsh made no volume elements: " + " | ".join(last["gmsh_stderr_tail"][-3:])
+    inverted = q["inverted_min_det_jac_le_0"] + q["zero_volume"]
+    if inverted or last["gmsh_reports_negative_jacobian"]:
+        if len(attempts) == 1:
+            return "retry", f"{inverted} inverted or zero-volume elements"
+        return "unverified", (f"{inverted} inverted or zero-volume elements after the SecondOrderLinear "
+                              f"retry, at {q['inverted_element_centroids_deck'][:3]}")
+    failed = [rule for rule, passed in q["acceptance"].items()
+              if not passed and not (last["second_order_linear"] and rule in JACOBIAN_RULES)]
+    if failed:
+        return "unverified", f"mesh quality below threshold: {failed}"
+    return "ok", ""
+
+
+def mesh_candidate(params, work, sizes=None, high_order_optimize="Optimization"):
+    """M3.2: mesh one candidate to D-24, with the one negative-Jacobian retry.
+
+    `sizes` is the task's D-24 sizing (SIZES when omitted); D-12's re-solve passes
+    it with `region` halved. `high_order_optimize` is on in D-24; the pipeline
+    check turns it off to reach the retry. Returns `record` with `status` "ok" or
+    "unverified" and a `diagnostic`, and for "ok" the open `doc`, `part`, `mesh`
+    and `shape`, which the caller closes. A retried mesh is "ok" on the rules
+    outside JACOBIAN_RULES only, and says so in `second_order_linear`.
+    """
+    sizes = dict(SIZES if sizes is None else sizes)
+    if sizes["region"] < sizes["min"]:
+        raise ValueError(f"MeshRegion {sizes['region']} mm is below CharacteristicLengthMin "
+                         f"{sizes['min']} mm; Gmsh would clamp it")
+    p = dict(params)
+    record = {"task": "M3.2", "sizes_mm": sizes, "thresholds": THRESHOLDS, "attempts": [],
+              "d24_retry_ran": False, "second_order_linear": False}
+    doc, part, mesh, shape, record["geometry"] = build(
+        p["arm_root_fillet"], False, high_order_optimize=high_order_optimize, params=p, sizes=sizes)
+    problems = ([f"shape valid={shape.isValid()} solids={len(shape.Solids)}"]
+                if not shape.isValid() or len(shape.Solids) != 1 else gb.select(shape, p)[2])
+    status, diagnostic = ("unverified", f"face selection: {problems}") if problems else ("retry", "")
+    for linear in (False, True):
+        if status != "retry":
+            break
+        attempt_dir = Path(work) / ("retry" if linear else "first")
+        shutil.rmtree(attempt_dir, ignore_errors=True)
+        attempt_dir.mkdir(parents=True)
+        rec, _ = mesh_once(doc, mesh, attempt_dir, linear, p["arm_root_fillet"], p)
+        record["attempts"].append(rec)
+        status, diagnostic = d24_outcome(record["attempts"])
+    record.update(status=status, diagnostic=diagnostic)
+    if record["attempts"]:
+        last = record["attempts"][-1]
+        record.update(d24_retry_ran=len(record["attempts"]) > 1,
+                      second_order_linear=last["second_order_linear"],
+                      nodes=last["femmesh"]["nodes"], c3d10=last["femmesh"]["volumes"],
+                      mesh_seconds=round(sum(a["mesh_seconds"] for a in record["attempts"]), 2))
+    if status != "ok":
+        FreeCAD.closeDocument(doc.Name)
+        return {"record": record, "doc": None, "part": None, "mesh": None, "shape": None}
+    return {"record": record, "doc": doc, "part": part, "mesh": mesh, "shape": shape}
+
+
+# A sizing that inverts elements once HighOrderOptimize is off, so the D-24 retry
+# fires on its own. Nothing inside PARAMS inverts at SIZES (M2.3).
+INVERTING = {"sizes": {"max": 20.0, "min": 0.0, "region": 20.0, "curvature": 0},
+             "high_order_optimize": "None"}
+
+
+def pipeline_check():
+    """M3.2: mesh_candidate at the baseline and each bound, then the retry and the region knob."""
+    out = OUT / "pipeline"
+    baseline = {k: r["baseline"] for k, r in gb.PARAMS.items()}
+    points = {"baseline": baseline}
+    for name, rec in gb.PARAMS.items():
+        for bound in ("min", "max"):
+            points[f"{name}={bound}"] = {**baseline, name: rec[bound]}
+
+    def run(label, params, **kw):
+        result = mesh_candidate(params, out / label.replace("=", "_"), **kw)
+        if result["doc"] is not None:
+            FreeCAD.closeDocument(result["doc"].Name)
+        r = result["record"]
+        print(f"{label:28} {r['status']:10} nodes {r.get('nodes', '-'):>7} "
+              f"{r.get('mesh_seconds', 0):6.2f} s  retry={r['d24_retry_ran']}  {r['diagnostic']}",
+              flush=True)
+        return r
+
+    report = {"task": "M3.2", "freecad_version": ".".join(FreeCAD.Version()[:3]),
+              "sizes_mm": SIZES, "thresholds": THRESHOLDS,
+              "points": {label: run(label, p) for label, p in points.items()}}
+    checks = {"every_point_ok_without_retry": all(
+        r["status"] == "ok" and not r["d24_retry_ran"] for r in report["points"].values())}
+
+    # The retry fires on inverted elements, is recorded, and its Jacobian rules are not used.
+    retried = run("inverting", baseline, **INVERTING)
+    first, last = retried["attempts"][0], retried["attempts"][-1]
+    checks["retry_fires_on_inversion"] = (
+        retried["d24_retry_ran"] and len(retried["attempts"]) == 2
+        and first["quality"]["inverted_min_det_jac_le_0"] > 0
+        and not first["second_order_linear"] and last["second_order_linear"])
+    checks["retry_is_recorded_on_the_candidate"] = retried["second_order_linear"] is True
+    checks["retry_not_accepted_on_its_jacobian"] = not any(
+        rule in retried["diagnostic"] for rule in JACOBIAN_RULES)
+
+    # A second failure is `unverified` with a diagnostic. SecondOrderLinear cannot
+    # invert a straight-sided element, so this branch is reached with the retry's
+    # record carrying the first attempt's inverted count.
+    still = dict(last, quality=dict(last["quality"],
+                                    inverted_min_det_jac_le_0=first["quality"]["inverted_min_det_jac_le_0"]))
+    status, diagnostic = d24_outcome([first, still])
+    checks["second_failure_is_unverified"] = status == "unverified" and "after the SecondOrderLinear" in diagnostic
+
+    # D-12's knob: the MeshRegion size alone, halved, refines and is still accepted.
+    halved = run("region_halved", baseline, sizes={**SIZES, "region": SIZES["region"] / 2})
+    checks["region_knob_refines"] = (halved["status"] == "ok"
+                                     and halved["c3d10"] > report["points"]["baseline"]["c3d10"]
+                                     and halved["geometry"]["mesh_region_size_mm"] == SIZES["region"] / 2)
+    try:
+        mesh_candidate(baseline, out / "region_below_min", sizes={**SIZES, "region": SIZES["min"] / 2})
+        checks["region_below_min_refused"] = False
+    except ValueError:
+        checks["region_below_min_refused"] = True
+
+    report.update(inverting=retried, region_halved=halved, checks=checks, ok=all(checks.values()))
+    (OUT / "pipeline.json").write_text(json.dumps(report, indent=2))
+    for name, passed in checks.items():
+        print(f"{name:40} {'ok' if passed else 'FAIL'}")
+    print("ok" if report["ok"] else "FAILED")
+    return 0 if report["ok"] else 2
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--pipeline", action="store_true",
+                        help="M3.2: check mesh_candidate instead of running the M2.3 cases")
     parser.add_argument("--cases", nargs="+", choices=list(CASES), default=list(CASES))
     parser.add_argument("--region", type=float, default=None,
                         help="override the MeshRegion size (mm); records the run under "
@@ -383,6 +546,8 @@ def main():
                              "they do not invert, to exercise and record the retry path")
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    if args.pipeline:
+        return pipeline_check()
     report_path = OUT / "mesh.json"
     report = json.loads(report_path.read_text()) if report_path.exists() else {}
     report.update({"freecad_version": ".".join(FreeCAD.Version()[:3]), "sizes_mm": SIZES,
