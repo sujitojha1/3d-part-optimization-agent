@@ -193,6 +193,15 @@ def build(radius, half, netgen=True, high_order_optimize="Optimization", region_
     return doc, part, mesh, shape, geom
 
 
+def add_groups(doc, part, mesh, faces):
+    """One FEM Mesh Group per D-06 region, named by the region."""
+    for region, names in faces.items():
+        g = ObjectsFem.makeMeshGroup(doc, mesh, True, f"MeshGroup_{region}")
+        g.Label = region  # UseLabel=True, so this is the name Gmsh and the .unv carry
+        g.References = [(part, names)]
+    doc.recompute()
+
+
 def settings(mesh):
     names = ["ElementDimension", "ElementOrder", "SecondOrderLinear", "HighOrderOptimize",
              "CharacteristicLengthMax", "CharacteristicLengthMin", "Algorithm2D", "Algorithm3D",
@@ -419,7 +428,8 @@ def d24_outcome(attempts):
     return "ok", ""
 
 
-def mesh_candidate(params, work, sizes=None, high_order_optimize="Optimization"):
+def mesh_candidate(params, work, sizes=None, high_order_optimize="Optimization",
+                   mesh_groups=False):
     """M3.2: mesh one candidate to D-24, with the one negative-Jacobian retry.
 
     `sizes` is the task's D-24 sizing (SIZES when omitted); D-12's re-solve passes
@@ -428,6 +438,8 @@ def mesh_candidate(params, work, sizes=None, high_order_optimize="Optimization")
     "unverified" and a `diagnostic`, and for "ok" the open `doc`, `part`, `mesh`
     and `shape`, which the caller closes. A retried mesh is "ok" on the rules
     outside JACOBIAN_RULES only, and says so in `second_order_linear`.
+    `mesh_groups` adds the D-06 Mesh Groups before meshing: they never reach the
+    deck (M2.4), but the element-centroid labels start from them.
     """
     sizes = dict(SIZES if sizes is None else sizes)
     if sizes["region"] < sizes["min"]:
@@ -436,10 +448,15 @@ def mesh_candidate(params, work, sizes=None, high_order_optimize="Optimization")
     p = dict(params)
     record = {"task": "M3.2", "sizes_mm": sizes, "thresholds": THRESHOLDS, "attempts": [],
               "d24_retry_ran": False, "second_order_linear": False}
+    t = time.perf_counter()
     doc, part, mesh, shape, record["geometry"] = build(
         p["arm_root_fillet"], False, high_order_optimize=high_order_optimize, params=p, sizes=sizes)
-    problems = ([f"shape valid={shape.isValid()} solids={len(shape.Solids)}"]
-                if not shape.isValid() or len(shape.Solids) != 1 else gb.select(shape, p)[2])
+    record["cad_seconds"] = round(time.perf_counter() - t, 2)
+    regions, problems = {}, [f"shape valid={shape.isValid()} solids={len(shape.Solids)}"]
+    if shape.isValid() and len(shape.Solids) == 1:
+        _, regions, problems = gb.select(shape, p)
+    if mesh_groups and not problems:
+        add_groups(doc, part, mesh, regions)
     status, diagnostic = ("unverified", f"face selection: {problems}") if problems else ("retry", "")
     for linear in (False, True):
         if status != "retry":

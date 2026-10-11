@@ -5,7 +5,7 @@ M2.2 ([#44](../docs/ge-bracket-lc1.md)) chose the rigid pin model on a provision
 D-06 label reaches the ccxtools deck, so the element-centroid fallback is the
 route to a region label. This script joins the three:
 
-    gm.build (D-24 mesh objects) -> mesh groups -> gmsh -> write_inp_file
+    ga.assemble (M3.1 faces, M3.2 mesh, M3.3 analysis and checked deck)
         -> ccx_run -> load_results -> mass, stress, displacement, peak element
 
 and reports the four M2.5 quantities on the full model:
@@ -48,10 +48,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 os.environ["PATH"] = f"{Path(sys.executable).parent}{os.pathsep}{os.environ['PATH']}"
 
 import FreeCAD  # noqa: E402
-import ObjectsFem  # noqa: E402
 from FreeCAD import Vector  # noqa: E402
-from femtools import ccxtools  # noqa: E402
 
+import ge_bracket_analysis as ga  # noqa: E402  the pipeline's mesh, analysis and deck (M3.3)
 import ge_bracket_labels as gl  # noqa: E402  D-06 groups and the centroid fallback (M2.4)
 import ge_bracket_mesh as gm  # noqa: E402  D-24 sizing and the Gmsh runner (M2.3)
 import lc1_pin_models as pm  # noqa: E402  reaction and CLOAD readers (M2.2)
@@ -97,45 +96,6 @@ def environment():
     }
 
 
-def add_physics(doc, part, mesh, matched):
-    """The LC1 record as FreeCAD objects: material, four fixed bolt holes, rigid pin.
-
-    `matched` is `gb.match`'s predicate -> face indices, so every reference is
-    resolved by geometry, never by a stored index. `gm.build` already made the
-    Analysis and put the mesh in it, so this only adds what M2.3 had no need for.
-    The pin model is the one M2.2 chose: `rigid`.
-    """
-    analysis = next(o for o in doc.Objects if o.isDerivedFrom("Fem::FemAnalysis"))
-    solver = ObjectsFem.makeSolverCalculiXCcxTools(doc, "CalculiXCcxTools")
-    analysis.addObject(solver)
-
-    mat = LC1["material"]
-    material = ObjectsFem.makeMaterialSolid(doc, "Material")
-    card = material.Material
-    card.update({"Name": mat["name"], "YoungsModulus": f"{mat['youngs_mpa']} MPa",
-                 "PoissonRatio": str(mat["poisson"]), "Density": f"{mat['density_kg_m3']} kg/m^3"})
-    material.Material = card
-    analysis.addObject(material)
-
-    supports = []  # one Fixed per hole, so ccx prints each bolt's reaction separately
-    for name in LC1["support"]["predicates"]:
-        fixed = ObjectsFem.makeConstraintFixed(doc, f"Fixed_{name}")
-        fixed.References = [(part, f"Face{matched[name][0]}")]
-        analysis.addObject(fixed)
-        supports.append(fixed)
-
-    fx, fy, fz = LC1["load"]["vector_n"]
-    pin = ObjectsFem.makeConstraintRigidBody(doc, "Pin")
-    pin.References = [(part, f"Face{matched[n][0]}") for n in LC1["load"]["load_faces"]]
-    pin.ReferenceNode = Vector(*LC1["load"]["applied_at"])
-    for axis, value in zip("XYZ", (fx, fy, fz)):
-        setattr(pin, f"TranslationalMode{axis}", "Load")
-        setattr(pin, f"Force{axis}", f"{value} N")
-    analysis.addObject(pin)
-    doc.recompute()
-    return analysis, solver, supports
-
-
 def element_stress(fm, vm):
     """Per volume element, the maximum nodal von Mises over its nodes, and the map
     from node to the elements that carry it. The peak element is the element the
@@ -179,41 +139,33 @@ def solve(hmax, region_size, curvature, run_ccx, out=OUT):
               "environment": environment(), "timings_s": {}, "problems": []}
 
     p = {k: r["baseline"] for k, r in gb.PARAMS.items()}
-    if hmax is not None:
-        gm.SIZES["max"] = hmax
-    if region_size is not None:
-        gm.SIZES["region"] = region_size
-    if curvature is not None:
-        gm.SIZES["curvature"] = curvature
-    record["d24_sizes_mm"] = dict(gm.SIZES)
+    sizes = dict(gm.SIZES)
+    sizes.update({k: v for k, v in (("max", hmax), ("region", region_size), ("curvature", curvature))
+                  if v is not None})
+    record["d24_sizes_mm"] = sizes
 
-    t = time.perf_counter()
-    doc, part, mesh, shape, geom = gm.build(p["arm_root_fillet"], half=False, params=p)
-    record["timings_s"]["cad"] = round(time.perf_counter() - t, 2)
-    record["geometry"] = geom
-    record["mesh_settings"] = gm.settings(mesh)
-
-    faces, problems = gl.cad_labels(shape, p)
-    record["problems"] += problems
-    if problems:
-        FreeCAD.closeDocument(doc.Name)
+    # M3.1 face selection, the M3.2 mesh with its D-24 retry and quality gate, and
+    # the M3.3 analysis and checked deck. Anything `unverified` stops the run here.
+    built = ga.assemble(p, LC1, OUT, sizes)
+    assembly = built["record"]
+    record["assembly"] = {k: assembly[k] for k in ("status", "diagnostic")}
+    record["d24"] = {k: assembly["mesh"].get(k) for k in ("status", "d24_retry_ran", "second_order_linear")}
+    record["timings_s"].update(assembly["timings_s"])
+    record["geometry"] = assembly["mesh"]["geometry"]
+    if assembly["mesh"]["attempts"]:
+        last = assembly["mesh"]["attempts"][-1]
+        record["mesh_settings"] = last["settings"]
+        record["mesh_quality"] = {k: last["quality"][k] for k in ("acceptance", "accepted")} \
+            if last["quality"] else None
+    if assembly["status"] != "ok":
+        record["problems"].append(f"unverified: {assembly['diagnostic']}")
         record["ok"] = False
         return record
-    gl.add_groups(doc, part, mesh, faces)  # M2.4: they never reach the deck, but they
-    #                                        are where the centroid fallback's labels start
-    analysis, solver, supports = add_physics(doc, part, mesh, gb.match(shape, p))
-
-    tools, err, mesh_s = gm.run_gmsh(mesh, OUT / "gmsh")
-    record["timings_s"]["mesh"] = round(mesh_s, 2)
-    if err:
-        record["problems"].append(f"gmsh: {err}")
+    doc, mesh, shape, analysis, supports, fea, inp = (
+        built[k] for k in ("doc", "mesh", "shape", "analysis", "supports", "fea", "inp"))
     fm = mesh.FemMesh
     record["mesh"] = {"nodes": fm.NodeCount, "c3d10": fm.VolumeCount,
                       "surface_elements": fm.FaceCount}
-    if fm.VolumeCount == 0:
-        FreeCAD.closeDocument(doc.Name)
-        record["ok"] = False
-        return record
 
     # Mass (M2.5's first quantity). The CAD volume is the contract; the mesh is the check.
     vol_cad = shape.Volume
@@ -227,32 +179,12 @@ def solve(hmax, region_size, curvature, run_ccx, out=OUT):
         "mesh_vs_cad_pct": round(100 * (vol_mesh - vol_cad) / vol_cad, 3),
     }
 
-    fea = ccxtools.FemToolsCcx(analysis, solver)
-    fea.update_objects()
-    # ccxtools' own `create` only prints; an absent dir silently becomes a temp dir.
-    (OUT / "ccx").mkdir(parents=True, exist_ok=True)
-    fea.setup_working_dir(str(OUT / "ccx"), create=True)
     fea.setup_ccx()
     record["environment"]["ccx_used"] = str(getattr(fea, "ccx_binary", ""))
-    if Path(fea.working_dir).resolve() != (OUT / "ccx").resolve():
-        record["problems"].append(f"ccxtools redirected the working dir to {fea.working_dir}")
-        FreeCAD.closeDocument(doc.Name)
-        record["ok"] = False
-        return record
-    blockers = fea.check_prerequisites()
-    if blockers:
-        record["problems"].append(f"prerequisites: {blockers}")
-        FreeCAD.closeDocument(doc.Name)
-        record["ok"] = False
-        return record
-
-    t = time.perf_counter()
-    fea.write_inp_file()
-    record["timings_s"]["write_inp"] = round(time.perf_counter() - t, 2)
     work = Path(fea.working_dir)
-    inp = work / f"{mesh.Name}.inp"
     record["deck"] = {"inp": str(inp.relative_to(ROOT)), "bytes": inp.stat().st_size,
-                      "sets": gl.deck_sets(inp), "d06_sets": gl.d06_sets(gl.deck_sets(inp))}
+                      "sets": gl.deck_sets(inp), "d06_sets": gl.d06_sets(gl.deck_sets(inp)),
+                      "checked": assembly["deck"]}
     if record["deck"]["d06_sets"]:
         record["problems"].append("D-06 sets unexpectedly present in the deck (M2.4 says none)")
     if not run_ccx:

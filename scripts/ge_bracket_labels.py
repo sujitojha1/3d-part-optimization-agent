@@ -85,13 +85,7 @@ def cad_labels(shape, p):
     return faces, problems
 
 
-def add_groups(doc, part, mesh, faces):
-    """One FEM Mesh Group per D-06 region, named by the region."""
-    for region, names in faces.items():
-        g = ObjectsFem.makeMeshGroup(doc, mesh, True, f"MeshGroup_{region}")
-        g.Label = region  # UseLabel=True, so this is the name Gmsh and the .unv carry
-        g.References = [(part, names)]
-    doc.recompute()
+add_groups = gm.add_groups  # one FEM Mesh Group per D-06 region; the pipeline mesher owns it
 
 
 def femmesh_groups(fm):
