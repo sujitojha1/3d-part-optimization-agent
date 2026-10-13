@@ -53,6 +53,7 @@ import ObjectsFem  # noqa: E402
 from FreeCAD import Vector  # noqa: E402
 from femtools import ccxtools  # noqa: E402
 
+import ge_bracket_labels as gl  # noqa: E402  the element-centroid D-06 labels (M2.4)
 import ge_bracket_mesh as gm  # noqa: E402  the pipeline mesher (M3.2)
 from parts import ge_bracket as gb  # noqa: E402
 
@@ -256,6 +257,51 @@ def assemble(params, lc, work, sizes=None, **mesh_options):
     record["status"] = "ok"
     return {"record": record, "doc": doc, "part": part, "mesh": mesh, "shape": shape,
             "analysis": analysis, "solver": solver, "supports": supports, "fea": fea, "inp": inp}
+
+
+def run(params, lc, work, sizes=None, **mesh_options):
+    """`run_sim`'s body: assemble, label the elements, and solve with ccx.
+
+    Leaves in `work` what `ge_bracket_result.read_result` reads without FreeCAD:
+    the deck, .frd and .dat under ccx/, the D-06 element sets, and candidate.json.
+    Returns the run record, also written to run.json: `status` "ok" or
+    "unverified" with a `diagnostic`. A solve that fails is a value, not an error.
+    """
+    work = Path(work)
+    shutil.rmtree(work, ignore_errors=True)
+    work.mkdir(parents=True)
+    built = assemble(params, lc, work, sizes, **mesh_options)
+    record = dict(built["record"], task="run_sim",
+                  versions={"freecad": ".".join(FreeCAD.Version()[:3])})
+    if record["status"] == "ok":
+        doc, mesh, shape, fea, inp = (built[k] for k in ("doc", "mesh", "shape", "fea", "inp"))
+        fm = mesh.FemMesh
+        t = time.perf_counter()
+        sets, partition = gl.centroid_labels(fm, gl.femmesh_groups(fm))
+        gl.write_elsets(work / "d06_elsets.inp", sets)
+        record["timings_s"]["labels"] = round(time.perf_counter() - t, 2)
+        record["d06_partition"] = partition
+        (work / "candidate.json").write_text(json.dumps({
+            "parameters_mm": dict(params), "volume_mm3": shape.Volume,
+            "bolt_centres_mm": [list(c) for c in gb.BOLT_CENTRES],
+            "regions": list(gb.REGIONS), "load_case": lc["name"]}, indent=2) + "\n")
+        fea.setup_ccx()
+        record["versions"]["ccx_binary"] = str(getattr(fea, "ccx_binary", ""))
+        t = time.perf_counter()
+        code = fea.ccx_run()
+        record["timings_s"]["ccx"] = round(time.perf_counter() - t, 2)
+        FreeCAD.closeDocument(doc.Name)
+        frd = inp.with_suffix(".frd")
+        record["artifacts"] = {"inp": f"ccx/{inp.name}", "frd": f"ccx/{frd.name}",
+                               "dat": f"ccx/{inp.with_suffix('.dat').name}",
+                               "d06_elsets": "d06_elsets.inp", "candidate": "candidate.json"}
+        if not partition["ok"]:
+            record.update(status="unverified", diagnostic=f"D-06 labels are not a partition: {partition}")
+        elif code != 0 or not frd.exists():
+            record.update(status="unverified", diagnostic=f"ccx exited {code}; .frd present: {frd.exists()}")
+    record["timings_s"]["total"] = round(sum(record["timings_s"].values()), 2)
+    (work / "run.json").write_text(json.dumps(record, indent=2) + "\n")
+    return record
 
 
 def check(bounds):
